@@ -48,6 +48,8 @@
 
 // warning : do not forget to update to_string() if new action or features are added
 
+//mod actions
+// 
 //replace = the shader will be replaced by a modded one
 static const uint32_t action_replace = 0b00000001;
 // skip : the shader is to be skipped after a count of draw
@@ -59,6 +61,8 @@ static const uint32_t action_identify = 0b00001000;
 //inject Texture : the shader need to have textures pushed as additional parameters 
 static const uint32_t action_injectText = 0b00010000;
 
+
+// mod features
 enum class Feature : uint32_t
 {
 	// Rotor : disable rotor when in cockpit view
@@ -76,6 +80,7 @@ enum class Feature : uint32_t
 	// Testing : for testing purpose
 	Testing = 10
 };
+
 
 // it is assumed that PS, VS and other kind of shaders to be modded in DCS are unique in their unique associated pipeline
 struct Shader_Definition {
@@ -99,3 +104,4 @@ extern std::unordered_map<uint32_t, Shader_Definition> shaders_by_handle;
 
 // definition of all the shaders to hanlde by hash (used to ID shader and initialize the map above, declaration in main.cpp)
 extern std::unordered_map<uint32_t, Shader_Definition> shaders_by_hash;
+

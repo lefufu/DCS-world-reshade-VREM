@@ -93,53 +93,6 @@ std::unordered_map<uint32_t, resource> texture_resource_by_handle;
 static thread_local std::vector<std::vector<uint8_t>> shader_code;
 static  bool flag_capture = false;
 
-// ***********************************************************************************************************************
-// on_init_resource_view() : not needed, keep for debug messages in resource copy
-//  once it will be known which resource is used by which shader...
-
-static void on_init_resource_view(
-	reshade::api::device* device,
-	reshade::api::resource resource,
-	reshade::api::resource_usage usage_type,
-	const reshade::api::resource_view_desc& desc,
-	reshade::api::resource_view view) 
-{
-	
-	std::stringstream s;
-	s << "init_resource_view("
-		<< reinterpret_cast<void*>(view.handle)
-		<< ", view type: " << to_string(desc.type) << " (0x" << std::hex << (uint32_t)desc.type << std::dec << ")"
-		<< ", view format: " << to_string(desc.format) << " (0x" << std::hex << (uint32_t)desc.format << std::dec << ")"
-		<< ", resource: " << reinterpret_cast<void*>(resource.handle)
-		<< ", resource usage: " << to_string(usage_type) << " 0x" << std::hex << (uint32_t)usage_type << std::dec;
-
-	// handle only texture
-	if (resource.handle) {
-		const auto resourceDesc = device->get_resource_desc(resource);
-		s << ", resource type: " << to_string(resourceDesc.type);
-		switch (resourceDesc.type) {
-			case reshade::api::resource_type::texture_1d:
-			case reshade::api::resource_type::texture_2d:
-				s << ", texture format: " << to_string(resourceDesc.texture.format);
-				s << ", texture width: " << resourceDesc.texture.width;
-				s << ", texture height: " << resourceDesc.texture.height;
-				texture_resource_by_handle.emplace(resource.handle, resource);
-				break;
-			case reshade::api::resource_type::texture_3d:
-				s << ", texture format: " << to_string(resourceDesc.texture.format);
-				s << ", texture width: " << resourceDesc.texture.width;
-				s << ", texture height: " << resourceDesc.texture.height;
-				s << ", texture depth: " << resourceDesc.texture.depth_or_layers;
-				texture_resource_by_handle.emplace(resource.handle, resource);
-				break;
-		}
-		s << ")";
-		if (debug_flag) reshade::log_message(reshade::log_level::info, s.str().c_str());
-		s.str("");
-		s.clear();
-	}
-}
-
 
 // *******************************************************************************************************
 // on_init_pipeline_layout() : called once, to create the DX11 layout to use in push_constant
@@ -163,7 +116,7 @@ static void on_init_pipeline_layout(reshade::api::device* device, const uint32_t
 		}
 		if (param.push_descriptors.type == descriptor_type::constant_buffer)
 		{
-			//index should be 2 for CB in DX11, but let's get it dynamically
+			//index should be 2 for CB in DX11, but let's get it dynamically. Not used.
 			shared_data.CBIndex = paramIndex;
 
 			// create a new pipeline_layout for just 1 constant buffer to be updated by push_constant(), cb number defined in CBINDEX
@@ -205,7 +158,7 @@ static void on_init_pipeline_layout(reshade::api::device* device, const uint32_t
 
 		else if (param.push_descriptors.type == descriptor_type::shader_resource_view)
 		{
-			// store info Ressource View injection
+			// store the index of Ressource View in the pipeline (not used)
 			shared_data.RVIndex = paramIndex;
 
 			// create a new pipeline_layout for just 1 rsource view to be updated by push_constant(), RV number defined in RVINDEX
@@ -335,9 +288,6 @@ static void on_init_pipeline(device* device, pipeline_layout layout, uint32_t su
 //
 static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, pipeline pipelineHandle)
 {
-
-	
-	
 	// maybe not the most elegant way to filter shader, but this more readeable...
 	bool to_process = false;
 	if ((stages & pipeline_stage::vertex_shader) == pipeline_stage::vertex_shader) to_process = true;
@@ -358,37 +308,45 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 			// debug message
 			if (debug_flag && shared_data.s_do_capture) {
 				std::stringstream s;
-				s << "on_bind_pipeline : Pipeline handle to process found: " << reinterpret_cast<void*>(pipelineHandle.handle) << ", hash =" << std::hex << it->second.hash << ", associated cloned pipeline handle: " << reinterpret_cast<void*>(it->second.substitute_pipeline.handle) << ", feature =" << to_string(it->second.feature) << ";";
-
+				s << "on_bind_pipeline : Pipeline handle to process found: " << reinterpret_cast<void*>(pipelineHandle.handle) << ", hash =";
+				s << std::hex << it->second.hash << ", associated cloned pipeline handle: " << reinterpret_cast<void*>(it->second.substitute_pipeline.handle);
+				s << ", feature =" << to_string(it->second.feature) << ";";
 				reshade::log_message(reshade::log_level::info, s.str().c_str());
-				// s.str("");
-				// s.clear();
 			}
-			
 			
 			if (it->second.action & action_injectText)
 			{
-				// inject texture using push_descriptor()
-				if (it->second.feature == Feature::Global)
+				// inject texture using push_descriptor() if things has been initialized => draw index is > -1
+				if (it->second.feature == Feature::Global && shared_data.count_display > -1)
 				{
-					// push the texture for depth and stencil
-					//depth
-					reshade::api::descriptor_table_update update;
-					update.binding = 0; // t3 as 3 is defined in pipeline_layout
-					update.count = 1;
-					update.type = reshade::api::descriptor_type::shader_resource_view;
-					update.descriptors = &shared_data.depth_view;
-					commandList->push_descriptors(reshade::api::shader_stage::pixel, shared_data.saved_pipeline_layout_RV, 0, update);
-
-					//stencil
-					update.binding = 1; // t4 as 3 is defined in pipeline_layout
-					update.descriptors = &shared_data.stencil_view;
-					commandList->push_descriptors(reshade::api::shader_stage::pixel, shared_data.saved_pipeline_layout_RV, 0, update);
-
+					
 					// log infos
 					if (debug_flag && shared_data.s_do_capture)
 					{
-						reshade::log_message(reshade::log_level::info, " => on_bind_pipeline : depthStencil textures injected;");
+						std::stringstream s;
+						s << " => on_bind_pipeline : depthStencil textures injected for draw index :";
+						s << shared_data.count_display << ";";
+						reshade::log_message(reshade::log_level::info, s.str().c_str());
+					}
+					if (shared_data.depth_view[shared_data.count_display].created && shared_data.stencil_view[shared_data.count_display].created)
+					{
+
+						// push the texture for depth and stencil
+						// setup descriptor
+						// TODO : need to define the texture regarding the number of call
+						reshade::api::descriptor_table_update update;
+						update.binding = 0; // t3 as 3 is defined in pipeline_layout
+						update.count = 1;
+						update.type = reshade::api::descriptor_type::shader_resource_view;
+
+						//depth
+						update.descriptors = &shared_data.depth_view[shared_data.count_display].texresource_view;
+						commandList->push_descriptors(reshade::api::shader_stage::pixel, shared_data.saved_pipeline_layout_RV, 0, update);
+
+						//stencil
+						update.binding = 1; // t4 as 3 is defined in pipeline_layout
+						update.descriptors = &shared_data.stencil_view[shared_data.count_display].texresource_view;;
+						commandList->push_descriptors(reshade::api::shader_stage::pixel, shared_data.saved_pipeline_layout_RV, 0, update);
 					}
 				}
 			}	
@@ -434,6 +392,19 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 				{	
 					// engage tracking shader_resource_view in push_descriptors() to get depthStencil 
 					shared_data.track_for_depthStencil = true;
+
+					// increase draw count
+					shared_data.count_display += 1;
+					// it's stupid but I'm too lazy to change code now..
+					shared_data.cb_inject_values.count_display = shared_data.count_display;
+
+					// log infos
+					if (debug_flag && shared_data.s_do_capture)
+					{
+						std::stringstream s;
+						s << " => on_bind_pipeline : current draw count updated : " << shared_data.count_display << ";";
+						reshade::log_message(reshade::log_level::info, s.str().c_str());
+					}
 				}
 			}
 

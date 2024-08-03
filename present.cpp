@@ -45,32 +45,21 @@
 #include "shader_definitions.h"
 
 // *******************************************************************************************************
-// This registers a callback for the 'present' event, which occurs every time a new frame is presented to the screen.
-// used to 
-//		Monitor keypress and set variable to inject
-//		Launch debugging of a frame
+// Initialize counters
 //
-void on_present(effect_runtime* runtime)
+void intialize_counters()
 {
-	std::stringstream s;
+	// to know the current display : 2D, VR standard: left/right, VR quad view : left/right + eye left/right
 
-	// frame capture by button on GUI
-	if (shared_data.s_do_capture)
-	{
-		reshade::log_message(reshade::log_level::info, "present()");
-		reshade::log_message(reshade::log_level::info, "--- End Frame ---");
-		shared_data.s_do_capture = false;
-	}
-	else
-	{
-		// The keyboard shortcut to trigger logging
-		// if (runtime->is_key_pressed(VK_F10))
-		if (shared_data.button_capture)
-		{
-			shared_data.s_do_capture = true;
-			reshade::log_message(reshade::log_level::info, "--- Frame ---");
-		}
-	}
+	shared_data.count_display = -1;
+
+}
+
+// *******************************************************************************************************
+// handle all key press outside imgui shortcut
+//
+void handle_keypress(effect_runtime* runtime)
+{
 
 	/*
 	//example on handling "hold" feature => effect is triggered only when key is pressed
@@ -95,6 +84,44 @@ void on_present(effect_runtime* runtime)
 		else if (shared_data.cb_inject_values.disable_video_IHADSS == 0.0)
 		{
 			shared_data.cb_inject_values.disable_video_IHADSS = 1.0;
+		}
+	}
+
+}
+
+// *******************************************************************************************************
+// This registers a callback for the 'present' event, which occurs every time a new frame is presented to the screen.
+// used to 
+//		Monitor keypress and set variable to inject
+//      Initialize counter for each frame
+//		Launch debugging of a frame
+//
+void on_present(effect_runtime* runtime)
+{
+	std::stringstream s;
+
+	// initialize counter to identfiy what to do when in the frame
+	intialize_counters();
+
+	// handle key press to toggle features not managed by imgui (eg TADS picture removed)
+	handle_keypress(runtime);
+
+
+	// frame capture by button on GUI
+	if (shared_data.s_do_capture)
+	{
+		reshade::log_message(reshade::log_level::info, "present()");
+		reshade::log_message(reshade::log_level::info, "--- End Frame ---");
+		shared_data.s_do_capture = false;
+	}
+	else
+	{
+		// The keyboard shortcut to trigger logging
+		// if (runtime->is_key_pressed(VK_F10))
+		if (shared_data.button_capture)
+		{
+			shared_data.s_do_capture = true;
+			reshade::log_message(reshade::log_level::info, "--- Frame ---");
 		}
 	}
 

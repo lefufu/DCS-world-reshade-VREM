@@ -50,6 +50,16 @@ extern std::string settings_iniFileName;
 extern bool debug_flag;
 
 
+struct resource_trace {
+	bool created = false;
+	reshade::api::resource texresource;
+};
+
+struct resourceview_trace {
+	bool created = false;
+	reshade::api::resource_view texresource_view;
+};
+
 // a class to host all global variables shared between reshade on_* functions. 
 // 
 struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
@@ -87,10 +97,17 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	std::shared_mutex s_mutex;
 
 	// to copy depth Stencil texture
-	reshade::api::resource depthStencil_res;
-	reshade::api::resource_view stencil_view;
-	reshade::api::resource_view depth_view;
-	bool depthStencil_created = false;
+	//reshade::api::resource depthStencil_res;
+	//reshade::api::resource_view stencil_view;
+	//reshade::api::resource_view depth_view;
+	//bool depthStencil_created = false;
+	
+	resource_trace depthStencil_res[4];
+	resourceview_trace stencil_view[4];
+	resourceview_trace depth_view[4];
+
+	// counter for the current display
+	short int count_display = -1;
 
 };
 

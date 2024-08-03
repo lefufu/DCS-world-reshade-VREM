@@ -39,8 +39,7 @@
 
 #pragma once
 
-// size of the constant buffer containing all mod parameters, to be injected in shaders
-static const int CBSIZE = 4;
+
 
 // CB number to be injected in the shaders
 static const int CBINDEX = 13;
@@ -48,14 +47,19 @@ static const int CBINDEX = 13;
 // RV number to be injected in the shaders
 static const int RVINDEX = 3;
 
+// size of the constant buffer containing all mod parameters, to be injected in shaders
+static const int CBSIZE = 8;
 
 // Must be 32bit aligned
-// Should be 4x32
 struct ShaderInjectData {
 	float testFlag; 
 	float rotorFlag;
 	float testGlobal;
 	float disable_video_IHADSS;
+	float count_display;
+	float unused1;
+	float unused2;
+	float unused3;
 };
 
 /*

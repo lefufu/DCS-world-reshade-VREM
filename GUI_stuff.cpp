@@ -70,7 +70,8 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		ImGui::Checkbox("Debug messages in log", &debug_flag);
 		// define the number of draw to differentiate
 		ImGui::SliderFloat("# of draws to differentiate", &shared_data.cb_inject_values.testFlag, 0.0f, 5.0f, "ratio = %.0f");
-
+		// to test global shader
+		ImGui::SliderFloat("Test global shader", &shared_data.cb_inject_values.testGlobal, 0.0f, 1.0f, "active: %1.0f");
 		//capture a fame 
 		static int clicked = 0;
 		if (ImGui::Button("Capture frame"))

@@ -55,23 +55,31 @@ bool copy_depthStencil(command_list* cmd_list, shader_stage stages, pipeline_lay
 	device* dev = cmd_list->get_device();
 	resource scr_resource = dev->get_resource_from_view(src_resource_view_depth);
 
-	// to do once in game session : if resource and view not created, create them
-	if (!shared_data.depthStencil_created)
+	// to do once per draw number : if resource and view not created, create them
+	if (!shared_data.depthStencil_res[shared_data.count_display].created)
 	{
 		
 		//get additional infos
 		resource_view src_resource_view_stencil = static_cast<const reshade::api::resource_view*>(update.descriptors)[4];
 		resource_desc src_resource_desc = dev->get_resource_desc(scr_resource);
-
-		reshade::log_message(reshade::log_level::info, " => copy_depthStencil() ");
+		if (debug_flag)
+		{
+			std::stringstream s;
+			s << " = > copy_depthStencil(" << shared_data.count_display << ") : create resource";
+			reshade::log_message(reshade::log_level::info, s.str().c_str());
+		}
 		// create the target resource for texture
-		dev->create_resource(src_resource_desc, nullptr, resource_usage::shader_resource, &shared_data.depthStencil_res, nullptr);
+		dev->create_resource(src_resource_desc, nullptr, resource_usage::shader_resource, &shared_data.depthStencil_res[shared_data.count_display].texresource, nullptr);
+		// flag creation to avoid to create it again 
+		shared_data.depthStencil_res[shared_data.count_display].created = true;
 
 		// create the resources view
 		resource_view_desc resview_desc_depth = dev->get_resource_view_desc(src_resource_view_depth);
-		dev->create_resource_view(shared_data.depthStencil_res, resource_usage::shader_resource, resview_desc_depth, &shared_data.depth_view);
+		dev->create_resource_view(shared_data.depthStencil_res[shared_data.count_display].texresource, resource_usage::shader_resource, resview_desc_depth, &shared_data.depth_view[shared_data.count_display].texresource_view);
+		shared_data.depth_view[shared_data.count_display].created = true;
 		resource_view_desc resview_desc_stencil = dev->get_resource_view_desc(src_resource_view_stencil);
-		dev->create_resource_view(shared_data.depthStencil_res, resource_usage::shader_resource, resview_desc_stencil, &shared_data.stencil_view);
+		dev->create_resource_view(shared_data.depthStencil_res[shared_data.count_display].texresource, resource_usage::shader_resource, resview_desc_stencil, &shared_data.stencil_view[shared_data.count_display].texresource_view);
+		shared_data.stencil_view[shared_data.count_display].created = true;
 
 		//debug
 		// if (debug_flag && shared_data.s_do_capture)
@@ -79,9 +87,9 @@ bool copy_depthStencil(command_list* cmd_list, shader_stage stages, pipeline_lay
 		{
 			
 			// display resource info
-			resource_desc check_new_res = dev->get_resource_desc(shared_data.depthStencil_res);
+			resource_desc check_new_res = dev->get_resource_desc(shared_data.depthStencil_res[shared_data.count_display].texresource);
 			std::stringstream s;
-			s << " => copy_depthStencil: create stencil/depth resource, type: " << to_string(check_new_res.type);
+			s << " => copy_depthStencil: for draw " << shared_data.count_display << ": create stencil/depth resource, type: " << to_string(check_new_res.type);
 
 			switch (check_new_res.type) {
 			default:
@@ -107,7 +115,7 @@ bool copy_depthStencil(command_list* cmd_list, shader_stage stages, pipeline_lay
 			s.clear();
 
 			//display resource view infos
-			resource_view_desc check_new_res2 = dev->get_resource_view_desc(shared_data.depth_view);
+			resource_view_desc check_new_res2 = dev->get_resource_view_desc(shared_data.depth_view[shared_data.count_display].texresource_view);
 			s << " => copy_depthStencil: create depth resource view , type: " << to_string(check_new_res2.type);
 
 			switch (check_new_res2.type) {
@@ -127,7 +135,7 @@ bool copy_depthStencil(command_list* cmd_list, shader_stage stages, pipeline_lay
 			s.str("");
 			s.clear();
 
-			check_new_res2 = dev->get_resource_view_desc(shared_data.stencil_view);
+			check_new_res2 = dev->get_resource_view_desc(shared_data.stencil_view[shared_data.count_display].texresource_view);
 			s << " => copy_depthStencil: create depth resource view , type: " << to_string(check_new_res2.type);
 
 			switch (check_new_res2.type) {
@@ -148,24 +156,24 @@ bool copy_depthStencil(command_list* cmd_list, shader_stage stages, pipeline_lay
 			s.clear();
 
 		}
-
-		// flag creation to avoid to create it again 
-		shared_data.depthStencil_created = true;
 	}
 	
 	// to do for all binding of global illum shader : copy current resource to new resource for later usage in another shader*
 	// 
 	//put resources in good usage for copying
 	cmd_list->barrier(scr_resource, resource_usage::shader_resource, resource_usage::copy_source);
-	cmd_list->barrier(shared_data.depthStencil_res, resource_usage::shader_resource, resource_usage::copy_dest);
+	cmd_list->barrier(shared_data.depthStencil_res[shared_data.count_display].texresource, resource_usage::shader_resource, resource_usage::copy_dest);
 	// do copy
-	cmd_list->copy_resource(scr_resource, shared_data.depthStencil_res);
+	cmd_list->copy_resource(scr_resource, shared_data.depthStencil_res[shared_data.count_display].texresource);
 	//restore usage
 	cmd_list->barrier(scr_resource, resource_usage::copy_source, resource_usage::shader_resource);
-	cmd_list->barrier(shared_data.depthStencil_res, resource_usage::copy_dest, resource_usage::shader_resource);
+	cmd_list->barrier(shared_data.depthStencil_res[shared_data.count_display].texresource, resource_usage::copy_dest, resource_usage::shader_resource);
 	if (debug_flag && shared_data.s_do_capture)
 	{
-		reshade::log_message(reshade::log_level::info, " => resource DepthStencil copied");
+		std::stringstream s;
+		s << " = > copy_depthStencil: for draw (" << shared_data.count_display << ") : resource DepthStencil copied";
+		reshade::log_message(reshade::log_level::info, s.str().c_str());
+
 	}
 
 	return true;
