@@ -39,8 +39,6 @@
 
 #pragma once
 
-
-
 // CB number to be injected in the shaders
 static const int CBINDEX = 13;
 
@@ -48,18 +46,38 @@ static const int CBINDEX = 13;
 static const int RVINDEX = 3;
 
 // size of the constant buffer containing all mod parameters, to be injected in shaders
-static const int CBSIZE = 8;
+static const int CBSIZE = 28;
 
 // Must be 32bit aligned
 struct ShaderInjectData {
-	float testFlag; 
-	float rotorFlag;
-	float testGlobal;
-	float disable_video_IHADSS;
-	float count_display;
-	float unused1;
-	float unused2;
-	float unused3;
+	float testFlag; //0.x
+	float rotorFlag; //0.y
+	float testGlobal; //0.z
+	float disable_video_IHADSS; //0.w
+	float count_display; //1.x
+	float mapMode; //1.y
+	float VRMode; //1.z
+	float maskLabels; //1.w
+	float hazeReduction; //2.x => used in asm !
+	float noReflect; //2.y
+	float cockpitSat; //2.z
+	float cockpitMul; //2.w
+	float cockpitAdd; //3.x
+	float extSat; //3.y
+	float extMul; //3.z
+	float extAdd; //3.w
+	float colorFlag; //4.x
+	float fSharpenIntensity; //4.y
+	float lumaFactor; //4.z
+	float sharpenFlag; //4.w
+	float debandFlag; //5.x
+	float Threshold; //5.y
+	float Range; //5.z
+	float Iterations; //5.w
+	float Grain; //6.x
+	float frame_counter; //6.y
+	float unused2; //6.z
+	float unused3; //6.w
 };
 
 /*

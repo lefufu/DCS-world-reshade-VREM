@@ -52,7 +52,7 @@ static int constant_color = false;
 void displaySettings(reshade::api::effect_runtime* runtime)
 {
 
-
+	// *******************************************************************************************************
 	if (ImGui::CollapsingHeader("General info and help"))
 	{
 		ImGui::PushTextWrapPos();
@@ -63,8 +63,131 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 
 	ImGui::Separator();
 
-	// debug
-	if (ImGui::CollapsingHeader("Debug options", ImGuiTreeNodeFlags_DefaultOpen))
+	// *******************************************************************************************************
+	if (ImGui::CollapsingHeader("Color change, sharpen and Deband"))
+	{
+		//-----------------------------------------------------------------------------------------------------------------
+		// enable/disable color changes
+		ImGui::SliderFloat("Enable color changes", &shared_data.cb_inject_values.colorFlag, 0.0f, 1.0f, "active: %1.0f");
+		ImGui::Separator();
+		if (!shared_data.cb_inject_values.colorFlag)
+		{
+			ImGui::BeginDisabled();
+		}
+
+		// set color for cockpit
+		ImGui::SliderFloat("Cockpit color common addition", &shared_data.cb_inject_values.cockpitAdd, 0.0f, 1.0f, "add: %.2f");
+		ImGui::SliderFloat("Cockpit color common multiplication", &shared_data.cb_inject_values.cockpitMul, 0.0f, 5.0f, "mul: %.2f");
+		ImGui::SliderFloat("Cockpit color saturation", &shared_data.cb_inject_values.cockpitSat, -5.0f, 5.0f, "sat: %.2f");
+		ImGui::Separator();
+		// set color for external
+		ImGui::SliderFloat("External color common addition", &shared_data.cb_inject_values.extAdd, 0.0f, 1.0f, "add : %.2f");
+		ImGui::SliderFloat("External color common multiplication", &shared_data.cb_inject_values.extMul, 0.0f, 5.0f, "mul: %.2f");
+		ImGui::SliderFloat("External color saturation", &shared_data.cb_inject_values.extSat, -5.0f, 5.0f, "sat: %.2f");
+
+		if (!shared_data.cb_inject_values.colorFlag)
+		{
+			ImGui::EndDisabled();
+		}
+		ImGui::Separator();
+		//-----------------------------------------------------------------------------------------------------------------
+		// enable/disable cockpit sharpen
+		ImGui::SliderFloat("Enable cockpit sharpen", &shared_data.cb_inject_values.sharpenFlag, 0.0f, 1.0f, "active: %1.0f");
+		ImGui::Separator();
+		if (!shared_data.cb_inject_values.sharpenFlag)
+		{
+			ImGui::BeginDisabled();
+		}
+
+		// set sharpen options
+		ImGui::SliderFloat("Sharpen intensity", &shared_data.cb_inject_values.fSharpenIntensity, 0.0f, 10.0f, "Sharpen: %.2f");
+		ImGui::SliderFloat("Sharpen luma", &shared_data.cb_inject_values.lumaFactor, 0.0f, 10.0f, "luma: %.2f");
+
+		if (!shared_data.cb_inject_values.sharpenFlag)
+		{
+			ImGui::EndDisabled();
+		}
+		ImGui::Separator();
+		//-----------------------------------------------------------------------------------------------------------------
+		// enable/disable sky and sea deband
+		ImGui::SliderFloat("Enable deband", &shared_data.cb_inject_values.debandFlag, 0.0f, 1.0f, "active: %1.0f");
+		ImGui::Separator();
+		if (!shared_data.cb_inject_values.debandFlag)
+		{
+			ImGui::BeginDisabled();
+		}
+
+		// set deband options
+		ImGui::SliderFloat("NoiseStrength", &shared_data.cb_inject_values.Threshold, 0.0f, 4096.0f, "Noise: %1.0f");
+		ImGui::SliderFloat("DitherStrength", &shared_data.cb_inject_values.Range, 1.0f, 64.0f, "Range: %1.0f");
+		// ImGui::SliderFloat("Iterations", &shared_data.cb_inject_values.Iterations, 1.0f, 16.0f, "Iterations: %1.0f");
+		ImGui::SliderFloat("Grain", &shared_data.cb_inject_values.Grain, 0.0f, 4096.0f, "Grain: %1.0f");
+
+		if (!shared_data.cb_inject_values.debandFlag)
+		{
+			ImGui::EndDisabled();
+		}
+		ImGui::Separator();
+	}
+
+	// *******************************************************************************************************
+	if (ImGui::CollapsingHeader("Mics: Labels, Haze, instrument reflection parameters"))
+	{
+		// enable/disable label fix
+		ImGui::SliderFloat("Labels hidden by cockpit frame", &shared_data.cb_inject_values.maskLabels, 0.0f, 1.0f, "active: %1.0f");
+
+		// set Haze factor
+		ImGui::SliderFloat("Haze strenght", &shared_data.cb_inject_values.hazeReduction, 0.0f, 1.0f, "strenght: %.2f");
+
+		// enable/disable reflection removal for A10C
+		ImGui::SliderFloat("Remove A10C instr. reflect", &shared_data.cb_inject_values.noReflect, 0.0f, 1.0f, "active: %1.0f");
+	}
+
+
+	// *******************************************************************************************************
+	if (ImGui::CollapsingHeader("Helicopter parameters"))
+	{
+		// enable/disable rotor fix
+		ImGui::SliderFloat("Disable Epileptic flashing rotor", &shared_data.cb_inject_values.rotorFlag, 0.0f, 1.0f, "active: %1.0f");
+	}
+
+	// *******************************************************************************************************
+	if (ImGui::CollapsingHeader("Save and Load"))
+	{
+		static int clicked = 0;
+		if (ImGui::Button("Save mod settings"))
+		{
+			saveShaderTogglerIniFile();
+			ImGui::SameLine();
+			ImGui::Text("Settings saved");
+		}
+		/*
+		clicked++;
+		if (clicked & 1)
+		{
+			saveShaderTogglerIniFile();
+			ImGui::SameLine();
+			ImGui::Text("Settings saved");
+		}
+		*/
+		static int clicked2 = 0;
+		if (ImGui::Button("Reload mod settings"))
+		{
+			load_setting_IniFile();
+			ImGui::SameLine();
+			ImGui::Text("Settings reloaded");
+		}
+		/*
+			clicked2++;
+		if (clicked2 & 1)
+		{
+			load_setting_IniFile();
+			ImGui::SameLine();
+			ImGui::Text("Settings reloaded");
+		}*/
+	}
+	// *******************************************************************************************************
+	if (ImGui::CollapsingHeader("Debug options"))
 	{
 		// verbose logs in reshade.log
 		ImGui::Checkbox("Debug messages in log", &debug_flag);
@@ -81,39 +204,6 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		else
 		{
 			shared_data.button_capture = false;
-		}
-	}
-
-
-	// Helicopters
-	if (ImGui::CollapsingHeader("Helicopter parameters", ImGuiTreeNodeFlags_DefaultOpen))
-	{
-		// define the number of draw to differentiate
-		ImGui::SliderFloat("Disable Epileptic flashing rotor", &shared_data.cb_inject_values.rotorFlag, 0.0f, 1.0f, "active: %1.0f");
-		//ImGui::Checkbox("Disable Epileptic flashing rotor", &shared_data.cb_inject_values.rotorFlag);
-	}
-
-	// Save
-	if (ImGui::CollapsingHeader("Save and Load", ImGuiTreeNodeFlags_DefaultOpen))
-	{
-		static int clicked = 0;
-		if (ImGui::Button("Save mod settings"))
-			clicked++;
-		if (clicked & 1)
-		{
-			saveShaderTogglerIniFile();
-			ImGui::SameLine();
-			ImGui::Text("Settings saved");
-		}
-
-		static int clicked2 = 0;
-		if (ImGui::Button("Reload mod settings"))
-			clicked2++;
-		if (clicked2 & 1)
-		{
-			load_setting_IniFile();
-			ImGui::SameLine();
-			ImGui::Text("Settings reloaded");
 		}
 	}
 }

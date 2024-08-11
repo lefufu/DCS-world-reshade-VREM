@@ -77,6 +77,12 @@ enum class Feature : uint32_t
 	IHADSS = 5,
 	// define if VRMode
 	VRMode = 6,
+	// define if view is in welcome screen or map
+	mapMode = 7,
+	// haze control
+	Haze = 8,
+	// remove A10C instrument reflect
+	NoReflect = 9,
 	// Testing : for testing purpose
 	Testing = 10
 };

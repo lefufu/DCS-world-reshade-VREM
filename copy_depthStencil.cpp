@@ -81,9 +81,13 @@ bool copy_depthStencil(command_list* cmd_list, shader_stage stages, pipeline_lay
 		dev->create_resource_view(shared_data.depthStencil_res[shared_data.count_display].texresource, resource_usage::shader_resource, resview_desc_stencil, &shared_data.stencil_view[shared_data.count_display].texresource_view);
 		shared_data.stencil_view[shared_data.count_display].created = true;
 
+		// setup the descriptor table
+		shared_data.update.binding = 0; // t3 as 3 is defined in pipeline_layout
+		shared_data.update.count = 1;
+		shared_data.update.type = reshade::api::descriptor_type::shader_resource_view;
+
 		//debug
-		// if (debug_flag && shared_data.s_do_capture)
-		if (debug_flag)
+		if (debug_flag && shared_data.s_do_capture)
 		{
 			
 			// display resource info
@@ -127,6 +131,7 @@ bool copy_depthStencil(command_list* cmd_list, shader_stage stages, pipeline_lay
 			case reshade::api::resource_view_type::texture_1d:
 			case reshade::api::resource_view_type::texture_2d:
 			case reshade::api::resource_view_type::texture_3d:
+			case reshade::api::resource_view_type::texture_2d_multisample:
 				s << ", view format: " << to_string(check_new_res2.format);
 				break;
 			}
@@ -147,6 +152,7 @@ bool copy_depthStencil(command_list* cmd_list, shader_stage stages, pipeline_lay
 			case reshade::api::resource_view_type::texture_1d:
 			case reshade::api::resource_view_type::texture_2d:
 			case reshade::api::resource_view_type::texture_3d:
+			case reshade::api::resource_view_type::texture_2d_multisample:
 				s << ", view format: " << to_string(check_new_res2.format);
 				break;
 			}
@@ -168,7 +174,8 @@ bool copy_depthStencil(command_list* cmd_list, shader_stage stages, pipeline_lay
 	//restore usage
 	cmd_list->barrier(scr_resource, resource_usage::copy_source, resource_usage::shader_resource);
 	cmd_list->barrier(shared_data.depthStencil_res[shared_data.count_display].texresource, resource_usage::copy_dest, resource_usage::shader_resource);
-	if (debug_flag && shared_data.s_do_capture)
+	// if (debug_flag && shared_data.s_do_capture)
+	if (debug_flag)
 	{
 		std::stringstream s;
 		s << " = > copy_depthStencil: for draw (" << shared_data.count_display << ") : resource DepthStencil copied";

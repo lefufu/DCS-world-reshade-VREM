@@ -62,6 +62,7 @@ std::unordered_map<uint32_t, Shader_Definition> shaders_by_hash =
 {
 	// fix for rotor
 	{ 0xC0CC8D69, Shader_Definition(action_replace, Feature::Rotor, L"AH64_rotorPS.cso", 0) },
+	{ 0x492932EA, Shader_Definition(action_replace, Feature::Rotor, L"UH1_rotorPS.cso", 0) },
 	// fix for TADS display in IHADSS
 	{ 0x0099D562, Shader_Definition(action_replace, Feature::IHADSS, L"IHADSS_PNVS_PS.cso", 0) },
 	// to start spying texture for depthStencil (Vs associated with global illumination PS)
@@ -69,20 +70,25 @@ std::unordered_map<uint32_t, Shader_Definition> shaders_by_hash =
 	// global PS for color change, sharpen,..
 	//{ 0x829504B1, Shader_Definition(action_replace | action_injectText, Feature::Global, L"global_PS_1.cso", 0) },
 	{ 0xBAF1E52F, Shader_Definition(action_replace | action_injectText, Feature::Global, L"global_PS_2.cso", 0) },
-
 	// to define if VR is active or not (2D mirror view of VR )
 	{ 0x886E31F2, Shader_Definition(action_identify, Feature::VRMode, L"", 0) },
-	//
-	// testing
-	{ 0x6CEA1C47, Shader_Definition(action_replace, Feature::Testing, L"GUI_textPS.cso", 0) }
-
+	// VS drawing cockpit parts to define if view is in welcome screen or map
+	{ 0xA337E177, Shader_Definition(action_identify, Feature::mapMode, L"", 0) },
+	// Label PS 
+	{ 0x6CEA1C47, Shader_Definition(action_replace | action_injectText, Feature::Label , L"labels_PS.cso", 0) },
+	// haze control : illum PS: used for Haze control, to define which draw (eye + quad view) is current.
+	{ 0x51302692, Shader_Definition(action_replace | action_log, Feature::Haze, L"illumNoAA_PS.cso", 0) },
+	{ 0x88AF23C6, Shader_Definition(action_replace | action_log, Feature::Haze, L"illumMSAA2x_PS.cso", 0) },
+	{ 0xA055EDE4, Shader_Definition(action_replace | action_log, Feature::Haze, L"illumMSAA2xB_PS.cso", 0) },
+	// A10C cockpit instrument
+	{ 0x4D8EB0B7, Shader_Definition(action_replace , Feature::NoReflect , L"A10C_instrument.cso", 0) },
 };
 
 // ***********************************************************************************************************************
 //init shared variables
 std::string settings_iniFileName = "DCS_VREM.ini";
 //default value overwritten by setting file if exists
-bool debug_flag = true;
+bool debug_flag;
 struct global_shared shared_data;
 std::unordered_map<uint32_t, Shader_Definition> shaders_by_handle;
 std::unordered_map<uint32_t, resource> texture_resource_by_handle;
@@ -92,7 +98,6 @@ std::unordered_map<uint32_t, resource> texture_resource_by_handle;
 //to hanlde loading code for replaced shader
 static thread_local std::vector<std::vector<uint8_t>> shader_code;
 static  bool flag_capture = false;
-
 
 // *******************************************************************************************************
 // on_init_pipeline_layout() : called once, to create the DX11 layout to use in push_constant
@@ -267,8 +272,15 @@ static void on_init_pipeline(device* device, pipeline_layout layout, uint32_t su
 					// setup some global variables according to the feature
 					if (it->second.feature == Feature::VRMode)
 					{
-						shared_data.VRMode = true;
+						shared_data.cb_inject_values.VRMode = 1.0;
 					}
+
+					if (it->second.feature == Feature::mapMode)
+					{
+						shared_data.cb_inject_values.mapMode = 0.0;
+					}
+					
+
 				}
 
 				// store new shader to re use it later 
@@ -317,7 +329,8 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 			if (it->second.action & action_injectText)
 			{
 				// inject texture using push_descriptor() if things has been initialized => draw index is > -1
-				if (it->second.feature == Feature::Global && shared_data.count_display > -1)
+				// same textures for color change and label masking 
+				if (( it->second.feature == Feature::Global || it->second.feature == Feature::Label) && shared_data.count_display > -1)
 				{
 					
 					// log infos
@@ -333,20 +346,22 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 
 						// push the texture for depth and stencil
 						// setup descriptor
-						// TODO : need to define the texture regarding the number of call
+						/* 
 						reshade::api::descriptor_table_update update;
 						update.binding = 0; // t3 as 3 is defined in pipeline_layout
 						update.count = 1;
 						update.type = reshade::api::descriptor_type::shader_resource_view;
+						*/
 
 						//depth
-						update.descriptors = &shared_data.depth_view[shared_data.count_display].texresource_view;
-						commandList->push_descriptors(reshade::api::shader_stage::pixel, shared_data.saved_pipeline_layout_RV, 0, update);
+						shared_data.update.binding = 0;
+						shared_data.update.descriptors = &shared_data.depth_view[shared_data.count_display].texresource_view;
+						commandList->push_descriptors(reshade::api::shader_stage::pixel, shared_data.saved_pipeline_layout_RV, 0, shared_data.update);
 
 						//stencil
-						update.binding = 1; // t4 as 3 is defined in pipeline_layout
-						update.descriptors = &shared_data.stencil_view[shared_data.count_display].texresource_view;;
-						commandList->push_descriptors(reshade::api::shader_stage::pixel, shared_data.saved_pipeline_layout_RV, 0, update);
+						shared_data.update.binding = 1; // t4 as 3 is defined in pipeline_layout
+						shared_data.update.descriptors = &shared_data.stencil_view[shared_data.count_display].texresource_view;;
+						commandList->push_descriptors(reshade::api::shader_stage::pixel, shared_data.saved_pipeline_layout_RV, 0, shared_data.update);
 					}
 				}
 			}	
@@ -387,7 +402,7 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 
 			if (it->second.action & action_log)
 			{
-				// trigger logging of resources (eg texture) or other topics (eg count calls)
+				// VS for illum : trigger logging of resources (eg texture) or other topics (eg count calls)
 				if (it->second.feature == Feature::GetStencil)
 				{	
 					// engage tracking shader_resource_view in push_descriptors() to get depthStencil 
@@ -406,6 +421,18 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 						reshade::log_message(reshade::log_level::info, s.str().c_str());
 					}
 				}
+			}
+
+			if (it->second.action & action_identify)
+			{
+				// setup some global variables according to the feature (if not possible to do it on init_pipeline)
+
+				if (it->second.feature == Feature::mapMode)
+				{
+					shared_data.cb_inject_values.mapMode = 0.0;
+				}
+
+
 			}
 
 		}
@@ -564,6 +591,17 @@ static void on_destroy_pipeline(
 		}
 	}
 
+	//delete resource and resource view if created (done here to get a reshade entry point for destroy*)
+	if (shared_data.depthStencil_res[0].created)
+	{
+		shared_data.depthStencil_res[0].created = false;
+		for (int i = 0; i < 4; i++)
+		{
+			device->destroy_resource(shared_data.depthStencil_res[i].texresource);
+			device->destroy_resource_view(shared_data.depth_view[i].texresource_view);
+			device->destroy_resource_view(shared_data.stencil_view[i].texresource_view);
+		}
+	}
 }
 
 //delete vectors and maps
@@ -574,6 +612,7 @@ void cleanup()
 	shaders_by_handle.clear();
 	texture_resource_by_handle.clear();
 	shaders_by_hash.clear();
+
 }
 
 // *******************************************************************************************************

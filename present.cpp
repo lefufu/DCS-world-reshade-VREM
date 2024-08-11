@@ -52,6 +52,7 @@ void intialize_counters()
 	// to know the current display : 2D, VR standard: left/right, VR quad view : left/right + eye left/right
 
 	shared_data.count_display = -1;
+	shared_data.cb_inject_values.mapMode = 1.0;
 
 }
 
@@ -103,9 +104,14 @@ void on_present(effect_runtime* runtime)
 	// initialize counter to identfiy what to do when in the frame
 	intialize_counters();
 
+	// frame counter 
+	if (shared_data.frame_counter != 0x7FFFFFFF) shared_data.frame_counter += 1;
+	else shared_data.frame_counter = 0;
+	//need to improve
+	shared_data.cb_inject_values.frame_counter = shared_data.frame_counter;
+
 	// handle key press to toggle features not managed by imgui (eg TADS picture removed)
 	handle_keypress(runtime);
-
 
 	// frame capture by button on GUI
 	if (shared_data.s_do_capture)
@@ -124,5 +130,4 @@ void on_present(effect_runtime* runtime)
 			reshade::log_message(reshade::log_level::info, "--- Frame ---");
 		}
 	}
-
 }

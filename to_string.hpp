@@ -605,6 +605,10 @@ inline auto to_string(Feature feature) {
 	case Feature::GetStencil: return "GetStencil";
 	case Feature::IHADSS: return "IHADSS";	
 	case Feature::VRMode: return "VRMode";
+	case Feature::mapMode: return "MapMode";
+	case Feature::Haze: return "Haze";
+	case Feature::NoReflect: return "NoReflect";
+		
 	}
 }
 
