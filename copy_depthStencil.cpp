@@ -87,7 +87,8 @@ bool copy_depthStencil(command_list* cmd_list, shader_stage stages, pipeline_lay
 		shared_data.update.type = reshade::api::descriptor_type::shader_resource_view;
 
 		//debug
-		if (debug_flag && shared_data.s_do_capture)
+		// if (debug_flag && shared_data.s_do_capture)
+		if (debug_flag && flag_capture)
 		{
 			
 			// display resource info
@@ -174,8 +175,12 @@ bool copy_depthStencil(command_list* cmd_list, shader_stage stages, pipeline_lay
 	//restore usage
 	cmd_list->barrier(scr_resource, resource_usage::copy_source, resource_usage::shader_resource);
 	cmd_list->barrier(shared_data.depthStencil_res[shared_data.count_display].texresource, resource_usage::copy_dest, resource_usage::shader_resource);
+	// flag the copy of the texture to avoid usage of PS before texture copy (eg MFD)
+	shared_data.texture_copy_started = true;
+
+
 	// if (debug_flag && shared_data.s_do_capture)
-	if (debug_flag)
+	if (debug_flag && flag_capture)
 	{
 		std::stringstream s;
 		s << " = > copy_depthStencil: for draw (" << shared_data.count_display << ") : resource DepthStencil copied";

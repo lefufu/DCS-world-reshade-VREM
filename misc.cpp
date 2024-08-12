@@ -121,7 +121,7 @@ void load_setting_IniFile()
 
 	// init global variables not saved in file
 	shared_data.cb_inject_values.disable_video_IHADSS = 0.0;
-
+	shared_data.cb_inject_values.MSAA = 0.0;
 }
 
 // *******************************************************************************************************

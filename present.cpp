@@ -51,8 +51,9 @@ void intialize_counters()
 {
 	// to know the current display : 2D, VR standard: left/right, VR quad view : left/right + eye left/right
 
-	shared_data.count_display = -1;
+	shared_data.count_display = 0;
 	shared_data.cb_inject_values.mapMode = 1.0;
+	shared_data.texture_copy_started = false;
 
 }
 
@@ -99,7 +100,6 @@ void handle_keypress(effect_runtime* runtime)
 //
 void on_present(effect_runtime* runtime)
 {
-	std::stringstream s;
 
 	// initialize counter to identfiy what to do when in the frame
 	intialize_counters();
@@ -114,11 +114,16 @@ void on_present(effect_runtime* runtime)
 	handle_keypress(runtime);
 
 	// frame capture by button on GUI
-	if (shared_data.s_do_capture)
+	// if (shared_data.s_do_capture)
+	if (flag_capture)
 	{
-		reshade::log_message(reshade::log_level::info, "present()");
-		reshade::log_message(reshade::log_level::info, "--- End Frame ---");
+		if (debug_flag)
+		{
+			reshade::log_message(reshade::log_level::info, "present()");
+			reshade::log_message(reshade::log_level::info, "--- End Frame ---");
+		}
 		shared_data.s_do_capture = false;
+		flag_capture = false;
 	}
 	else
 	{
@@ -127,7 +132,12 @@ void on_present(effect_runtime* runtime)
 		if (shared_data.button_capture)
 		{
 			shared_data.s_do_capture = true;
-			reshade::log_message(reshade::log_level::info, "--- Frame ---");
+			flag_capture = true;
+			if (debug_flag)
+			{
+				reshade::log_message(reshade::log_level::info, "--- Frame ---");
+			}
+
 		}
 	}
 }

@@ -608,6 +608,7 @@ inline auto to_string(Feature feature) {
 	case Feature::mapMode: return "MapMode";
 	case Feature::Haze: return "Haze";
 	case Feature::NoReflect: return "NoReflect";
+	case Feature::HazeMSAA2x: return "HazeMSAA2x";
 		
 	}
 }

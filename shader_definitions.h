@@ -81,10 +81,12 @@ enum class Feature : uint32_t
 	mapMode = 7,
 	// haze control
 	Haze = 8,
+	// haze control & flag MSAA
+	HazeMSAA2x = 9,
 	// remove A10C instrument reflect
-	NoReflect = 9,
+	NoReflect = 11,
 	// Testing : for testing purpose
-	Testing = 10
+	Testing = 20
 };
 
 

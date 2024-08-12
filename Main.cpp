@@ -69,7 +69,7 @@ std::unordered_map<uint32_t, Shader_Definition> shaders_by_hash =
 	{ 0x4DDC4917, Shader_Definition(action_log, Feature::GetStencil, L"", 0) },
 	// global PS for color change, sharpen,..
 	//{ 0x829504B1, Shader_Definition(action_replace | action_injectText, Feature::Global, L"global_PS_1.cso", 0) },
-	{ 0xBAF1E52F, Shader_Definition(action_replace | action_injectText, Feature::Global, L"global_PS_2.cso", 0) },
+	{ 0xBAF1E52F, Shader_Definition(action_replace | action_injectText | action_log, Feature::Global, L"global_PS_2.cso", 0) },
 	// to define if VR is active or not (2D mirror view of VR )
 	{ 0x886E31F2, Shader_Definition(action_identify, Feature::VRMode, L"", 0) },
 	// VS drawing cockpit parts to define if view is in welcome screen or map
@@ -77,9 +77,9 @@ std::unordered_map<uint32_t, Shader_Definition> shaders_by_hash =
 	// Label PS 
 	{ 0x6CEA1C47, Shader_Definition(action_replace | action_injectText, Feature::Label , L"labels_PS.cso", 0) },
 	// haze control : illum PS: used for Haze control, to define which draw (eye + quad view) is current.
-	{ 0x51302692, Shader_Definition(action_replace | action_log, Feature::Haze, L"illumNoAA_PS.cso", 0) },
-	{ 0x88AF23C6, Shader_Definition(action_replace | action_log, Feature::Haze, L"illumMSAA2x_PS.cso", 0) },
-	{ 0xA055EDE4, Shader_Definition(action_replace | action_log, Feature::Haze, L"illumMSAA2xB_PS.cso", 0) },
+	{ 0x51302692, Shader_Definition(action_replace, Feature::Haze, L"illumNoAA_PS.cso", 0) },
+	{ 0x88AF23C6, Shader_Definition(action_replace | action_identify, Feature::HazeMSAA2x, L"illumMSAA2x_PS.cso", 0) },
+	{ 0xA055EDE4, Shader_Definition(action_replace, Feature::Haze, L"illumMSAA2xB_PS.cso", 0) },
 	// A10C cockpit instrument
 	{ 0x4D8EB0B7, Shader_Definition(action_replace , Feature::NoReflect , L"A10C_instrument.cso", 0) },
 };
@@ -97,7 +97,7 @@ std::unordered_map<uint32_t, resource> texture_resource_by_handle;
 //init local variables
 //to hanlde loading code for replaced shader
 static thread_local std::vector<std::vector<uint8_t>> shader_code;
-static  bool flag_capture = false;
+bool flag_capture = false;
 
 // *******************************************************************************************************
 // on_init_pipeline_layout() : called once, to create the DX11 layout to use in push_constant
@@ -318,7 +318,9 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 		if (it != shaders_by_handle.end()) {
 
 			// debug message
-			if (debug_flag && shared_data.s_do_capture) {
+			// if (debug_flag && shared_data.s_do_capture) 
+			if (debug_flag && flag_capture && it->second.feature != Feature::IHADSS && it->second.feature != Feature::mapMode && it->second.feature != Feature::Label && it->second.feature != Feature::Rotor)
+			{
 				std::stringstream s;
 				s << "on_bind_pipeline : Pipeline handle to process found: " << reinterpret_cast<void*>(pipelineHandle.handle) << ", hash =";
 				s << std::hex << it->second.hash << ", associated cloned pipeline handle: " << reinterpret_cast<void*>(it->second.substitute_pipeline.handle);
@@ -329,12 +331,13 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 			if (it->second.action & action_injectText)
 			{
 				// inject texture using push_descriptor() if things has been initialized => draw index is > -1
-				// same textures for color change and label masking 
-				if (( it->second.feature == Feature::Global || it->second.feature == Feature::Label) && shared_data.count_display > -1)
+				// stencil depth textures for color change and label masking 
+				if (( it->second.feature == Feature::Global || it->second.feature == Feature::Label) && shared_data.count_display > -1 && shared_data.texture_copy_started)
 				{
 					
 					// log infos
-					if (debug_flag && shared_data.s_do_capture)
+					// if (debug_flag && shared_data.s_do_capture)
+					if (debug_flag && flag_capture)
 					{
 						std::stringstream s;
 						s << " => on_bind_pipeline : depthStencil textures injected for draw index :";
@@ -384,7 +387,8 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 				commandList->bind_pipeline(stages, it->second.substitute_pipeline);
 
 				// log infos
-				if (debug_flag && shared_data.s_do_capture)
+				// if (debug_flag && shared_data.s_do_capture)
+				if (debug_flag && flag_capture && it->second.feature != Feature::IHADSS && it->second.feature != Feature::mapMode && it->second.feature != Feature::Label && it->second.feature != Feature::Rotor)
 				{
 					std::stringstream s;
 					s << " => on_bind_pipeline : pipeline Pixel replaced (" << reinterpret_cast<void*>(pipelineHandle.handle) << ") by  " << reinterpret_cast<void*>(it->second.substitute_pipeline.handle) << ", feature =" << to_string(it->second.feature )<< ";";
@@ -400,25 +404,57 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 				// shader is to be skipped, setup a flag for next draw
 			}
 
+			// setup variables regarding the action
 			if (it->second.action & action_log)
 			{
 				// VS for illum : trigger logging of resources (eg texture) or other topics (eg count calls)
 				if (it->second.feature == Feature::GetStencil)
 				{	
 					// engage tracking shader_resource_view in push_descriptors() to get depthStencil 
+					// const std::unique_lock<std::shared_mutex> lock(shared_data.s_mutex);
 					shared_data.track_for_depthStencil = true;
 
-					// increase draw count
-					shared_data.count_display += 1;
-					// it's stupid but I'm too lazy to change code now..
-					shared_data.cb_inject_values.count_display = shared_data.count_display;
-
 					// log infos
-					if (debug_flag && shared_data.s_do_capture)
+					// if (debug_flag && shared_data.s_do_capture)
+					if (debug_flag && flag_capture) 
 					{
 						std::stringstream s;
-						s << " => on_bind_pipeline : current draw count updated : " << shared_data.count_display << ";";
+						s << " => on_bind_pipeline : start monitor Depth Stencil, draw : " << shared_data.count_display << ";";
 						reshade::log_message(reshade::log_level::info, s.str().c_str());
+					}
+				}
+
+
+				// PS global color : increase draw count
+				if (it->second.feature == Feature::Global)
+				{
+					// if texure has been copied previously, increase draw count
+					// if (shared_data.stencil_view->created)
+					if (shared_data.texture_copy_started)
+					{
+						shared_data.count_display += 1;
+						// it's stupid but I'm too lazy to change code now..
+						shared_data.cb_inject_values.count_display = shared_data.count_display;
+
+						// log infos
+						// if (debug_flag && shared_data.s_do_capture)
+						if (debug_flag && flag_capture)
+						{
+							std::stringstream s;
+							s << " => on_bind_pipeline : stop monitor DepthStencil and update draw count : " << shared_data.count_display << ";";
+							reshade::log_message(reshade::log_level::info, s.str().c_str());
+						}
+					}
+					else
+					{	
+						// log infos
+						if (debug_flag && flag_capture)
+						{
+							std::stringstream s;
+							s << " => on_bind_pipeline : do not update draw count, texture not copied;";
+							reshade::log_message(reshade::log_level::info, s.str().c_str());
+						}
+
 					}
 				}
 			}
@@ -432,8 +468,24 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 					shared_data.cb_inject_values.mapMode = 0.0;
 				}
 
+				// PS for MSAA2x : setup the flag
+				if (it->second.feature == Feature::HazeMSAA2x)
+				{
+
+					shared_data.cb_inject_values.MSAA = 2.0;
+
+					// log infos
+					// if (debug_flag && shared_data.s_do_capture)
+					if (debug_flag && flag_capture)
+					{
+						std::stringstream s;
+						s << " => on_bind_pipeline : flag MSAA2x;";
+						reshade::log_message(reshade::log_level::info, s.str().c_str());
+					}
+				}
 
 			}
+
 
 		}
 	}
@@ -456,7 +508,8 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 		
 		//log infos
 		
-		if (debug_flag && shared_data.s_do_capture)
+		//if (debug_flag && shared_data.s_do_capture)
+		if (debug_flag && flag_capture) 
 		{
 			std::stringstream s;
 			s << "on_push_descriptors(" << to_string(stages) << ", " << (void*)layout.handle << ", " << param_index << ", { " << to_string(update.type) << ", " << update.binding << ", " << update.count << " })";
@@ -501,7 +554,8 @@ static void clear_tracking_flags()
 static bool on_draw(command_list* commandList, uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex, uint32_t first_instance)
 {
 
-	if (debug_flag && shared_data.s_do_capture && shared_data.track_for_depthStencil)
+	// if (debug_flag && shared_data.s_do_capture && shared_data.track_for_depthStencil)
+	if (debug_flag && flag_capture && shared_data.track_for_depthStencil) 
 	{
 		std::stringstream s;
 		s << "draw(" << vertex_count << ", " << instance_count << ", " << first_vertex << ", " << first_instance << ")";
@@ -526,7 +580,8 @@ static bool on_draw_indexed(command_list* commandList, uint32_t index_count, uin
 {
 
 
-	if (debug_flag && shared_data.s_do_capture && shared_data.track_for_depthStencil)
+	// if (debug_flag && shared_data.s_do_capture && shared_data.track_for_depthStencil)
+	if (debug_flag && flag_capture && shared_data.track_for_depthStencil)
 	{
 		std::stringstream s;
 		s << "draw_indexed(" << index_count << ", " << instance_count << ", " << first_index << ", " << vertex_offset << ", " << first_instance << ")";
@@ -550,7 +605,8 @@ static bool on_draw_indexed(command_list* commandList, uint32_t index_count, uin
 static bool on_drawOrDispatch_indirect(command_list* commandList, indirect_command type, resource buffer, uint64_t offset, uint32_t draw_count, uint32_t stride)
 {
 
-	if (debug_flag && shared_data.s_do_capture && shared_data.track_for_depthStencil)
+	// if (debug_flag && shared_data.s_do_capture && shared_data.track_for_depthStencil)
+	if (debug_flag && flag_capture && shared_data.track_for_depthStencil)
 	{
 		std::stringstream s;
 		s << "draw_indexed_indirect(" << (void*)buffer.handle << ", " << offset << ", " << draw_count << ", " << stride << ")";

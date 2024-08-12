@@ -48,7 +48,7 @@ extern std::string settings_iniFileName;
 
 //GUI variables to use in functions
 extern bool debug_flag;
-
+extern bool flag_capture;
 
 struct resource_trace {
 	bool created = false;
@@ -102,9 +102,9 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	resourceview_trace stencil_view[MAXVIEWSPERDRAW];
 	resourceview_trace depth_view[MAXVIEWSPERDRAW];
 	reshade::api::descriptor_table_update update;
-
+	bool texture_copy_started;
 	// counter for the current display (eye + quad view)
-	short int count_display = -1;
+	short int count_display = 0;
 
 	// to used as seed for random
 	uint32_t frame_counter = 0;

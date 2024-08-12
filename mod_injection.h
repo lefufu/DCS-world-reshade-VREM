@@ -76,7 +76,7 @@ struct ShaderInjectData {
 	float Iterations; //5.w
 	float Grain; //6.x
 	float frame_counter; //6.y
-	float unused2; //6.z
+	float MSAA; //6.z
 	float unused3; //6.w
 };
 
