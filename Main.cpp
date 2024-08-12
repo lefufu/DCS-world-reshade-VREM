@@ -77,7 +77,7 @@ std::unordered_map<uint32_t, Shader_Definition> shaders_by_hash =
 	// Label PS 
 	{ 0x6CEA1C47, Shader_Definition(action_replace | action_injectText, Feature::Label , L"labels_PS.cso", 0) },
 	// haze control : illum PS: used for Haze control, to define which draw (eye + quad view) is current.
-	{ 0x51302692, Shader_Definition(action_replace, Feature::Haze, L"illumNoAA_PS.cso", 0) },
+	{ 0x51302692, Shader_Definition(action_replace | action_identify, Feature::Haze, L"illumNoAA_PS.cso", 0) },
 	{ 0x88AF23C6, Shader_Definition(action_replace | action_identify, Feature::HazeMSAA2x, L"illumMSAA2x_PS.cso", 0) },
 	{ 0xA055EDE4, Shader_Definition(action_replace, Feature::Haze, L"illumMSAA2xB_PS.cso", 0) },
 	// A10C cockpit instrument
@@ -468,18 +468,36 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 					shared_data.cb_inject_values.mapMode = 0.0;
 				}
 
-				// PS for MSAA2x : setup the flag
-				if (it->second.feature == Feature::HazeMSAA2x)
+				// PS for no MSAA : setup the flag
+				if (it->second.feature == Feature::Haze)
 				{
 
-					shared_data.cb_inject_values.MSAA = 2.0;
+					shared_data.cb_inject_values.AAxFactor = 1.0;
+					shared_data.cb_inject_values.AAyFactor = 1.0;
 
 					// log infos
 					// if (debug_flag && shared_data.s_do_capture)
 					if (debug_flag && flag_capture)
 					{
 						std::stringstream s;
-						s << " => on_bind_pipeline : flag MSAA2x;";
+						s << " => on_bind_pipeline : flag MSAA2x, Xfactor = " << to_string(shared_data.cb_inject_values.AAxFactor) << ", Yfactor = " << to_string(shared_data.cb_inject_values.AAyFactor) << ";";
+						reshade::log_message(reshade::log_level::info, s.str().c_str());
+					}
+				}
+
+				// PS for MSAA2x : setup the flag
+				if (it->second.feature == Feature::HazeMSAA2x)
+				{
+
+					shared_data.cb_inject_values.AAxFactor = 2.0;
+					shared_data.cb_inject_values.AAyFactor = 1.0;
+
+					// log infos
+					// if (debug_flag && shared_data.s_do_capture)
+					if (debug_flag && flag_capture)
+					{
+						std::stringstream s;
+						s << " => on_bind_pipeline : flag MSAA2x, Xfactor = " << to_string(shared_data.cb_inject_values.AAxFactor) << ", Yfactor = " << to_string(shared_data.cb_inject_values.AAyFactor) << ";";
 						reshade::log_message(reshade::log_level::info, s.str().c_str());
 					}
 				}

@@ -64,7 +64,7 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 	ImGui::Separator();
 
 	// *******************************************************************************************************
-	if (ImGui::CollapsingHeader("Color change, sharpen and Deband"))
+	if (ImGui::CollapsingHeader("Color change"))
 	{
 		//-----------------------------------------------------------------------------------------------------------------
 		// enable/disable color changes
@@ -90,6 +90,12 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 			ImGui::EndDisabled();
 		}
 		ImGui::Separator();
+
+	}
+	// *******************************************************************************************************
+	if (ImGui::CollapsingHeader("Cockpit sharpen, sky and sea deband"))
+	{
+		
 		//-----------------------------------------------------------------------------------------------------------------
 		// enable/disable cockpit sharpen
 		ImGui::SliderFloat("Enable cockpit sharpen", &shared_data.cb_inject_values.sharpenFlag, 0.0f, 1.0f, "active: %1.0f");
@@ -98,7 +104,6 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		{
 			ImGui::BeginDisabled();
 		}
-
 		// set sharpen options
 		ImGui::SliderFloat("Sharpen intensity", &shared_data.cb_inject_values.fSharpenIntensity, 0.0f, 10.0f, "Sharpen: %.2f");
 		ImGui::SliderFloat("Sharpen luma", &shared_data.cb_inject_values.lumaFactor, 0.0f, 10.0f, "luma: %.2f");
@@ -110,7 +115,7 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		ImGui::Separator();
 		//-----------------------------------------------------------------------------------------------------------------
 		// enable/disable sky and sea deband
-		ImGui::SliderFloat("Enable deband", &shared_data.cb_inject_values.debandFlag, 0.0f, 1.0f, "active: %1.0f");
+		ImGui::SliderFloat("Enable sky and sea deband", &shared_data.cb_inject_values.debandFlag, 0.0f, 1.0f, "active: %1.0f");
 		ImGui::Separator();
 		if (!shared_data.cb_inject_values.debandFlag)
 		{
@@ -149,6 +154,7 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 	{
 		// enable/disable rotor fix
 		ImGui::SliderFloat("Disable Epileptic flashing rotor", &shared_data.cb_inject_values.rotorFlag, 0.0f, 1.0f, "active: %1.0f");
+		ImGui::Text("Disable/Enable TADS or PNVS in IHADSS : use CTRL+I in game");
 	}
 
 	// *******************************************************************************************************
@@ -191,10 +197,16 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 	{
 		// verbose logs in reshade.log
 		ImGui::Checkbox("Debug messages in log", &debug_flag);
+
+		if (!debug_flag)
+		{
+			ImGui::BeginDisabled();
+		}
+
 		// define the number of draw to differentiate
-		ImGui::SliderFloat("# of draws to differentiate", &shared_data.cb_inject_values.testFlag, 0.0f, 5.0f, "ratio = %.0f");
+		// ImGui::SliderFloat("# of draws to differentiate", &shared_data.cb_inject_values.testFlag, 0.0f, 5.0f, "ratio = %.0f");
 		// to test global shader
-		ImGui::SliderFloat("Test global shader", &shared_data.cb_inject_values.testGlobal, 0.0f, 1.0f, "active: %1.0f");
+		ImGui::SliderFloat("Display stencil mask", &shared_data.cb_inject_values.testGlobal, 0.0f, 1.0f, "active: %1.0f");
 		//capture a fame 
 		static int clicked = 0;
 		if (ImGui::Button("Capture frame"))
@@ -204,6 +216,10 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		else
 		{
 			shared_data.button_capture = false;
+		}
+		if (!debug_flag)
+		{
+			ImGui::EndDisabled();
 		}
 	}
 }
