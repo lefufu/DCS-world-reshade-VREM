@@ -75,6 +75,26 @@ void load_setting_IniFile()
 	if (!iniFile.Load(settings_iniFileName))
 	{
 		// not there
+
+		// set default values
+		debug_flag = false;
+		shared_data.cb_inject_values.rotorFlag = 0.0;
+		shared_data.cb_inject_values.maskLabels = 0.0;
+		shared_data.cb_inject_values.hazeReduction = 1.0;
+		shared_data.cb_inject_values.noReflect = 0.0;
+		shared_data.cb_inject_values.cockpitAdd = 0.0;
+		shared_data.cb_inject_values.cockpitMul = 1.0;
+		shared_data.cb_inject_values.cockpitSat = 0.0;
+		shared_data.cb_inject_values.extAdd = 0.0;
+		shared_data.cb_inject_values.extMul = 1.0;
+		shared_data.cb_inject_values.extSat = 0.0;
+		shared_data.cb_inject_values.fSharpenIntensity = 1.0;
+		shared_data.cb_inject_values.lumaFactor = 1.0;
+		shared_data.cb_inject_values.Threshold = 128.0;
+		shared_data.cb_inject_values.Range = 32.0;
+		shared_data.cb_inject_values.Iterations = 2.0;
+		shared_data.cb_inject_values.Grain = 48.0;
+
 		return;
 	}
 
@@ -84,11 +104,12 @@ void load_setting_IniFile()
 
 	// helicopter
 	shared_data.cb_inject_values.rotorFlag = iniFile.GetFloat("rotorFlag", "Settings");
+	if (shared_data.cb_inject_values.rotorFlag == FLT_MIN) shared_data.cb_inject_values.rotorFlag = 0.0;
 	//misc
 	shared_data.cb_inject_values.maskLabels = iniFile.GetFloat("maskLabels", "Settings");
 	if (shared_data.cb_inject_values.maskLabels == FLT_MIN) shared_data.cb_inject_values.maskLabels = 0.0;
 	shared_data.cb_inject_values.hazeReduction = iniFile.GetFloat("hazeReduction", "Settings");
-	if (shared_data.cb_inject_values.maskLabels == FLT_MIN) shared_data.cb_inject_values.maskLabels = 1.0;
+	if (shared_data.cb_inject_values.hazeReduction == FLT_MIN) shared_data.cb_inject_values.hazeReduction = 1.0;
 	shared_data.cb_inject_values.noReflect = iniFile.GetFloat("noReflect", "Settings");
 	if (shared_data.cb_inject_values.noReflect == FLT_MIN) shared_data.cb_inject_values.noReflect = 0.0;
 	// color

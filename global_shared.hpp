@@ -52,6 +52,7 @@ extern bool flag_capture;
 
 struct resource_trace {
 	bool created = false;
+	bool copied = false;
 	reshade::api::resource texresource;
 };
 
@@ -61,8 +62,8 @@ struct resourceview_trace {
 };
 
 // maximum resources or reource_views per draw, to copy DepthStencil texture
-// should be 2x per eye x 2 for quad view x4 for AA   
-#define MAXVIEWSPERDRAW 16
+// should be 2x per eye x 2 for quad view + margin. No add view/resources for for AA   
+#define MAXVIEWSPERDRAW 6
 
 // a class to host all global variables shared between reshade on_* functions. 
 // 
@@ -88,13 +89,12 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	reshade::api::descriptor_table_update CB_desc_table_update;
 
 	// for frame debugging
-	bool s_do_capture = false;
 	bool button_capture = false;
 
 	// for logging shader_resource_view in push_descriptors() to get depthStencil 
 	bool track_for_depthStencil = false;
 
-	// to handle parallel access
+	// to handle parallel access (not used)
 	std::shared_mutex s_mutex;
 
 	// to copy depth Stencil texture
@@ -103,6 +103,7 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	resourceview_trace depth_view[MAXVIEWSPERDRAW];
 	reshade::api::descriptor_table_update update;
 	bool texture_copy_started;
+
 	// counter for the current display (eye + quad view)
 	short int count_display = 0;
 

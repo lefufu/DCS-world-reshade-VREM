@@ -55,6 +55,12 @@ void intialize_counters()
 	shared_data.cb_inject_values.mapMode = 1.0;
 	shared_data.texture_copy_started = false;
 
+	// initialize flags for copy
+	for (int i = 0; i < MAXVIEWSPERDRAW; i++)
+	{
+		shared_data.depthStencil_res[i].copied = false;
+	}
+
 }
 
 // *******************************************************************************************************
@@ -114,7 +120,6 @@ void on_present(effect_runtime* runtime)
 	handle_keypress(runtime);
 
 	// frame capture by button on GUI
-	// if (shared_data.s_do_capture)
 	if (flag_capture)
 	{
 		if (debug_flag)
@@ -122,7 +127,6 @@ void on_present(effect_runtime* runtime)
 			reshade::log_message(reshade::log_level::info, "present()");
 			reshade::log_message(reshade::log_level::info, "--- End Frame ---");
 		}
-		shared_data.s_do_capture = false;
 		flag_capture = false;
 	}
 	else
@@ -131,7 +135,6 @@ void on_present(effect_runtime* runtime)
 		// if (runtime->is_key_pressed(VK_F10))
 		if (shared_data.button_capture)
 		{
-			shared_data.s_do_capture = true;
 			flag_capture = true;
 			if (debug_flag)
 			{

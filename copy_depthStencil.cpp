@@ -165,27 +165,31 @@ bool copy_depthStencil(command_list* cmd_list, shader_stage stages, pipeline_lay
 		}
 	}
 	
-	// to do for all binding of global illum shader : copy current resource to new resource for later usage in another shader*
-	// 
-	//put resources in good usage for copying
-	cmd_list->barrier(scr_resource, resource_usage::shader_resource, resource_usage::copy_source);
-	cmd_list->barrier(shared_data.depthStencil_res[shared_data.count_display].texresource, resource_usage::shader_resource, resource_usage::copy_dest);
-	// do copy
-	cmd_list->copy_resource(scr_resource, shared_data.depthStencil_res[shared_data.count_display].texresource);
-	//restore usage
-	cmd_list->barrier(scr_resource, resource_usage::copy_source, resource_usage::shader_resource);
-	cmd_list->barrier(shared_data.depthStencil_res[shared_data.count_display].texresource, resource_usage::copy_dest, resource_usage::shader_resource);
-	// flag the copy of the texture to avoid usage of PS before texture copy (eg MFD)
-	shared_data.texture_copy_started = true;
-
-
-	// if (debug_flag && shared_data.s_do_capture)
-	if (debug_flag && flag_capture)
+	// to do before binding of global illum shader in associated push_descriptor: copy current resource to new resource for later usage in another shader
+	// do it once per frame
+	if (! shared_data.depthStencil_res[shared_data.count_display].copied)
 	{
-		std::stringstream s;
-		s << " = > copy_depthStencil: for draw (" << shared_data.count_display << ") : resource DepthStencil copied";
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		//put resources in good usage for copying
+		cmd_list->barrier(scr_resource, resource_usage::shader_resource, resource_usage::copy_source);
+		cmd_list->barrier(shared_data.depthStencil_res[shared_data.count_display].texresource, resource_usage::shader_resource, resource_usage::copy_dest);
+		// do copy
+		cmd_list->copy_resource(scr_resource, shared_data.depthStencil_res[shared_data.count_display].texresource);
+		//restore usage
+		cmd_list->barrier(scr_resource, resource_usage::copy_source, resource_usage::shader_resource);
+		cmd_list->barrier(shared_data.depthStencil_res[shared_data.count_display].texresource, resource_usage::copy_dest, resource_usage::shader_resource);
+		// flag the first copy of texture to avoid usage of PS before texture copy (eg MFD)
+		shared_data.texture_copy_started = true;
+		//flag
+		shared_data.depthStencil_res[shared_data.count_display].copied = true;
 
+		// if (debug_flag && shared_data.s_do_capture)
+		if (debug_flag && flag_capture)
+		{
+			std::stringstream s;
+			s << " = > copy_depthStencil: for draw (" << shared_data.count_display << ") : resource DepthStencil copied";
+			reshade::log_message(reshade::log_level::info, s.str().c_str());
+
+		}
 	}
 
 	return true;

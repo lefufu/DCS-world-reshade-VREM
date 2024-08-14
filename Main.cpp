@@ -54,7 +54,7 @@
 using namespace reshade::api;
 
 extern "C" __declspec(dllexport) const char *NAME = "DCS VREM";
-extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS";
+extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v1.0";
 
 // ***********************************************************************************************************************
 // definition of shader of the mod
@@ -280,6 +280,39 @@ static void on_init_pipeline(device* device, pipeline_layout layout, uint32_t su
 						shared_data.cb_inject_values.mapMode = 0.0;
 					}
 					
+					// PS for no MSAA : setup the flag
+					if (it->second.feature == Feature::Haze)
+					{
+
+						shared_data.cb_inject_values.AAxFactor = 1.0;
+						shared_data.cb_inject_values.AAyFactor = 1.0;
+
+						// log infos
+						// // if (debug_flag && flag_capture)
+						if (debug_flag )
+						{
+							std::stringstream s;
+							s << " => on_bind_pipeline : flag MSAA2x, Xfactor = " << shared_data.cb_inject_values.AAxFactor << ", Yfactor = " << shared_data.cb_inject_values.AAyFactor << ";";
+							reshade::log_message(reshade::log_level::info, s.str().c_str());
+						}
+					}
+
+					// PS for MSAA2x : setup the flag
+					if (it->second.feature == Feature::HazeMSAA2x)
+					{
+
+						shared_data.cb_inject_values.AAxFactor = 2.0;
+						shared_data.cb_inject_values.AAyFactor = 1.0;
+
+						// log infos
+						// if (debug_flag && flag_capture)
+						if (debug_flag)
+						{
+							std::stringstream s;
+							s << " => on_bind_pipeline : flag MSAA2x, Xfactor = " << shared_data.cb_inject_values.AAxFactor << ", Yfactor = " << shared_data.cb_inject_values.AAyFactor << ";";
+							reshade::log_message(reshade::log_level::info, s.str().c_str());
+						}
+					}
 
 				}
 
@@ -318,7 +351,6 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 		if (it != shaders_by_handle.end()) {
 
 			// debug message
-			// if (debug_flag && shared_data.s_do_capture) 
 			if (debug_flag && flag_capture && it->second.feature != Feature::IHADSS && it->second.feature != Feature::mapMode && it->second.feature != Feature::Label && it->second.feature != Feature::Rotor)
 			{
 				std::stringstream s;
@@ -336,7 +368,6 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 				{
 					
 					// log infos
-					// if (debug_flag && shared_data.s_do_capture)
 					if (debug_flag && flag_capture)
 					{
 						std::stringstream s;
@@ -387,8 +418,7 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 				commandList->bind_pipeline(stages, it->second.substitute_pipeline);
 
 				// log infos
-				// if (debug_flag && shared_data.s_do_capture)
-				if (debug_flag && flag_capture && it->second.feature != Feature::IHADSS && it->second.feature != Feature::mapMode && it->second.feature != Feature::Label && it->second.feature != Feature::Rotor)
+				if (debug_flag && flag_capture)
 				{
 					std::stringstream s;
 					s << " => on_bind_pipeline : pipeline Pixel replaced (" << reinterpret_cast<void*>(pipelineHandle.handle) << ") by  " << reinterpret_cast<void*>(it->second.substitute_pipeline.handle) << ", feature =" << to_string(it->second.feature )<< ";";
@@ -415,7 +445,6 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 					shared_data.track_for_depthStencil = true;
 
 					// log infos
-					// if (debug_flag && shared_data.s_do_capture)
 					if (debug_flag && flag_capture) 
 					{
 						std::stringstream s;
@@ -437,7 +466,6 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 						shared_data.cb_inject_values.count_display = shared_data.count_display;
 
 						// log infos
-						// if (debug_flag && shared_data.s_do_capture)
 						if (debug_flag && flag_capture)
 						{
 							std::stringstream s;
@@ -468,40 +496,6 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 					shared_data.cb_inject_values.mapMode = 0.0;
 				}
 
-				// PS for no MSAA : setup the flag
-				if (it->second.feature == Feature::Haze)
-				{
-
-					shared_data.cb_inject_values.AAxFactor = 1.0;
-					shared_data.cb_inject_values.AAyFactor = 1.0;
-
-					// log infos
-					// if (debug_flag && shared_data.s_do_capture)
-					if (debug_flag && flag_capture)
-					{
-						std::stringstream s;
-						s << " => on_bind_pipeline : flag MSAA2x, Xfactor = " << to_string(shared_data.cb_inject_values.AAxFactor) << ", Yfactor = " << to_string(shared_data.cb_inject_values.AAyFactor) << ";";
-						reshade::log_message(reshade::log_level::info, s.str().c_str());
-					}
-				}
-
-				// PS for MSAA2x : setup the flag
-				if (it->second.feature == Feature::HazeMSAA2x)
-				{
-
-					shared_data.cb_inject_values.AAxFactor = 2.0;
-					shared_data.cb_inject_values.AAyFactor = 1.0;
-
-					// log infos
-					// if (debug_flag && shared_data.s_do_capture)
-					if (debug_flag && flag_capture)
-					{
-						std::stringstream s;
-						s << " => on_bind_pipeline : flag MSAA2x, Xfactor = " << to_string(shared_data.cb_inject_values.AAxFactor) << ", Yfactor = " << to_string(shared_data.cb_inject_values.AAyFactor) << ";";
-						reshade::log_message(reshade::log_level::info, s.str().c_str());
-					}
-				}
-
 			}
 
 
@@ -526,7 +520,6 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 		
 		//log infos
 		
-		//if (debug_flag && shared_data.s_do_capture)
 		if (debug_flag && flag_capture) 
 		{
 			std::stringstream s;
@@ -572,7 +565,6 @@ static void clear_tracking_flags()
 static bool on_draw(command_list* commandList, uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex, uint32_t first_instance)
 {
 
-	// if (debug_flag && shared_data.s_do_capture && shared_data.track_for_depthStencil)
 	if (debug_flag && flag_capture && shared_data.track_for_depthStencil) 
 	{
 		std::stringstream s;
@@ -598,7 +590,6 @@ static bool on_draw_indexed(command_list* commandList, uint32_t index_count, uin
 {
 
 
-	// if (debug_flag && shared_data.s_do_capture && shared_data.track_for_depthStencil)
 	if (debug_flag && flag_capture && shared_data.track_for_depthStencil)
 	{
 		std::stringstream s;
@@ -623,7 +614,6 @@ static bool on_draw_indexed(command_list* commandList, uint32_t index_count, uin
 static bool on_drawOrDispatch_indirect(command_list* commandList, indirect_command type, resource buffer, uint64_t offset, uint32_t draw_count, uint32_t stride)
 {
 
-	// if (debug_flag && shared_data.s_do_capture && shared_data.track_for_depthStencil)
 	if (debug_flag && flag_capture && shared_data.track_for_depthStencil)
 	{
 		std::stringstream s;

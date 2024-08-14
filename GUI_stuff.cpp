@@ -57,7 +57,7 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 	{
 		ImGui::PushTextWrapPos();
 		ImGui::TextUnformatted("Provide different enhancement that can be toggled on or off below");
-		ImGui::TextUnformatted("See https://forum.dcs.world/topic/207154-3dmigoto-vr-mod-for-dcs-label-masking-color-enhancement-sharpen-fxaa-copypaste-of-radio-msg/ for more info");
+		ImGui::TextUnformatted("See DCS world forums (Home / English / Digital Combat Simulator / DCS World Topics / DCS Modding / Utility/Program Mods for DCS World / Reshade VREM) for more info");
 		ImGui::PopTextWrapPos();
 	}
 
