@@ -1,4 +1,4 @@
-# Reshade VR Enhancer Mod (VREM)
+# Reshade DCS World VR Enhancer Mod (VREM)
 
 ## What is VREM ?
 
