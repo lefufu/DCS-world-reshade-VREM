@@ -2,7 +2,7 @@
 
 ## What is VREM ?
 
-Reshade VREM is a reshade add-on that gives some improvement for VR users (even if most of them are working in 2D).
+Reshade VREM is a reshade add-on that gives some improvement for DCS WORLD VR users (even if most of them are working in 2D).
 
 It is the “son” of the 3Dmigoto mod, as the library is no longer working with openXR.
 
