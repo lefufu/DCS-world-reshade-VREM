@@ -26,7 +26,7 @@ It may eat some fps, but I did not have any reliable fps measurement tool workin
 
 **Download and install the reshade version** with full add_on support ( <https://reshade.me/>). Reshade must be installed for each version of DCS (ST or MT) you are using.
 
-**Download the mod from here (to be updated) :** <https://www.digitalcombatsimulator.com/fr/files/3305420/>
+**Download the mod from here :** <https://www.digitalcombatsimulator.com/fr/files/3305420/>
 
 **Install the mod in DCS folders**
 
