@@ -95,6 +95,34 @@ void handle_keypress(effect_runtime* runtime)
 		}
 	}
 
+	// SHIFT+I toggle on/off boresight convergence of IHADSS
+	if (runtime->is_key_pressed('I') && runtime->is_key_down(VK_SHIFT))
+	{
+		// Toggle the value of disable_video_IHADSS between 0.0 and 1.0
+		if (shared_data.cb_inject_values.IHADSSBoresight == 1.0)
+		{
+			shared_data.cb_inject_values.IHADSSBoresight = 0.0;
+		}
+		else if (shared_data.cb_inject_values.IHADSSBoresight == 0.0)
+		{
+			shared_data.cb_inject_values.IHADSSBoresight = 1.0;
+		}
+	}
+
+	// ALT+I toggle on/off boresight convergence of IHADSS
+	if (runtime->is_key_pressed('I') && runtime->is_key_down(VK_MENU))
+	{
+		// Toggle the value of disable_video_IHADSS between 0.0 and 1.0
+		if (shared_data.cb_inject_values.IHADSSNoLeft == 1.0)
+		{
+			shared_data.cb_inject_values.IHADSSNoLeft = 0.0;
+		}
+		else if (shared_data.cb_inject_values.IHADSSNoLeft == 0.0)
+		{
+			shared_data.cb_inject_values.IHADSSNoLeft = 1.0;
+		}
+	}
+
 }
 
 // *******************************************************************************************************

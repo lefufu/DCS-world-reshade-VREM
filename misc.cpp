@@ -79,15 +79,21 @@ void load_setting_IniFile()
 		// set default values
 		debug_flag = false;
 		shared_data.cb_inject_values.rotorFlag = 0.0;
+		shared_data.cb_inject_values.disable_video_IHADSS = 0.0;
+		shared_data.cb_inject_values.IHADSSBoresight = 0.0;
+		shared_data.cb_inject_values.IHADSSxOffset = 0.0;
+
 		shared_data.cb_inject_values.maskLabels = 0.0;
 		shared_data.cb_inject_values.hazeReduction = 1.0;
 		shared_data.cb_inject_values.noReflect = 0.0;
+
 		shared_data.cb_inject_values.cockpitAdd = 0.0;
 		shared_data.cb_inject_values.cockpitMul = 1.0;
 		shared_data.cb_inject_values.cockpitSat = 0.0;
 		shared_data.cb_inject_values.extAdd = 0.0;
 		shared_data.cb_inject_values.extMul = 1.0;
 		shared_data.cb_inject_values.extSat = 0.0;
+
 		shared_data.cb_inject_values.fSharpenIntensity = 1.0;
 		shared_data.cb_inject_values.lumaFactor = 1.0;
 		shared_data.cb_inject_values.Threshold = 128.0;
@@ -98,6 +104,7 @@ void load_setting_IniFile()
 		return;
 	}
 
+	// set default values if file is existing but do not have the variable
 	// debug
 	debug_flag = iniFile.GetBool("debug", "Settings");
 	shared_data.cb_inject_values.testFlag = iniFile.GetFloat("testFlag", "Settings");
@@ -105,6 +112,12 @@ void load_setting_IniFile()
 	// helicopter
 	shared_data.cb_inject_values.rotorFlag = iniFile.GetFloat("rotorFlag", "Settings");
 	if (shared_data.cb_inject_values.rotorFlag == FLT_MIN) shared_data.cb_inject_values.rotorFlag = 0.0;
+	shared_data.cb_inject_values.disable_video_IHADSS = iniFile.GetFloat("disable_video_IHADSS", "Settings");
+	if (shared_data.cb_inject_values.disable_video_IHADSS == FLT_MIN) shared_data.cb_inject_values.disable_video_IHADSS = 0.0;
+	shared_data.cb_inject_values.IHADSSBoresight = iniFile.GetFloat("IHADSSBoresight", "Settings");
+	if (shared_data.cb_inject_values.IHADSSBoresight == FLT_MIN) shared_data.cb_inject_values.IHADSSBoresight = 0.0;
+	shared_data.cb_inject_values.IHADSSxOffset = iniFile.GetFloat("IHADSSxOffset", "Settings");
+	if (shared_data.cb_inject_values.IHADSSxOffset == FLT_MIN) shared_data.cb_inject_values.IHADSSxOffset = 0.0;
 	//misc
 	shared_data.cb_inject_values.maskLabels = iniFile.GetFloat("maskLabels", "Settings");
 	if (shared_data.cb_inject_values.maskLabels == FLT_MIN) shared_data.cb_inject_values.maskLabels = 0.0;
@@ -142,8 +155,9 @@ void load_setting_IniFile()
 
 	// init global variables not saved in file
 	shared_data.cb_inject_values.disable_video_IHADSS = 0.0;
-	// shared_data.cb_inject_values.AAxFactor = 1.0;
-	// shared_data.cb_inject_values.AAyFactor = 1.0;
+	shared_data.cb_inject_values.AAxFactor = 1.0;
+	shared_data.cb_inject_values.AAyFactor = 1.0;
+	shared_data.cb_inject_values.IHADSSNoLeft = 0.0;
 }
 
 // *******************************************************************************************************
@@ -157,6 +171,11 @@ void saveShaderTogglerIniFile()
 	CDataFile iniFile;
 	// helicopter
 	iniFile.SetFloat("rotorFlag", shared_data.cb_inject_values.rotorFlag, "Flag to hide helicopters rotor", "Settings");
+	iniFile.SetFloat("disable_video_IHADSS", shared_data.cb_inject_values.disable_video_IHADSS, "Flag to enable/disable video in TADS", "Settings");
+	iniFile.SetFloat("IHADSSBoresight", shared_data.cb_inject_values.IHADSSBoresight, "Flag to enable boresight IHADSS convergence", "Settings");
+	iniFile.SetFloat("IHADSSxOffset", shared_data.cb_inject_values.IHADSSxOffset, "convergence offset value for boresighting IHADSS", "Settings");
+
+
 	// debug
 	iniFile.SetBool("debug", debug_flag, "Enable debug features", "Settings");
 	iniFile.SetFloat("testFlag", shared_data.cb_inject_values.testFlag, "for debugging purpose", "Settings");

@@ -588,11 +588,13 @@ inline auto to_string(reshade::api::pipeline_subobject_type value) {
 
 inline auto to_string(uint32_t action) {
 	switch (action) {
+	default: return "NDef";
 	case action_replace: return "replace";
 	case action_skip: return "skip";
 	case action_log: return "log";
 	case action_identify: return "identify";
 	case action_injectText: return "injectText";
+	case action_count: return "count";
 	};
 }
 

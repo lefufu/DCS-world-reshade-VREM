@@ -72,6 +72,7 @@ void clone_pipeline(
         s << "CLONING PIPELINE("
             << reinterpret_cast<void*>(pipeline.handle)
             << ") Layout : " << reinterpret_cast<void*>(layout.handle)
+            << ", Hash = " << std::hex << newShader->hash << ";"
             << ", subobjects counts: " << (subobjectCount)
             << " )";
         reshade::log_message(reshade::log_level::info, s.str().c_str());

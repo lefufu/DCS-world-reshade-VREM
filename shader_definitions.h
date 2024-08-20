@@ -60,6 +60,8 @@ static const uint32_t action_log = 0b00000100;
 static const uint32_t action_identify = 0b00001000;
 //inject Texture : the shader need to have textures pushed as additional parameters 
 static const uint32_t action_injectText = 0b00010000;
+//inject count : the shader will trigger call count 
+static const uint32_t action_count = 0b00100000;
 
 
 // mod features

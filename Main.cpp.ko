@@ -42,6 +42,7 @@
 #include <filesystem>
 #include <unordered_map>
 
+
 #include <imgui.h>
 #include <reshade.hpp>
 #include "crc32_hash.hpp"
@@ -50,11 +51,10 @@
 #include "to_string.hpp"
 #include "shader_definitions.h"
 
-
 using namespace reshade::api;
 
 extern "C" __declspec(dllexport) const char *NAME = "DCS VREM";
-extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v2.0";
+extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v1.1";
 
 // ***********************************************************************************************************************
 // definition of shader of the mod
@@ -63,13 +63,13 @@ std::unordered_map<uint32_t, Shader_Definition> shaders_by_hash =
 	// fix for rotor
 	{ 0xC0CC8D69, Shader_Definition(action_replace, Feature::Rotor, L"AH64_rotorPS.cso", 0) },
 	{ 0x492932EA, Shader_Definition(action_replace, Feature::Rotor, L"UH1_rotorPS.cso", 0) },
-	// fix for IHADSS
-	{ 0x2D713734, Shader_Definition(action_replace, Feature::IHADSS, L"IHADSS_PNVS_PS.cso", 0) },
-	{ 0x6AA19B8F, Shader_Definition(action_replace, Feature::IHADSS, L"IHADSS_PS.cso", 0) },
-	{ 0x45E221A9, Shader_Definition(action_replace, Feature::IHADSS, L"IHADSS_VS.cso", 0) },
+	// fix for TADS display in IHADSS
+	// { 0x0099D562, Shader_Definition(action_replace, Feature::IHADSS, L"IHADSS_PNVS_PS.cso", 0) },
+	{ 0xCD3997FF, Shader_Definition(action_replace, Feature::IHADSS, L"IHADSS_PNVS_PS.cso", 0) },
 	// to start spying texture for depthStencil (Vs associated with global illumination PS)
 	{ 0x4DDC4917, Shader_Definition(action_log, Feature::GetStencil, L"", 0) },
 	// global PS for color change, sharpen,..
+	//{ 0x829504B1, Shader_Definition(action_replace | action_injectText, Feature::Global, L"global_PS_1.cso", 0) },
 	{ 0xBAF1E52F, Shader_Definition(action_replace | action_injectText | action_log, Feature::Global, L"global_PS_2.cso", 0) },
 	// to define if VR is active or not (2D mirror view of VR )
 	{ 0x886E31F2, Shader_Definition(action_identify, Feature::VRMode, L"", 0) },
@@ -261,11 +261,10 @@ static void on_init_pipeline(device* device, pipeline_layout layout, uint32_t su
 						s.clear();
 					}
 					else {
-						//keep hash for debug messages
-						newShader.hash = hash;
 						// if not done, clone the pipeline to have a new version with fixed color for PS
 						clone_pipeline(device, layout, subobjectCount, subobjects, pipelineHandle, shader_code, &newShader);
-
+						//keep hash for debug messages
+						newShader.hash = hash;
 					}
 				}
 
@@ -353,7 +352,7 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 		if (it != shaders_by_handle.end()) {
 
 			// debug message
-			if (debug_flag && flag_capture )
+			if (debug_flag && flag_capture && it->second.feature != Feature::IHADSS && it->second.feature != Feature::mapMode && it->second.feature != Feature::Label && it->second.feature != Feature::Rotor)
 			{
 				std::stringstream s;
 				s << "on_bind_pipeline : Pipeline handle to process found: " << reinterpret_cast<void*>(pipelineHandle.handle) << ", hash =";
@@ -362,12 +361,79 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 				reshade::log_message(reshade::log_level::info, s.str().c_str());
 			}
 			
+			// setup variables regarding the action
+			if (it->second.action & action_log)
+			{
+				// VS for illum : trigger logging of resources (eg texture) or other topics (eg count calls)
+				if (it->second.feature == Feature::GetStencil)
+				{
+					// engage tracking shader_resource_view in push_descriptors() to get depthStencil 
+					// const std::unique_lock<std::shared_mutex> lock(shared_data.s_mutex);
+					shared_data.track_for_depthStencil = true;
+
+					// log infos
+					if (debug_flag && flag_capture)
+					{
+						std::stringstream s;
+						s << " => on_bind_pipeline : start monitor Depth Stencil, draw : " << shared_data.count_display << ";";
+						reshade::log_message(reshade::log_level::info, s.str().c_str());
+					}
+				}
+
+
+				// PS global color : increase draw count
+				if (it->second.feature == Feature::Global)
+				{
+					// if texure has been copied previously, increase draw count
+					// if (shared_data.stencil_view->created)
+					if (shared_data.texture_copy_started)
+					{
+						shared_data.count_display += 1;
+						// it's stupid but I'm too lazy to change code now..
+						shared_data.cb_inject_values.count_display = shared_data.count_display;
+
+						// log infos
+						if (debug_flag && flag_capture)
+						{
+							std::stringstream s;
+							s << " => on_bind_pipeline : stop monitor DepthStencil and update draw count : " << shared_data.count_display << ";";
+							reshade::log_message(reshade::log_level::info, s.str().c_str());
+						}
+					}
+					else
+					{
+						// log infos
+						if (debug_flag && flag_capture)
+						{
+							std::stringstream s;
+							s << " => on_bind_pipeline : do not update draw count, texture not copied;";
+							reshade::log_message(reshade::log_level::info, s.str().c_str());
+						}
+
+					}
+				}
+			}
+
 			if (it->second.action & action_count)
 			{
 				// increment the associated counter
-				
+				if (it->second.feature == Feature::IHADSS && shared_data.cb_inject_values.disable_video_IHADSS)
+				{
+
+					shared_data.cb_inject_values.IHADSS_Video_count += 1;
+					
+					// log infos
+					if (debug_flag && flag_capture)
+					{
+						std::stringstream s;
+						s << " => on_bind_pipeline : increment count for IHADSS video :";
+						s << shared_data.cb_inject_values.IHADSS_Video_count << ";";
+						reshade::log_message(reshade::log_level::info, s.str().c_str());
+					}
+
+				}
 			}
-			
+
 			if (it->second.action & action_injectText)
 			{
 				// inject texture using push_descriptor() if things has been initialized => draw index is > -1
@@ -408,7 +474,7 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 				}
 			}	
 			
-			// shader is to be handled
+			// shader is to be replaced 
 			if (it->second.action & action_replace)
 			{
 				
@@ -429,7 +495,7 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 				if (debug_flag && flag_capture)
 				{
 					std::stringstream s;
-					s << " => on_bind_pipeline : pipeline shader replaced (" << reinterpret_cast<void*>(pipelineHandle.handle) << ") by  " << reinterpret_cast<void*>(it->second.substitute_pipeline.handle) << ", hash =" << std::hex << it->second.hash << ", feature =" << to_string(it->second.feature )<< ";";
+					s << " => on_bind_pipeline : pipeline Pixel replaced (" << reinterpret_cast<void*>(pipelineHandle.handle) << ") by  " << reinterpret_cast<void*>(it->second.substitute_pipeline.handle) << ", feature =" << to_string(it->second.feature )<< ";";
 					reshade::log_message(reshade::log_level::info, s.str().c_str());
 					// s.str("");
 					// s.clear();
@@ -442,58 +508,7 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 				// shader is to be skipped, setup a flag for next draw
 			}
 
-			// setup variables regarding the action
-			if (it->second.action & action_log)
-			{
-				// VS for illum : trigger logging of resources (eg texture) or other topics (eg count calls)
-				if (it->second.feature == Feature::GetStencil)
-				{	
-					// engage tracking shader_resource_view in push_descriptors() to get depthStencil 
-					// const std::unique_lock<std::shared_mutex> lock(shared_data.s_mutex);
-					shared_data.track_for_depthStencil = true;
 
-					// log infos
-					if (debug_flag && flag_capture) 
-					{
-						std::stringstream s;
-						s << " => on_bind_pipeline : start monitor Depth Stencil, draw : " << shared_data.count_display << ";";
-						reshade::log_message(reshade::log_level::info, s.str().c_str());
-					}
-				}
-
-
-				// PS global color : increase draw count
-				if (it->second.feature == Feature::Global)
-				{
-					// if texure has been copied previously, increase draw count
-					// if (shared_data.stencil_view->created)
-					if (shared_data.texture_copy_started)
-					{
-						shared_data.count_display += 1;
-						// it's stupid but I'm too lazy to change code now..
-						shared_data.cb_inject_values.count_display = shared_data.count_display;
-
-						// log infos
-						if (debug_flag && flag_capture)
-						{
-							std::stringstream s;
-							s << " => on_bind_pipeline : stop monitor DepthStencil and update draw count : " << shared_data.count_display << ";";
-							reshade::log_message(reshade::log_level::info, s.str().c_str());
-						}
-					}
-					else
-					{	
-						// log infos
-						if (debug_flag && flag_capture)
-						{
-							std::stringstream s;
-							s << " => on_bind_pipeline : do not update draw count, texture not copied;";
-							reshade::log_message(reshade::log_level::info, s.str().c_str());
-						}
-
-					}
-				}
-			}
 
 			if (it->second.action & action_identify)
 			{

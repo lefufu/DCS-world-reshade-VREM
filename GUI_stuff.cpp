@@ -68,7 +68,7 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 	{
 		//-----------------------------------------------------------------------------------------------------------------
 		// enable/disable color changes
-		ImGui::SliderFloat("Enable color changes", &shared_data.cb_inject_values.colorFlag, 0.0f, 1.0f, "active: %1.0f");
+		ImGui::SliderFloat("Enable color changes", &shared_data.cb_inject_values.colorFlag, 0.0f, 1.0f, "Active: %1.0f");
 		ImGui::Separator();
 		if (!shared_data.cb_inject_values.colorFlag)
 		{
@@ -76,14 +76,14 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		}
 
 		// set color for cockpit
-		ImGui::SliderFloat("Cockpit color common addition", &shared_data.cb_inject_values.cockpitAdd, 0.0f, 1.0f, "add: %.2f");
-		ImGui::SliderFloat("Cockpit color common multiplication", &shared_data.cb_inject_values.cockpitMul, 0.0f, 5.0f, "mul: %.2f");
-		ImGui::SliderFloat("Cockpit color saturation", &shared_data.cb_inject_values.cockpitSat, -5.0f, 5.0f, "sat: %.2f");
+		ImGui::SliderFloat("Cockpit color common addition", &shared_data.cb_inject_values.cockpitAdd, 0.0f, 1.0f, "Add: %.2f");
+		ImGui::SliderFloat("Cockpit color common multiplication", &shared_data.cb_inject_values.cockpitMul, 0.0f, 5.0f, "Mul: %.2f");
+		ImGui::SliderFloat("Cockpit color saturation", &shared_data.cb_inject_values.cockpitSat, -5.0f, 5.0f, "Sat: %.2f");
 		ImGui::Separator();
 		// set color for external
-		ImGui::SliderFloat("External color common addition", &shared_data.cb_inject_values.extAdd, 0.0f, 1.0f, "add : %.2f");
-		ImGui::SliderFloat("External color common multiplication", &shared_data.cb_inject_values.extMul, 0.0f, 5.0f, "mul: %.2f");
-		ImGui::SliderFloat("External color saturation", &shared_data.cb_inject_values.extSat, -5.0f, 5.0f, "sat: %.2f");
+		ImGui::SliderFloat("External color common addition", &shared_data.cb_inject_values.extAdd, 0.0f, 1.0f, "Add : %.2f");
+		ImGui::SliderFloat("External color common multiplication", &shared_data.cb_inject_values.extMul, 0.0f, 5.0f, "Mul: %.2f");
+		ImGui::SliderFloat("External color saturation", &shared_data.cb_inject_values.extSat, -5.0f, 5.0f, "Sat: %.2f");
 
 		if (!shared_data.cb_inject_values.colorFlag)
 		{
@@ -98,7 +98,7 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		
 		//-----------------------------------------------------------------------------------------------------------------
 		// enable/disable cockpit sharpen
-		ImGui::SliderFloat("Enable cockpit sharpen", &shared_data.cb_inject_values.sharpenFlag, 0.0f, 1.0f, "active: %1.0f");
+		ImGui::SliderFloat("Enable cockpit sharpen", &shared_data.cb_inject_values.sharpenFlag, 0.0f, 1.0f, "Active: %1.0f");
 		ImGui::Separator();
 		if (!shared_data.cb_inject_values.sharpenFlag)
 		{
@@ -106,7 +106,7 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		}
 		// set sharpen options
 		ImGui::SliderFloat("Sharpen intensity", &shared_data.cb_inject_values.fSharpenIntensity, 0.0f, 10.0f, "Sharpen: %.2f");
-		ImGui::SliderFloat("Sharpen luma", &shared_data.cb_inject_values.lumaFactor, 0.0f, 10.0f, "luma: %.2f");
+		ImGui::SliderFloat("Sharpen luma", &shared_data.cb_inject_values.lumaFactor, 0.0f, 10.0f, "Luma: %.2f");
 
 		if (!shared_data.cb_inject_values.sharpenFlag)
 		{
@@ -115,7 +115,7 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		ImGui::Separator();
 		//-----------------------------------------------------------------------------------------------------------------
 		// enable/disable sky and sea deband
-		ImGui::SliderFloat("Enable sky and sea deband", &shared_data.cb_inject_values.debandFlag, 0.0f, 1.0f, "active: %1.0f");
+		ImGui::SliderFloat("Enable sky and sea deband", &shared_data.cb_inject_values.debandFlag, 0.0f, 1.0f, "Active: %1.0f");
 		ImGui::Separator();
 		if (!shared_data.cb_inject_values.debandFlag)
 		{
@@ -139,13 +139,13 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 	if (ImGui::CollapsingHeader("Mics: Labels, Haze, instrument reflection parameters"))
 	{
 		// enable/disable label fix
-		ImGui::SliderFloat("Labels hidden by cockpit frame", &shared_data.cb_inject_values.maskLabels, 0.0f, 1.0f, "active: %1.0f");
+		ImGui::SliderFloat("Labels hidden by cockpit frame", &shared_data.cb_inject_values.maskLabels, 0.0f, 1.0f, "Active: %1.0f");
 
 		// set Haze factor
-		ImGui::SliderFloat("Haze strenght", &shared_data.cb_inject_values.hazeReduction, 0.0f, 1.0f, "strenght: %.2f");
+		ImGui::SliderFloat("Haze strenght", &shared_data.cb_inject_values.hazeReduction, 0.0f, 1.0f, "Strenght: %.2f");
 
 		// enable/disable reflection removal for A10C
-		ImGui::SliderFloat("Remove A10C instr. reflect", &shared_data.cb_inject_values.noReflect, 0.0f, 1.0f, "active: %1.0f");
+		ImGui::SliderFloat("Remove A10C instr. reflect", &shared_data.cb_inject_values.noReflect, 0.0f, 1.0f, "Active: %1.0f");
 	}
 
 
@@ -154,7 +154,43 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 	{
 		// enable/disable rotor fix
 		ImGui::SliderFloat("Disable Epileptic flashing rotor", &shared_data.cb_inject_values.rotorFlag, 0.0f, 1.0f, "active: %1.0f");
-		ImGui::Text("Disable/Enable TADS or PNVS in IHADSS : use CTRL+I in game");
+
+		// enable/disable vido in TADS (just to show the status)
+		ImGui::SliderFloat("Disable TADS or PNVS in IHADSS", &shared_data.cb_inject_values.disable_video_IHADSS, 0.0f, 1.0f, "Active: %1.0f");
+		if (!shared_data.cb_inject_values.disable_video_IHADSS)
+		{
+			ImGui::BeginDisabled();
+		}
+		ImGui::Text("Use CTRL+I in game to change");
+		if (!shared_data.cb_inject_values.disable_video_IHADSS)
+		{
+			ImGui::EndDisabled();
+		}
+		// set convergence for boresight
+		ImGui::SliderFloat("Boresight convergence for IHASSS", &shared_data.cb_inject_values.IHADSSBoresight, 0.0f, 1.0f, "Enabled: %1.0f");
+		if (!shared_data.cb_inject_values.IHADSSBoresight)
+		{
+			ImGui::BeginDisabled();
+		}
+		ImGui::SliderFloat("Boresight convergence offset", &shared_data.cb_inject_values.IHADSSxOffset, -0.25f, 0.25f, "Offset: %.3f");
+		ImGui::Text("Enable/Disable boresight convergence for IHADSS : use SHIFT+I in game");
+		if (!shared_data.cb_inject_values.IHADSSBoresight)
+		{
+			ImGui::EndDisabled();
+		}
+		// enable/disable left eye in IHADSS (just to show the status)
+		ImGui::SliderFloat("Disable left eye in IHADSS", &shared_data.cb_inject_values.IHADSSNoLeft, 0.0f, 1.0f, "Active: %1.0f");
+		if (!shared_data.cb_inject_values.IHADSSNoLeft)
+		{
+			ImGui::BeginDisabled();
+		}
+		ImGui::Text("Use ALT+I in game to change");
+		if (!shared_data.cb_inject_values.IHADSSNoLeft)
+		{
+			ImGui::EndDisabled();
+		}
+
+
 	}
 
 	// *******************************************************************************************************
