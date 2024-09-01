@@ -49,6 +49,3 @@ inline uint32_t compute_crc32(const uint8_t *data, size_t size)
 		crc = (crc >> 8) ^ crc32_table[(crc ^ (*data)) & 0xFF];
 	return ~crc;
 }
-
-
-extern uint32_t calculateShaderHash(void* shaderData);
