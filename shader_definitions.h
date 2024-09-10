@@ -87,6 +87,12 @@ enum class Feature : uint32_t
 	HazeMSAA2x = 9,
 	// remove A10C instrument reflect
 	NoReflect = 11,
+	// NS430 
+	NS430 = 12,
+	// NVG
+	NVG = 13,
+	//GUI 
+	GUI = 14,
 	// Testing : for testing purpose
 	Testing = 20
 };

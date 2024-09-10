@@ -53,12 +53,16 @@ void intialize_counters()
 
 	shared_data.count_display = 0;
 	shared_data.cb_inject_values.mapMode = 1.0;
-	shared_data.texture_copy_started = false;
+	shared_data.depthStencil_copy_started = false;
+	shared_data.counter_testing = 0;
+	do_not_draw = false;
+	shared_data.cb_inject_values.GUItodraw = 0.0;
 
 	// initialize flags for copy
 	for (int i = 0; i < MAXVIEWSPERDRAW; i++)
 	{
 		shared_data.depthStencil_res[i].copied = false;
+		shared_data.NS430_res[i].copied = false;
 	}
 
 }
@@ -109,7 +113,7 @@ void handle_keypress(effect_runtime* runtime)
 		}
 	}
 
-	// ALT+I toggle on/off boresight convergence of IHADSS
+	// ALT+I toggle on/off lest eye of IHADSS
 	if (runtime->is_key_pressed('I') && runtime->is_key_down(VK_MENU))
 	{
 		// Toggle the value of disable_video_IHADSS between 0.0 and 1.0
@@ -120,6 +124,20 @@ void handle_keypress(effect_runtime* runtime)
 		else if (shared_data.cb_inject_values.IHADSSNoLeft == 0.0)
 		{
 			shared_data.cb_inject_values.IHADSSNoLeft = 1.0;
+		}
+	}
+
+	// ALT+v toggle NS430 hiding and screen texture display in GUI
+	if (runtime->is_key_pressed('V') && runtime->is_key_down(VK_MENU))
+	{
+		// Toggle the value of disable_video_IHADSS between 0.0 and 1.0
+		if (shared_data.cb_inject_values.NS430Flag == 1.0)
+		{
+			shared_data.cb_inject_values.NS430Flag = 0.0;
+		}
+		else if (shared_data.cb_inject_values.NS430Flag == 0.0)
+		{
+			shared_data.cb_inject_values.NS430Flag = 1.0;
 		}
 	}
 

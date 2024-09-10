@@ -136,7 +136,7 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 	}
 
 	// *******************************************************************************************************
-	if (ImGui::CollapsingHeader("Mics: Labels, Haze, instrument reflection parameters"))
+	if (ImGui::CollapsingHeader("Mics: Labels, Haze, A10C instrument reflection, NVG size"))
 	{
 		// enable/disable label fix
 		ImGui::SliderFloat("Labels hidden by cockpit frame", &shared_data.cb_inject_values.maskLabels, 0.0f, 1.0f, "Active: %1.0f");
@@ -146,11 +146,14 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 
 		// enable/disable reflection removal for A10C
 		ImGui::SliderFloat("Remove A10C instr. reflect", &shared_data.cb_inject_values.noReflect, 0.0f, 1.0f, "Active: %1.0f");
+
+		// set Haze factor
+		ImGui::SliderFloat("NVG size", &shared_data.cb_inject_values.NVGSize, 0.9f, 3.0f, "Scale: %.2f");
 	}
 
 
 	// *******************************************************************************************************
-	if (ImGui::CollapsingHeader("Helicopter parameters"))
+	if (ImGui::CollapsingHeader("Helicopter"))
 	{
 		// enable/disable rotor fix
 		ImGui::SliderFloat("Disable Epileptic flashing rotor", &shared_data.cb_inject_values.rotorFlag, 0.0f, 1.0f, "active: %1.0f");
@@ -161,7 +164,7 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		{
 			ImGui::BeginDisabled();
 		}
-		ImGui::Text("Use CTRL+I in game to change");
+		ImGui::Text("Use CTRL+i in game to change");
 		if (!shared_data.cb_inject_values.disable_video_IHADSS)
 		{
 			ImGui::EndDisabled();
@@ -184,13 +187,32 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		{
 			ImGui::BeginDisabled();
 		}
-		ImGui::Text("Use ALT+I in game to change");
+		ImGui::Text("Use ALT+i in game to change");
 		if (!shared_data.cb_inject_values.IHADSSNoLeft)
 		{
 			ImGui::EndDisabled();
 		}
+	}
 
-
+	// *******************************************************************************************************
+	if (ImGui::CollapsingHeader("NS430"))
+	{
+		// enable/disable label fix
+		ImGui::SliderFloat("Hide NS430", &shared_data.cb_inject_values.NS430Flag, 0.0f, 1.0f, "Active: %1.0f");
+		if (!shared_data.cb_inject_values.NS430Flag)
+		{
+			ImGui::BeginDisabled();
+		}
+		ImGui::Text("Use ALT+v in game to change");
+		ImGui::SliderFloat("NS430 Scale", &shared_data.cb_inject_values.NS430Scale, 3.0f, 10.0f, "Scale: %.2f");
+		ImGui::SliderFloat("NS430 Xposition ", &shared_data.cb_inject_values.NS430Xpos, 0.0f, 1.0f, "Xpos: %.2f");
+		ImGui::SliderFloat("NS430 Yposition ", &shared_data.cb_inject_values.NS430Ypos, 0.0f, 1.0f, "YPos: %.2f");
+		ImGui::SliderFloat("NS430 Offset", &shared_data.cb_inject_values.NS430Convergence, 0.5f, 1.5f, "Offset: %.3f");
+		ImGui::SliderFloat("NS430 Area YScale ", &shared_data.cb_inject_values.GUIYScale, 1.0f, 2.0f, "YScale: %.2f");
+		if (!shared_data.cb_inject_values.NS430Flag)
+		{
+			ImGui::EndDisabled();
+		}
 	}
 
 	// *******************************************************************************************************
@@ -257,5 +279,6 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		{
 			ImGui::EndDisabled();
 		}
+
 	}
 }

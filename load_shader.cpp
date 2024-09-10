@@ -78,7 +78,7 @@ bool load_shader_code(std::vector<std::vector<uint8_t>>& shaderCode, wchar_t fil
 
 	// log info
 	std::stringstream s;
-	s << "Color shader readed, size = " << (void*)shaderCode.size() << ")";
+	s << "Shader readed, size = " << (void*)shaderCode.size() << ")";
 	reshade::log_message(reshade::log_level::info, s.str().c_str());
 
 	return true;

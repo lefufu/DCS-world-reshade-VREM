@@ -91,18 +91,25 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	// for frame debugging
 	bool button_capture = false;
 
-	// for logging shader_resource_view in push_descriptors() to get depthStencil 
-	bool track_for_depthStencil = false;
-
 	// to handle parallel access (not used)
 	std::shared_mutex s_mutex;
 
-	// to copy depth Stencil texture
+	// to copy texture
+	reshade::api::descriptor_table_update update;
+	// depth Stencil texture
 	resource_trace depthStencil_res[MAXVIEWSPERDRAW];
 	resourceview_trace stencil_view[MAXVIEWSPERDRAW];
 	resourceview_trace depth_view[MAXVIEWSPERDRAW];
-	reshade::api::descriptor_table_update update;
-	bool texture_copy_started;
+	bool depthStencil_copy_started;
+	// for logging shader_resource_view in push_descriptors() to get depthStencil 
+	bool track_for_depthStencil = false;
+
+	//NS430 texture
+	resource_trace NS430_res[MAXVIEWSPERDRAW];
+	resourceview_trace NS430_view[MAXVIEWSPERDRAW];
+	bool NS430_copy_started;
+	// for logging shader_resource_view in push_descriptors() to get screen texture 
+	bool track_for_NS430 = false;
 
 	// counter for the current display (eye + quad view)
 	short int count_display = 0;
@@ -110,6 +117,11 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	// to used as seed for random
 	uint32_t frame_counter = 0;
 
+	// counter for skip seems not working !
+	uint32_t counter_testing = 0;
 };
 
 extern struct global_shared shared_data;
+
+extern bool do_not_draw;
+

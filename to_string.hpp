@@ -611,6 +611,9 @@ inline auto to_string(Feature feature) {
 	case Feature::Haze: return "Haze";
 	case Feature::NoReflect: return "NoReflect";
 	case Feature::HazeMSAA2x: return "HazeMSAA2x";
+	case Feature::NS430: return "NS430";
+	case Feature::NVG: return "NVG";
+	case Feature::GUI: return "GUI";
 		
 	}
 }

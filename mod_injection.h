@@ -46,7 +46,7 @@ static const int CBINDEX = 13;
 static const int RVINDEX = 3;
 
 // size of the constant buffer containing all mod parameters, to be injected in shaders
-static const int CBSIZE = 32;
+static const int CBSIZE = 40;
 
 // Must be 32bit aligned
 struct ShaderInjectData {
@@ -81,8 +81,28 @@ struct ShaderInjectData {
 	float IHADSSxOffset; //7.x
 	float IHADSSBoresight; //7.y
 	float IHADSSNoLeft; //7.z
-	float unused3; //7.w
+	float NS430Flag; //7.w
+	float NS430Xpos; //8.x
+	float NS430Ypos; //8.y
+	float NS430Scale; //8.z
+	float NS430Convergence; //8.w
+	float NVGSize; //9.x
+	float GUIYScale; //9.y
+	float GUItodraw; //9.z
+	float unused3; //9.w
 };
+
+
+// NS430 screen size
+static const int NS430_textSizeX = 240;
+static const int NS430_textSizeY = 128;
+
+static const int NS430_renderSizeX = 720;
+static const int NS430_renderSizeY = 384;
+
+// VR menu windows size 
+static const int VRGUI_sizeX = 1680;
+static const int VRGUI_sizeY = 1050;
 
 /*
 #ifndef __cplusplus

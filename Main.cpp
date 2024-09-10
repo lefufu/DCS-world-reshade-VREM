@@ -60,29 +60,49 @@ extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance V
 // definition of shader of the mod
 std::unordered_map<uint32_t, Shader_Definition> shaders_by_hash =
 {
-	// fix for rotor
+	// ** fix for rotor **
 	{ 0xC0CC8D69, Shader_Definition(action_replace, Feature::Rotor, L"AH64_rotorPS.cso", 0) },
+	{ 0x460B6238, Shader_Definition(action_replace, Feature::Rotor, L"AH64_rotor2PS.cso", 0) },
 	{ 0x492932EA, Shader_Definition(action_replace, Feature::Rotor, L"UH1_rotorPS.cso", 0) },
-	// fix for IHADSS
+	// ** fix for IHADSS **
 	{ 0x2D713734, Shader_Definition(action_replace, Feature::IHADSS, L"IHADSS_PNVS_PS.cso", 0) },
 	{ 0x6AA19B8F, Shader_Definition(action_replace, Feature::IHADSS, L"IHADSS_PS.cso", 0) },
 	{ 0x45E221A9, Shader_Definition(action_replace, Feature::IHADSS, L"IHADSS_VS.cso", 0) },
+	// ** label masking and color/sharpen/deband **
 	// to start spying texture for depthStencil (Vs associated with global illumination PS)
 	{ 0x4DDC4917, Shader_Definition(action_log, Feature::GetStencil, L"", 0) },
-	// global PS for color change, sharpen,..
+	// global PS for all changes
 	{ 0xBAF1E52F, Shader_Definition(action_replace | action_injectText | action_log, Feature::Global, L"global_PS_2.cso", 0) },
+	// Label PS 
+	{ 0x6CEA1C47, Shader_Definition(action_replace | action_injectText, Feature::Label , L"labels_PS.cso", 0) },
+	// ** NS430 **
+	// Obsolete - to start spying texture for screen texture and disable frame (Vs associated with NS430 screen PS below)
+	{ 0x52C97365, Shader_Definition(action_replace, Feature::NS430, L"VR_GUI_MFD_VS.cso", 0) },
+	// to start spying texture for screen texture (Vs associated with NS430 screen EDF9F8DD for su25T&UH1, not same res. texture !)
+	{ 0x8439C716, Shader_Definition(action_log, Feature::NS430, L"", 0) },
+	// inject texture in global GUI and filter screen display (same shader for both)
+	{ 0x99D562, Shader_Definition(action_replace | action_injectText, Feature::NS430 , L"VR_GUI_MFD_PS.cso", 0) },
+	// disable NS430 frame, shared with some cockpit parts (can not be done by skip)
+	{ 0xD391F41C, Shader_Definition(action_replace, Feature::NS430 , L"NS430__framePS.cso", 0) },
+	// disable NS430 screen background (done in shader because shared with other objects than NS430)
+	{ 0x6EF95548, Shader_Definition(action_replace, Feature::NS430, L"NS430_screen_back.cso", 0) },
+	// to filter out call for GUI and MFD
+	{ 0x55288581, Shader_Definition(action_log, Feature::GUI, L"", 0) },
+	 
+	// 
+	//  ** identify game config **
 	// to define if VR is active or not (2D mirror view of VR )
 	{ 0x886E31F2, Shader_Definition(action_identify, Feature::VRMode, L"", 0) },
 	// VS drawing cockpit parts to define if view is in welcome screen or map
 	{ 0xA337E177, Shader_Definition(action_identify, Feature::mapMode, L"", 0) },
-	// Label PS 
-	{ 0x6CEA1C47, Shader_Definition(action_replace | action_injectText, Feature::Label , L"labels_PS.cso", 0) },
-	// haze control : illum PS: used for Haze control, to define which draw (eye + quad view) is current.
+	//  ** haze control : illum PS: used for Haze control, to define which draw (eye + quad view) is current.  **
 	{ 0x51302692, Shader_Definition(action_replace | action_identify, Feature::Haze, L"illumNoAA_PS.cso", 0) },
 	{ 0x88AF23C6, Shader_Definition(action_replace | action_identify, Feature::HazeMSAA2x, L"illumMSAA2x_PS.cso", 0) },
 	{ 0xA055EDE4, Shader_Definition(action_replace, Feature::Haze, L"illumMSAA2xB_PS.cso", 0) },
-	// A10C cockpit instrument
+	//  ** A10C cockpit instrument **
 	{ 0x4D8EB0B7, Shader_Definition(action_replace , Feature::NoReflect , L"A10C_instrument.cso", 0) },
+	//  ** NVG **
+	{ 0xE65FAB66, Shader_Definition(action_replace , Feature::NVG , L"NVG_extPS.cso", 0) }
 };
 
 // ***********************************************************************************************************************
@@ -94,11 +114,14 @@ struct global_shared shared_data;
 std::unordered_map<uint32_t, Shader_Definition> shaders_by_handle;
 std::unordered_map<uint32_t, resource> texture_resource_by_handle;
 
+uint32_t last_replaced_shader = 0;
+
 // ***********************************************************************************************************************
 //init local variables
 //to hanlde loading code for replaced shader
 static thread_local std::vector<std::vector<uint8_t>> shader_code;
 bool flag_capture = false;
+bool do_not_draw = false;
 
 // *******************************************************************************************************
 // on_init_pipeline_layout() : called once, to create the DX11 layout to use in push_constant
@@ -110,16 +133,13 @@ static void on_init_pipeline_layout(reshade::api::device* device, const uint32_t
 
 	// generate data for constant_buffer or shader_resource_view
 	for (uint32_t paramIndex = 0; paramIndex < paramCount; ++paramIndex) {
-		auto param = params[paramIndex];
+		// auto param = params[paramIndex];
+		reshade::api::pipeline_layout_param param = params[paramIndex];
+
 
 		//log infos
-		if (debug_flag)
-		{
-			s << "* looping on  paramCount : param = " << to_string(paramIndex) << ", param.type = " << to_string(param.type) << ", param.push_descriptors.type = " << to_string(param.push_descriptors.type);
-			reshade::log_message(reshade::log_level::info, s.str().c_str());
-			s.str("");
-			s.clear();
-		}
+		log_init_pipeline_params(paramCount, params, layout,paramIndex, param);
+
 		if (param.push_descriptors.type == descriptor_type::constant_buffer)
 		{
 			//index should be 2 for CB in DX11, but let's get it dynamically. Not used.
@@ -143,23 +163,9 @@ static void on_init_pipeline_layout(reshade::api::device* device, const uint32_t
 
 			bool  result = device->create_pipeline_layout(1, &newParams, &shared_data.saved_pipeline_layout_CB);
 
-			if (result) {
-				if (debug_flag)
-				{
-					s << "on_init_pipeline_layout: new pipeline created, hash =" << reinterpret_cast<void*>(&shared_data.saved_pipeline_layout_CB.handle) << " ).  DX11 layout created for CB;";
-					s << "dx_register_index=" << CBINDEX << ", CBIndex =" << shared_data.CBIndex << "; ";
-					reshade::log_message(reshade::log_level::warning, s.str().c_str());
-					s.str("");
-					s.clear();
-				}
-			}
-			else
-			{
-				s << "on_init_pipeline_layout(" << reinterpret_cast<void*>(&shared_data.saved_pipeline_layout_CB.handle) << " ). !!! Error in creating DX11 layout for CB!!!;";
-				reshade::log_message(reshade::log_level::warning, s.str().c_str());
-				s.str("");
-				s.clear();
-			}
+			//logs
+			if (result) log_create_CBlayout();
+			else log_error_creating_CBlayout();
 		}
 
 		else if (param.push_descriptors.type == descriptor_type::shader_resource_view)
@@ -180,25 +186,9 @@ static void on_init_pipeline_layout(reshade::api::device* device, const uint32_t
 
 			bool  result = device->create_pipeline_layout(std::size(params), params, &shared_data.saved_pipeline_layout_RV);
 
-			if (result) {
-				if (debug_flag)
-				{
-					s << "on_init_pipeline_layout: new pipeline created, hash =" << reinterpret_cast<void*>(&shared_data.saved_pipeline_layout_RV.handle) << " ).  DX11 layout created for RV;";
-					s << "dx_register_index=" << RVINDEX << ", RVIndex =" << shared_data.RVIndex << "; ";
-					reshade::log_message(reshade::log_level::warning, s.str().c_str());
-					s.str("");
-					s.clear();
-				}
-			}
-			else
-			{
-				s << "on_init_pipeline_layout(" << reinterpret_cast<void*>(&shared_data.saved_pipeline_layout_CB.handle) << " ). !!! Error in creating DX11 layout for CB!!!;";
-				reshade::log_message(reshade::log_level::warning, s.str().c_str());
-				s.str("");
-				s.clear();
-			}
+			if (result)  log_create_RVlayout();
+			else log_error_creating_RVlayout();
 		}
-
 	}
 }
 
@@ -223,25 +213,15 @@ static void on_init_pipeline(device* device, pipeline_layout layout, uint32_t su
 		case pipeline_subobject_type::domain_shader:
 			//compute has and see if it is declared in shader mod list
 			uint32_t hash = calculateShaderHash(subobjects[0].data);
-			auto it = shaders_by_hash.find(hash);
+			// auto it = shaders_by_hash.find(hash);
+			std::unordered_map<uint32_t, Shader_Definition>::iterator it = shaders_by_hash.find(hash);
 
 			if (it != shaders_by_hash.end()) {
 				// shader is to be handled
 				// add the shader entry in the map by pipeline handle
 
-				if (debug_flag) {
-					// logging infos
-					s << "onInitPipeline, pipelineHandle: " << (void*)pipelineHandle.handle << "), ";
-					s << "layout =  " << reinterpret_cast<void*>(layout.handle) << " ;";
-					s << "subobjectCount =  " << subobjectCount << " ;";
-					s << "Type = " << to_string(subobjects[0].type) << " ;";
-					s << "hash to handle = " << std::hex << hash << " ;";
-					s << "Action = " << to_string(it->second.action) << "; Feature = " << to_string(it->second.feature) << "; fileName =" << to_string(it->second.replace_filename) << ";";
-
-					reshade::log_message(reshade::log_level::info, s.str().c_str());
-					s.str("");
-					s.clear();
-				}
+				//log
+				log_init_pipeline(pipelineHandle, layout, subobjectCount, subobjects, hash, it);
 
 				//create the entry for handling shader by pipeline instead of Hash
 				Shader_Definition newShader(it->second.action, it->second.feature, it->second.replace_filename, it->second.draw_count);
@@ -252,13 +232,7 @@ static void on_init_pipeline(device* device, pipeline_layout layout, uint32_t su
 					bool status = load_shader_code(shader_code, it->second.replace_filename);
 					if (!status) {
 						// log error
-						s << "onInitPipeline, pipelineHandle: " << (void*)pipelineHandle.handle << "), ";
-						s << "hash to handle = " << std::hex << hash << " ;";
-						s << "!!! Error in loading code for :" << to_string(it->second.replace_filename) << "; !!!";
-
-						reshade::log_message(reshade::log_level::error, s.str().c_str());
-						s.str("");
-						s.clear();
+						log_shader_code_error(pipelineHandle, hash, it);
 					}
 					else {
 						//keep hash for debug messages
@@ -280,40 +254,6 @@ static void on_init_pipeline(device* device, pipeline_layout layout, uint32_t su
 					if (it->second.feature == Feature::mapMode)
 					{
 						shared_data.cb_inject_values.mapMode = 0.0;
-					}
-					
-					// PS for no MSAA : setup the flag
-					if (it->second.feature == Feature::Haze)
-					{
-
-						shared_data.cb_inject_values.AAxFactor = 1.0;
-						shared_data.cb_inject_values.AAyFactor = 1.0;
-
-						// log infos
-						// // if (debug_flag && flag_capture)
-						if (debug_flag )
-						{
-							std::stringstream s;
-							s << " => on_bind_pipeline : flag MSAA2x, Xfactor = " << shared_data.cb_inject_values.AAxFactor << ", Yfactor = " << shared_data.cb_inject_values.AAyFactor << ";";
-							reshade::log_message(reshade::log_level::info, s.str().c_str());
-						}
-					}
-
-					// PS for MSAA2x : setup the flag
-					if (it->second.feature == Feature::HazeMSAA2x)
-					{
-
-						shared_data.cb_inject_values.AAxFactor = 2.0;
-						shared_data.cb_inject_values.AAyFactor = 1.0;
-
-						// log infos
-						// if (debug_flag && flag_capture)
-						if (debug_flag)
-						{
-							std::stringstream s;
-							s << " => on_bind_pipeline : flag MSAA2x, Xfactor = " << shared_data.cb_inject_values.AAxFactor << ", Yfactor = " << shared_data.cb_inject_values.AAyFactor << ";";
-							reshade::log_message(reshade::log_level::info, s.str().c_str());
-						}
 					}
 
 				}
@@ -353,14 +293,7 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 		if (it != shaders_by_handle.end()) {
 
 			// debug message
-			if (debug_flag && flag_capture )
-			{
-				std::stringstream s;
-				s << "on_bind_pipeline : Pipeline handle to process found: " << reinterpret_cast<void*>(pipelineHandle.handle) << ", hash =";
-				s << std::hex << it->second.hash << ", associated cloned pipeline handle: " << reinterpret_cast<void*>(it->second.substitute_pipeline.handle);
-				s << ", feature =" << to_string(it->second.feature) << ";";
-				reshade::log_message(reshade::log_level::info, s.str().c_str());
-			}
+			log_pipeline_to_process(pipelineHandle, it);
 			
 			if (it->second.action & action_count)
 			{
@@ -371,30 +304,14 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 			if (it->second.action & action_injectText)
 			{
 				// inject texture using push_descriptor() if things has been initialized => draw index is > -1
-				// stencil depth textures for color change and label masking 
-				if (( it->second.feature == Feature::Global || it->second.feature == Feature::Label) && shared_data.count_display > -1 && shared_data.texture_copy_started)
+
+				if (( it->second.feature == Feature::Global || it->second.feature == Feature::Label) && shared_data.count_display > -1 && shared_data.depthStencil_copy_started)
 				{
-					
-					// log infos
-					if (debug_flag && flag_capture)
-					{
-						std::stringstream s;
-						s << " => on_bind_pipeline : depthStencil textures injected for draw index :";
-						s << shared_data.count_display << ";";
-						reshade::log_message(reshade::log_level::info, s.str().c_str());
-					}
+					// stencil depth textures in shaders for color change and label masking 
 					if (shared_data.depth_view[shared_data.count_display].created && shared_data.stencil_view[shared_data.count_display].created)
 					{
 
-						// push the texture for depth and stencil
-						// setup descriptor
-						/* 
-						reshade::api::descriptor_table_update update;
-						update.binding = 0; // t3 as 3 is defined in pipeline_layout
-						update.count = 1;
-						update.type = reshade::api::descriptor_type::shader_resource_view;
-						*/
-
+						// push the texture for depth and stencil, descriptor initialized in copy_texture()
 						//depth
 						shared_data.update.binding = 0;
 						shared_data.update.descriptors = &shared_data.depth_view[shared_data.count_display].texresource_view;
@@ -404,42 +321,65 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 						shared_data.update.binding = 1; // t4 as 3 is defined in pipeline_layout
 						shared_data.update.descriptors = &shared_data.stencil_view[shared_data.count_display].texresource_view;;
 						commandList->push_descriptors(reshade::api::shader_stage::pixel, shared_data.saved_pipeline_layout_RV, 0, shared_data.update);
+
+						// log infos
+						log_texture_injected("depthStencil");
 					}
 				}
+
+				// inject texture for NS430 if feature activated
+				// if (it->second.feature == Feature::NS430  && shared_data.count_display > -1 && shared_data.NS430_copy_started && shared_data.cb_inject_values.NS430Flag)
+				if (it->second.feature == Feature::NS430 && shared_data.NS430_copy_started && shared_data.cb_inject_values.NS430Flag)
+				{
+					// NS430 texture in VR menu GUI aera shaders as only 1 copy is done per frame, use 0 for all draws
+					// if (shared_data.NS430_view[shared_data.count_display].created)
+					if (shared_data.NS430_view[0].created)
+					{
+						// push the texture for NS430, descriptor initialized in copy_texture()
+						shared_data.update.binding = 2; // t5
+						// shared_data.update.descriptors = &shared_data.NS430_view[shared_data.count_display].texresource_view;
+						shared_data.update.descriptors = &shared_data.NS430_view[0].texresource_view;
+						commandList->push_descriptors(reshade::api::shader_stage::pixel, shared_data.saved_pipeline_layout_RV, 0, shared_data.update);
+
+						// log infos
+						log_texture_injected("NS430");
+					}
+				}
+
 			}	
 			
 			// shader is to be handled
 			if (it->second.action & action_replace)
 			{
 				
-				//use push constant() to push the mod parameter in CB13
-				commandList->push_constants(
-					shader_stage::all,
-					shared_data.saved_pipeline_layout_CB,
-					0,
-					0,
-					CBSIZE,
-					&shared_data.cb_inject_values
-				);
+				// optimization : do not push CB if same shader is replaced again and no "count" action used for the shader 
+				// possible because CB13 is not used by the game
+				if (last_replaced_shader != pipelineHandle.handle || it->second.action & action_count)
+				{
+					// use push constant() to push the mod parameter in CB13,a sit is assumed a replaced shader will need mod parameters
+					// pipeline_layout for CB initialized in init_pipeline() once for all
+					commandList->push_constants(
+						shader_stage::all,
+						shared_data.saved_pipeline_layout_CB,
+						0,
+						0,
+						CBSIZE,
+						&shared_data.cb_inject_values
+					);
+				}
 				
 				// shader is to be replaced by the new one created in on_Init_Pipeline
 				commandList->bind_pipeline(stages, it->second.substitute_pipeline);
 
 				// log infos
-				if (debug_flag && flag_capture)
-				{
-					std::stringstream s;
-					s << " => on_bind_pipeline : pipeline shader replaced (" << reinterpret_cast<void*>(pipelineHandle.handle) << ") by  " << reinterpret_cast<void*>(it->second.substitute_pipeline.handle) << ", hash =" << std::hex << it->second.hash << ", feature =" << to_string(it->second.feature )<< ";";
-					reshade::log_message(reshade::log_level::info, s.str().c_str());
-					// s.str("");
-					// s.clear();
-				}
-	
+				log_pipeline_replaced(pipelineHandle, it);	
+				last_replaced_shader = pipelineHandle.handle;
 			}
 			
-			if (it->second.action & action_skip)
+			if (it->second.action & action_skip && shared_data.cb_inject_values.NS430Flag && it->second.feature == Feature::NS430)
 			{
 				// shader is to be skipped, setup a flag for next draw
+				do_not_draw = true;
 			}
 
 			// setup variables regarding the action
@@ -453,44 +393,57 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 					shared_data.track_for_depthStencil = true;
 
 					// log infos
-					if (debug_flag && flag_capture) 
-					{
-						std::stringstream s;
-						s << " => on_bind_pipeline : start monitor Depth Stencil, draw : " << shared_data.count_display << ";";
-						reshade::log_message(reshade::log_level::info, s.str().c_str());
-					}
+					log_start_monitor("Depth Stencil");
 				}
 
+				// VS for NS430 : trigger logging of resources (eg texture) or other topics (eg count calls)
+				if (it->second.feature == Feature::NS430)
+				{
+					// engage tracking shader_resource_view in push_descriptors() to get depthStencil 
+					// const std::unique_lock<std::shared_mutex> lock(shared_data.s_mutex);
+					shared_data.track_for_NS430 = true;
 
-				// PS global color : increase draw count
+					// log infos
+					log_start_monitor("NS430");
+				}
+
+				// PS for GUI : set flag
+				if (it->second.feature == Feature::GUI)
+				{
+					shared_data.cb_inject_values.GUItodraw = 1.0;
+
+					// log infos
+					log_start_monitor("GUItodraw");
+				}
+
+				// PS for GUI : reset flag
+				if (it->second.feature == Feature::NS430)
+				{
+					shared_data.cb_inject_values.GUItodraw = 0.0;
+
+					// log infos
+					log_clear_action_log("GUItodraw");
+				}
+				
+
+				// PS global color : increase draw count & GUI flag (to avoid MFD)
 				if (it->second.feature == Feature::Global)
 				{
-					// if texure has been copied previously, increase draw count
-					// if (shared_data.stencil_view->created)
-					if (shared_data.texture_copy_started)
+					// if texure has been copied previously, increase draw count, otherwise do nothing, to avoid counting shader calls for MFD rendering
+					if (shared_data.depthStencil_copy_started)
 					{
 						shared_data.count_display += 1;
 						// it's stupid but I'm too lazy to change code now..
 						shared_data.cb_inject_values.count_display = shared_data.count_display;
 
 						// log infos
-						if (debug_flag && flag_capture)
-						{
-							std::stringstream s;
-							s << " => on_bind_pipeline : stop monitor DepthStencil and update draw count : " << shared_data.count_display << ";";
-							reshade::log_message(reshade::log_level::info, s.str().c_str());
-						}
+						log_increase_draw_count();
+
 					}
 					else
 					{	
 						// log infos
-						if (debug_flag && flag_capture)
-						{
-							std::stringstream s;
-							s << " => on_bind_pipeline : do not update draw count, texture not copied;";
-							reshade::log_message(reshade::log_level::info, s.str().c_str());
-						}
-
+						log_not_increase_draw_count();
 					}
 				}
 			}
@@ -504,8 +457,29 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 					shared_data.cb_inject_values.mapMode = 0.0;
 				}
 
-			}
+				// PS for no MSAA : setup the ratio for masking
+				if (it->second.feature == Feature::Haze)
+				{
 
+					shared_data.cb_inject_values.AAxFactor = 1.0;
+					shared_data.cb_inject_values.AAyFactor = 1.0;
+
+					// log infos
+					log_MSAA();
+				}
+
+				// PS for no MSAA : setup the ratio for masking
+				if (it->second.feature == Feature::HazeMSAA2x)
+				{
+
+					shared_data.cb_inject_values.AAxFactor = 2.0;
+					shared_data.cb_inject_values.AAyFactor = 1.0;
+
+					//log
+					log_MSAA();
+				}
+
+			}
 
 		}
 	}
@@ -527,29 +501,7 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 	{
 		
 		//log infos
-		
-		if (debug_flag && flag_capture) 
-		{
-			std::stringstream s;
-			s << "on_push_descriptors(" << to_string(stages) << ", " << (void*)layout.handle << ", " << param_index << ", { " << to_string(update.type) << ", " << update.binding << ", " << update.count << " })";
-			reshade::log_message(reshade::log_level::info, s.str().c_str());
-			s.str("");
-			s.clear();
-
-			if (update.type == descriptor_type::shader_resource_view)
-			{
-				// add info on textures hash
-				for (uint32_t i = 0; i < update.count; ++i)
-				{
-					auto item = static_cast<const reshade::api::resource_view*>(update.descriptors)[i];
-					s << "=> on_push_descriptors(), resource_view[" << i << "],  handle = " << reinterpret_cast<void*>(item.handle) << " })";
-					reshade::log_message(reshade::log_level::info, s.str().c_str());
-					s.str("");
-					s.clear();
-				}
-			}
-			reshade::log_message(reshade::log_level::info, s.str().c_str());
-		}
+		log_push_descriptor(stages, layout, param_index, update);
 
 		// copy depthStencil texture into shared_data
 		bool status = copy_depthStencil(cmd_list, stages, layout, param_index, update);
@@ -558,13 +510,52 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 		shared_data.track_for_depthStencil = false;
 	}
 
+	// handle NS430
+	if (shared_data.track_for_NS430 && update.type == descriptor_type::shader_resource_view && stages == shader_stage::pixel && update.count == 1)
+	{
+		//log infos
+		log_push_descriptor(stages, layout, param_index, update);
+
+		// Copy only if texture has good resolution
+		device* dev = cmd_list->get_device();
+		resource_view NS430_rv = static_cast<const reshade::api::resource_view*>(update.descriptors)[0];
+		resource NS430_resource = dev->get_resource_from_view(NS430_rv);
+		resource_desc NS430_res_desc = dev->get_resource_desc(NS430_resource);
+
+
+		if (NS430_res_desc.texture.width == NS430_textSizeX && NS430_res_desc.texture.height == NS430_textSizeY ) 
+		{	
+			// copy NS430 texture into shared_data (only done once per frame)
+			bool status = copy_NS430_text(cmd_list, stages, layout, param_index, update);
+
+			// stop tracking
+			shared_data.track_for_NS430 = false;
+		}
+
+		if (debug_flag && flag_capture)
+		{
+			std::stringstream s;
+			s << "   on_push_descriptor, text. width= " << NS430_res_desc.texture.width << ", texture.height =" << NS430_res_desc.texture.height << ";";
+			reshade::log_message(reshade::log_level::info, s.str().c_str());
+			s.str("");
+			s.clear();
+		}
+
+	}
 }
 
 //*******************************************************************************************************
 // clear tracking flags to avoid tracking resources if push_descriptor did not detect it...
 static void clear_tracking_flags()
 {
-	shared_data.track_for_depthStencil = false;
+
+	if (shared_data.track_for_depthStencil || shared_data.track_for_NS430 || do_not_draw)
+	{
+		log_reset_tracking();
+		shared_data.track_for_depthStencil = false;
+		shared_data.track_for_NS430 = false;
+		do_not_draw = false;
+	}
 }
 
 // *******************************************************************************************************
@@ -573,73 +564,50 @@ static void clear_tracking_flags()
 static bool on_draw(command_list* commandList, uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex, uint32_t first_instance)
 {
 
-	if (debug_flag && flag_capture && shared_data.track_for_depthStencil) 
-	{
-		std::stringstream s;
-		s << "draw(" << vertex_count << ", " << instance_count << ", " << first_vertex << ", " << first_instance << ")";
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
-	}
+	bool skip = false;
+	if (do_not_draw) skip = true;
 
-	// clear trackign flags
+	// log 
+	log_ondraw(vertex_count, instance_count, first_vertex,first_instance);
+
+	// clear tracking flags
 	clear_tracking_flags();
 
-	/*
-	// check if for this command list the active shader handles are part of the blocked set. If so, return true
-	if (!constant_color)
-		return blockDrawCallForCommandList(commandList);
-	else
-		return false;
-		*/
-	return false;
+	return skip;
 }
 
 // On draw* : skip draw
 static bool on_draw_indexed(command_list* commandList, uint32_t index_count, uint32_t instance_count, uint32_t first_index, int32_t vertex_offset, uint32_t first_instance)
 {
 
+	bool skip = false;
+	if (do_not_draw) skip = true;
 
-	if (debug_flag && flag_capture && shared_data.track_for_depthStencil)
-	{
-		std::stringstream s;
-		s << "draw_indexed(" << index_count << ", " << instance_count << ", " << first_index << ", " << vertex_offset << ", " << first_instance << ")";
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
-	}
+	// log 
+	log_on_draw_indexed(index_count, instance_count, first_index, vertex_offset, first_instance);
 
 	// clear trackign flags
 	clear_tracking_flags();
 
-	/*
-	// check if for this command list the active shader handles are part of the blocked set. If so, return true
-	if (!constant_color)
-		return blockDrawCallForCommandList(commandList);
-	else
-		return false;
-		*/
-	return false;
+	return skip;
 }
 
 // On draw* : skip draw
 static bool on_drawOrDispatch_indirect(command_list* commandList, indirect_command type, resource buffer, uint64_t offset, uint32_t draw_count, uint32_t stride)
 {
 
-	if (debug_flag && flag_capture && shared_data.track_for_depthStencil)
-	{
-		std::stringstream s;
-		s << "draw_indexed_indirect(" << (void*)buffer.handle << ", " << offset << ", " << draw_count << ", " << stride << ")";
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
-	}
+
+	bool skip = false;
+	if (do_not_draw) skip = true;
+
+	// log 
+	log_on_drawOrDispatch_indirect(type, buffer, offset, draw_count, stride);
 
 	// clear trackign flags
 	clear_tracking_flags();
 
-	/*
-	// check if for this command list the active shader handles are part of the blocked set. If so, return true
-	if (!constant_color)
-		return blockDrawCallForCommandList(commandList);
-	else
-		return false;
-		*/
-	return false;
+	return skip;
+
 }
 
 // *******************************************************************************************************
@@ -656,11 +624,7 @@ static void on_destroy_pipeline(
 
 	if (it != shaders_by_handle.end()) {
 		device->destroy_pipeline(it->second.substitute_pipeline);
-		if (debug_flag )
-		{
-			std::stringstream s;
-			s << "destroy_pipeline, master pipeline" << reinterpret_cast<void*>(pipeline.handle) << ", associated pipeline" << reinterpret_cast<void*>(it->second.substitute_pipeline.handle) << ")";
-		}
+		log_destroy_pipeline(pipeline, it);
 	}
 
 	//delete resource and resource view if created (done here to get a reshade entry point for destroy*)
@@ -714,7 +678,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD fdwReason, LPVOID)
 			reshade::register_event<reshade::addon_event::draw>(on_draw);
 			reshade::register_event<reshade::addon_event::draw_indexed>(on_draw_indexed);
 			reshade::register_event<reshade::addon_event::draw_or_dispatch_indirect>(on_drawOrDispatch_indirect);
-			//   reshade::register_event<reshade::addon_event::init_resource_view>(on_init_resource_view);
 			reshade::register_event<reshade::addon_event::push_descriptors>(on_push_descriptors);
 
 			reshade::register_event<reshade::addon_event::reshade_present>(on_present);
@@ -730,12 +693,11 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD fdwReason, LPVOID)
 	case DLL_PROCESS_DETACH:
 
 		reshade::unregister_event<reshade::addon_event::init_pipeline>(on_init_pipeline);
-		//reshade::unregister_event<reshade::addon_event::bind_pipeline>(on_bind_pipeline);
+		reshade::unregister_event<reshade::addon_event::bind_pipeline>(on_bind_pipeline);
 		reshade::unregister_event<reshade::addon_event::init_pipeline_layout>(on_init_pipeline_layout);
 		reshade::unregister_event<reshade::addon_event::draw>(on_draw);
 		reshade::unregister_event<reshade::addon_event::draw_indexed>(on_draw_indexed);
 		reshade::unregister_event<reshade::addon_event::draw_or_dispatch_indirect>(on_drawOrDispatch_indirect);
-		//   reshade::unregister_event<reshade::addon_event::init_resource_view>(on_init_resource_view);
 		reshade::unregister_event<reshade::addon_event::push_descriptors>(on_push_descriptors);
 
 		reshade::unregister_event<reshade::addon_event::reshade_present>(on_present);

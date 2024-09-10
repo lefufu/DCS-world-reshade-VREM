@@ -74,9 +74,8 @@ void load_setting_IniFile()
 	CDataFile iniFile;
 	if (!iniFile.Load(settings_iniFileName))
 	{
-		// not there
-
-		// set default values
+		
+		// file not existing : set default values
 		debug_flag = false;
 		shared_data.cb_inject_values.rotorFlag = 0.0;
 		shared_data.cb_inject_values.disable_video_IHADSS = 0.0;
@@ -86,6 +85,7 @@ void load_setting_IniFile()
 		shared_data.cb_inject_values.maskLabels = 0.0;
 		shared_data.cb_inject_values.hazeReduction = 1.0;
 		shared_data.cb_inject_values.noReflect = 0.0;
+		shared_data.cb_inject_values.NVGSize = 1.0;
 
 		shared_data.cb_inject_values.cockpitAdd = 0.0;
 		shared_data.cb_inject_values.cockpitMul = 1.0;
@@ -100,6 +100,13 @@ void load_setting_IniFile()
 		shared_data.cb_inject_values.Range = 32.0;
 		shared_data.cb_inject_values.Iterations = 2.0;
 		shared_data.cb_inject_values.Grain = 48.0;
+
+		shared_data.cb_inject_values.NS430Flag = 0.0;
+		shared_data.cb_inject_values.NS430Scale = 4.0;
+		shared_data.cb_inject_values.NS430Xpos = 0.7;
+		shared_data.cb_inject_values.NS430Ypos = 0.7;
+		shared_data.cb_inject_values.NS430Convergence = 1.0;
+		shared_data.cb_inject_values.GUIYScale = 1.0;
 
 		return;
 	}
@@ -125,6 +132,8 @@ void load_setting_IniFile()
 	if (shared_data.cb_inject_values.hazeReduction == FLT_MIN) shared_data.cb_inject_values.hazeReduction = 1.0;
 	shared_data.cb_inject_values.noReflect = iniFile.GetFloat("noReflect", "Settings");
 	if (shared_data.cb_inject_values.noReflect == FLT_MIN) shared_data.cb_inject_values.noReflect = 0.0;
+	shared_data.cb_inject_values.NVGSize = iniFile.GetFloat("NVGSize", "Settings");
+	if (shared_data.cb_inject_values.NVGSize == FLT_MIN) shared_data.cb_inject_values.NVGSize = 1.0;
 	// color
 	shared_data.cb_inject_values.cockpitAdd = iniFile.GetFloat("cockpitAdd", "Color");
 	if (shared_data.cb_inject_values.cockpitAdd == FLT_MIN) shared_data.cb_inject_values.cockpitAdd = 0.0;
@@ -152,12 +161,26 @@ void load_setting_IniFile()
 	if (shared_data.cb_inject_values.Iterations == FLT_MIN) shared_data.cb_inject_values.Iterations = 2.0;
 	shared_data.cb_inject_values.Grain = iniFile.GetFloat("Grain", "Deband");
 	if (shared_data.cb_inject_values.Grain == FLT_MIN) shared_data.cb_inject_values.Grain = 48.0;
+	//NS430
+	shared_data.cb_inject_values.NS430Scale = iniFile.GetFloat("Scale", "NS430");
+	if (shared_data.cb_inject_values.NS430Scale == FLT_MIN) shared_data.cb_inject_values.NS430Scale = 4.0;
+	shared_data.cb_inject_values.NS430Xpos = iniFile.GetFloat("Xpos", "NS430");
+	if (shared_data.cb_inject_values.NS430Xpos == FLT_MIN) shared_data.cb_inject_values.NS430Xpos = 0.7;
+	shared_data.cb_inject_values.NS430Ypos = iniFile.GetFloat("Ypos", "NS430");
+	if (shared_data.cb_inject_values.NS430Ypos == FLT_MIN) shared_data.cb_inject_values.NS430Ypos = 0.7;
+	shared_data.cb_inject_values.NS430Convergence = iniFile.GetFloat("Convergence", "NS430");
+	if (shared_data.cb_inject_values.NS430Convergence == FLT_MIN) shared_data.cb_inject_values.NS430Convergence = 1.0;
+	shared_data.cb_inject_values.GUIYScale = iniFile.GetFloat("GUIYScale", "NS430");
+	if (shared_data.cb_inject_values.GUIYScale == FLT_MIN) shared_data.cb_inject_values.GUIYScale = 1.0;
+
+	
 
 	// init global variables not saved in file
 	shared_data.cb_inject_values.disable_video_IHADSS = 0.0;
 	shared_data.cb_inject_values.AAxFactor = 1.0;
 	shared_data.cb_inject_values.AAyFactor = 1.0;
 	shared_data.cb_inject_values.IHADSSNoLeft = 0.0;
+	shared_data.cb_inject_values.NS430Flag = 0.0;
 }
 
 // *******************************************************************************************************
@@ -183,6 +206,7 @@ void saveShaderTogglerIniFile()
 	iniFile.SetFloat("maskLabels", shared_data.cb_inject_values.maskLabels, "for hiding labels", "Settings");
 	iniFile.SetFloat("hazeReduction", shared_data.cb_inject_values.hazeReduction, "for haze control", "Settings");
 	iniFile.SetFloat("noReflect", shared_data.cb_inject_values.noReflect, "remove A10C instrument reflexion", "Settings");
+	iniFile.SetFloat("NVGSize", shared_data.cb_inject_values.NVGSize, "Scale NVG", "Settings");
 	// color
 	iniFile.SetFloat("cockpitAdd", shared_data.cb_inject_values.cockpitAdd, "add to all cockpit color component ", "Color");
 	iniFile.SetFloat("cockpitMul", shared_data.cb_inject_values.cockpitMul, "multiply of all cockpit color component ", "Color");
@@ -198,6 +222,14 @@ void saveShaderTogglerIniFile()
 	iniFile.SetFloat("Range", shared_data.cb_inject_values.Range, "Deband Range ", "Deband");
 	iniFile.SetFloat("Iterations", shared_data.cb_inject_values.Iterations, "Deband Iterations (not used)", "Deband");
 	iniFile.SetFloat("Grain", shared_data.cb_inject_values.Grain, "Deband Grain", "Deband");
+
+	//NS430
+	iniFile.SetFloat("Scale", shared_data.cb_inject_values.NS430Scale, "Size of NS430 in VR GUI", "NS430");
+	iniFile.SetFloat("Xpos", shared_data.cb_inject_values.NS430Xpos, "Size of NS430 in VR GUI", "NS430");
+	iniFile.SetFloat("Ypos", shared_data.cb_inject_values.NS430Ypos, "Size of NS430 in VR GUI", "NS430");
+	iniFile.SetFloat("Convergence", shared_data.cb_inject_values.NS430Convergence, "convergence of NS430 in VR GUI", "NS430");
+	iniFile.SetFloat("GUIYScale", shared_data.cb_inject_values.GUIYScale, "Y size of VR GUI", "NS430");
+	
 
 	iniFile.SetFileName(settings_iniFileName);
 	iniFile.Save();
