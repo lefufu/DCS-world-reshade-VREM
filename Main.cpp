@@ -114,7 +114,7 @@ struct global_shared shared_data;
 std::unordered_map<uint32_t, Shader_Definition> shaders_by_handle;
 std::unordered_map<uint32_t, resource> texture_resource_by_handle;
 
-uint32_t last_replaced_shader = 0;
+uint64_t last_replaced_shader = 0;
 
 // ***********************************************************************************************************************
 //init local variables
@@ -366,6 +366,9 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 						CBSIZE,
 						&shared_data.cb_inject_values
 					);
+					log_CB_injected();
+
+					last_replaced_shader = pipelineHandle.handle;
 				}
 				
 				// shader is to be replaced by the new one created in on_Init_Pipeline
@@ -373,7 +376,6 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 
 				// log infos
 				log_pipeline_replaced(pipelineHandle, it);	
-				last_replaced_shader = pipelineHandle.handle;
 			}
 			
 			if (it->second.action & action_skip && shared_data.cb_inject_values.NS430Flag && it->second.feature == Feature::NS430)

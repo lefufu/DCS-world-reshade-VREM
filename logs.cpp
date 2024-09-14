@@ -530,3 +530,17 @@ void log_clear_action_log(std::string varname)
 		reshade::log_message(reshade::log_level::warning, s.str().c_str());
 	}
 }
+
+// *******************************************************************************************************
+/// <summary>
+/// Log reset tracking
+/// </summary>
+/// 
+/// 
+void log_CB_injected()
+{
+	if (debug_flag && flag_capture)
+	{
+		reshade::log_message(reshade::log_level::info, " -> on_bind_pipeline: CB injected");
+	}
+}

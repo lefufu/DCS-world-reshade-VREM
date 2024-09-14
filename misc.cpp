@@ -86,6 +86,7 @@ void load_setting_IniFile()
 		shared_data.cb_inject_values.hazeReduction = 1.0;
 		shared_data.cb_inject_values.noReflect = 0.0;
 		shared_data.cb_inject_values.NVGSize = 1.0;
+		shared_data.cb_inject_values.NVGYPos = 0.0;
 
 		shared_data.cb_inject_values.cockpitAdd = 0.0;
 		shared_data.cb_inject_values.cockpitMul = 1.0;
@@ -113,27 +114,29 @@ void load_setting_IniFile()
 
 	// set default values if file is existing but do not have the variable
 	// debug
-	debug_flag = iniFile.GetBool("debug", "Settings");
-	shared_data.cb_inject_values.testFlag = iniFile.GetFloat("testFlag", "Settings");
+	debug_flag = iniFile.GetBool("debug", "Debug");
+	shared_data.cb_inject_values.testFlag = iniFile.GetFloat("testFlag", "Debug");
 
 	// helicopter
-	shared_data.cb_inject_values.rotorFlag = iniFile.GetFloat("rotorFlag", "Settings");
+	shared_data.cb_inject_values.rotorFlag = iniFile.GetFloat("rotorFlag", "Helo");
 	if (shared_data.cb_inject_values.rotorFlag == FLT_MIN) shared_data.cb_inject_values.rotorFlag = 0.0;
-	shared_data.cb_inject_values.disable_video_IHADSS = iniFile.GetFloat("disable_video_IHADSS", "Settings");
+	shared_data.cb_inject_values.disable_video_IHADSS = iniFile.GetFloat("disable_video_IHADSS", "Helo");
 	if (shared_data.cb_inject_values.disable_video_IHADSS == FLT_MIN) shared_data.cb_inject_values.disable_video_IHADSS = 0.0;
-	shared_data.cb_inject_values.IHADSSBoresight = iniFile.GetFloat("IHADSSBoresight", "Settings");
+	shared_data.cb_inject_values.IHADSSBoresight = iniFile.GetFloat("IHADSSBoresight", "Helo");
 	if (shared_data.cb_inject_values.IHADSSBoresight == FLT_MIN) shared_data.cb_inject_values.IHADSSBoresight = 0.0;
-	shared_data.cb_inject_values.IHADSSxOffset = iniFile.GetFloat("IHADSSxOffset", "Settings");
+	shared_data.cb_inject_values.IHADSSxOffset = iniFile.GetFloat("IHADSSxOffset", "Helo");
 	if (shared_data.cb_inject_values.IHADSSxOffset == FLT_MIN) shared_data.cb_inject_values.IHADSSxOffset = 0.0;
 	//misc
-	shared_data.cb_inject_values.maskLabels = iniFile.GetFloat("maskLabels", "Settings");
+	shared_data.cb_inject_values.maskLabels = iniFile.GetFloat("maskLabels", "Misc");
 	if (shared_data.cb_inject_values.maskLabels == FLT_MIN) shared_data.cb_inject_values.maskLabels = 0.0;
-	shared_data.cb_inject_values.hazeReduction = iniFile.GetFloat("hazeReduction", "Settings");
+	shared_data.cb_inject_values.hazeReduction = iniFile.GetFloat("hazeReduction", "Misc");
 	if (shared_data.cb_inject_values.hazeReduction == FLT_MIN) shared_data.cb_inject_values.hazeReduction = 1.0;
-	shared_data.cb_inject_values.noReflect = iniFile.GetFloat("noReflect", "Settings");
+	shared_data.cb_inject_values.noReflect = iniFile.GetFloat("noReflect", "Misc");
 	if (shared_data.cb_inject_values.noReflect == FLT_MIN) shared_data.cb_inject_values.noReflect = 0.0;
-	shared_data.cb_inject_values.NVGSize = iniFile.GetFloat("NVGSize", "Settings");
+	shared_data.cb_inject_values.NVGSize = iniFile.GetFloat("NVGSize", "Misc");
 	if (shared_data.cb_inject_values.NVGSize == FLT_MIN) shared_data.cb_inject_values.NVGSize = 1.0;
+	shared_data.cb_inject_values.NVGYPos = iniFile.GetFloat("NVGYPos", "Misc");
+	if (shared_data.cb_inject_values.NVGYPos == FLT_MIN) shared_data.cb_inject_values.NVGYPos = 0.0;
 	// color
 	shared_data.cb_inject_values.cockpitAdd = iniFile.GetFloat("cockpitAdd", "Color");
 	if (shared_data.cb_inject_values.cockpitAdd == FLT_MIN) shared_data.cb_inject_values.cockpitAdd = 0.0;
@@ -193,20 +196,21 @@ void saveShaderTogglerIniFile()
 	// groups are stored with "Group" + group counter, starting with 0.
 	CDataFile iniFile;
 	// helicopter
-	iniFile.SetFloat("rotorFlag", shared_data.cb_inject_values.rotorFlag, "Flag to hide helicopters rotor", "Settings");
-	iniFile.SetFloat("disable_video_IHADSS", shared_data.cb_inject_values.disable_video_IHADSS, "Flag to enable/disable video in TADS", "Settings");
-	iniFile.SetFloat("IHADSSBoresight", shared_data.cb_inject_values.IHADSSBoresight, "Flag to enable boresight IHADSS convergence", "Settings");
-	iniFile.SetFloat("IHADSSxOffset", shared_data.cb_inject_values.IHADSSxOffset, "convergence offset value for boresighting IHADSS", "Settings");
+	iniFile.SetFloat("rotorFlag", shared_data.cb_inject_values.rotorFlag, "Flag to hide helicopters rotor", "Helo");
+	iniFile.SetFloat("disable_video_IHADSS", shared_data.cb_inject_values.disable_video_IHADSS, "Flag to enable/disable video in TADS", "Helo");
+	iniFile.SetFloat("IHADSSBoresight", shared_data.cb_inject_values.IHADSSBoresight, "Flag to enable boresight IHADSS convergence", "Helo");
+	iniFile.SetFloat("IHADSSxOffset", shared_data.cb_inject_values.IHADSSxOffset, "convergence offset value for boresighting IHADSS", "Helo");
 
 
 	// debug
-	iniFile.SetBool("debug", debug_flag, "Enable debug features", "Settings");
-	iniFile.SetFloat("testFlag", shared_data.cb_inject_values.testFlag, "for debugging purpose", "Settings");
+	iniFile.SetBool("debug", debug_flag, "Enable debug features", "Debug");
+	iniFile.SetFloat("testFlag", shared_data.cb_inject_values.testFlag, "for debugging purpose", "Debug");
 	//misc
-	iniFile.SetFloat("maskLabels", shared_data.cb_inject_values.maskLabels, "for hiding labels", "Settings");
-	iniFile.SetFloat("hazeReduction", shared_data.cb_inject_values.hazeReduction, "for haze control", "Settings");
-	iniFile.SetFloat("noReflect", shared_data.cb_inject_values.noReflect, "remove A10C instrument reflexion", "Settings");
-	iniFile.SetFloat("NVGSize", shared_data.cb_inject_values.NVGSize, "Scale NVG", "Settings");
+	iniFile.SetFloat("maskLabels", shared_data.cb_inject_values.maskLabels, "for hiding labels", "Misc");
+	iniFile.SetFloat("hazeReduction", shared_data.cb_inject_values.hazeReduction, "for haze control", "Misc");
+	iniFile.SetFloat("noReflect", shared_data.cb_inject_values.noReflect, "remove A10C instrument reflexion", "Misc");
+	iniFile.SetFloat("NVGSize", shared_data.cb_inject_values.NVGSize, "Scale NVG", "Misc");
+	iniFile.SetFloat("NVGYPos", shared_data.cb_inject_values.NVGYPos, "height of NVG", "Misc");
 	// color
 	iniFile.SetFloat("cockpitAdd", shared_data.cb_inject_values.cockpitAdd, "add to all cockpit color component ", "Color");
 	iniFile.SetFloat("cockpitMul", shared_data.cb_inject_values.cockpitMul, "multiply of all cockpit color component ", "Color");

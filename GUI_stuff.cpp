@@ -147,8 +147,11 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		// enable/disable reflection removal for A10C
 		ImGui::SliderFloat("Remove A10C instr. reflect", &shared_data.cb_inject_values.noReflect, 0.0f, 1.0f, "Active: %1.0f");
 
-		// set Haze factor
+		// set NVG size
 		ImGui::SliderFloat("NVG size", &shared_data.cb_inject_values.NVGSize, 0.9f, 3.0f, "Scale: %.2f");
+
+		// set NVG YPOS
+		ImGui::SliderFloat("NVG vert. Pos", &shared_data.cb_inject_values.NVGYPos, -0.5f, 1.0f, "YPos: %.2f");
 	}
 
 

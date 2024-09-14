@@ -71,3 +71,5 @@ extern void log_create_RVlayout();
 extern void log_error_creating_RVlayout();
 
 extern void log_clear_action_log(std::string varname);
+
+extern void log_CB_injected();

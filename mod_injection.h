@@ -89,7 +89,7 @@ struct ShaderInjectData {
 	float NVGSize; //9.x
 	float GUIYScale; //9.y
 	float GUItodraw; //9.z
-	float unused3; //9.w
+	float NVGYPos; //9.w
 };
 
 
