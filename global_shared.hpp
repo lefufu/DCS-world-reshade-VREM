@@ -119,6 +119,24 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 
 	// counter for skip seems not working !
 	uint32_t counter_testing = 0;
+
+	//disable optimisation
+	bool disable_optimisation = false;
+
+	// flag for features
+	bool color_feature = false;
+	bool sharpenDeband_feature = false;
+	bool misc_feature = false;
+	bool helo_feature = false;
+	bool NS430_feature = false;
+	// bool debug_feature = false;
+	// initial value of flag above, to display 'relaunch' message
+	bool init_color_feature = false;
+	bool init_sharpenDeband_feature = false;
+	bool init_misc_feature = false;
+	bool init_helo_feature = false;
+	bool init_NS430_feature = false;
+	bool init_debug_feature = false;
 };
 
 extern struct global_shared shared_data;

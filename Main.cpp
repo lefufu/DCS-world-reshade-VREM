@@ -54,11 +54,11 @@
 using namespace reshade::api;
 
 extern "C" __declspec(dllexport) const char *NAME = "DCS VREM";
-extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v2.0";
+extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v3.0";
 
 // ***********************************************************************************************************************
-// definition of shader of the mod
-std::unordered_map<uint32_t, Shader_Definition> shaders_by_hash =
+// definition of all shader of the mod (whatever feature selected in GUI)
+std::unordered_map<uint32_t, Shader_Definition> shader_by_hash =
 {
 	// ** fix for rotor **
 	{ 0xC0CC8D69, Shader_Definition(action_replace, Feature::Rotor, L"AH64_rotorPS.cso", 0) },
@@ -111,10 +111,14 @@ std::string settings_iniFileName = "DCS_VREM.ini";
 //default value overwritten by setting file if exists
 bool debug_flag;
 struct global_shared shared_data;
-std::unordered_map<uint32_t, Shader_Definition> shaders_by_handle;
-std::unordered_map<uint32_t, resource> texture_resource_by_handle;
+// map to detect pipeline to process regarding the features enabled in GUI
+std::unordered_map<uint32_t, Shader_Definition> pipeline_by_hash;
+// map of pipeline detected, by using hash from previous map
+std::unordered_map<uint64_t, Shader_Definition> pipeline_by_handle;
+// std::unordered_map<uint32_t, resource> texture_resource_by_handle;
 
 uint64_t last_replaced_shader = 0;
+Feature last_feature = Feature::Null;
 
 // ***********************************************************************************************************************
 //init local variables
@@ -122,6 +126,44 @@ uint64_t last_replaced_shader = 0;
 static thread_local std::vector<std::vector<uint8_t>> shader_code;
 bool flag_capture = false;
 bool do_not_draw = false;
+static thread_local std::vector<std::vector<uint8_t>> s_data_to_delete;
+
+// *******************************************************************************************************
+// on_create_pipeline() : called once per pipeline, used to replace shader code if option setup for shader
+//
+static bool on_create_pipeline(device* device, pipeline_layout, uint32_t subobject_count, const pipeline_subobject* subobjects)
+{
+	bool replaced_stages = false;
+	const device_api device_type = device->get_api();
+
+	// Go through all shader stages that are in this pipeline and potentially replace the associated shader code
+	for (uint32_t i = 0; i < subobject_count; ++i)
+	{
+		switch (subobjects[i].type)
+		{
+		case pipeline_subobject_type::vertex_shader:
+		case pipeline_subobject_type::pixel_shader:
+		case pipeline_subobject_type::compute_shader:
+		case pipeline_subobject_type::hull_shader:
+		case pipeline_subobject_type::domain_shader:
+			replaced_stages |= load_shader_code_crosire(device_type, *static_cast<shader_desc*>(subobjects[i].data), s_data_to_delete);
+			break;
+		}
+	}
+
+	// Return whether any shader code was replaced
+	return replaced_stages;
+}
+
+// *******************************************************************************************************
+// on_after_create_pipeline() : clear data used to replace shader code in pipelines
+//
+static void on_after_create_pipeline(device*, pipeline_layout, uint32_t, const pipeline_subobject*, pipeline)
+{
+	// Free the memory allocated in the 'load_shader_code' call above
+	s_data_to_delete.clear();
+}
+
 
 // *******************************************************************************************************
 // on_init_pipeline_layout() : called once, to create the DX11 layout to use in push_constant
@@ -198,8 +240,6 @@ static void on_init_pipeline_layout(reshade::api::device* device, const uint32_t
 static void on_init_pipeline(device* device, pipeline_layout layout, uint32_t subobjectCount, const pipeline_subobject* subobjects, pipeline pipelineHandle)
 {
 
-	std::stringstream s;
-
 	// It is assumed all worthly shaders are in pipeline of only 1 object in DCS
 	// only few shaders are to be modded
 	if (subobjectCount == 1)
@@ -214,9 +254,9 @@ static void on_init_pipeline(device* device, pipeline_layout layout, uint32_t su
 			//compute has and see if it is declared in shader mod list
 			uint32_t hash = calculateShaderHash(subobjects[0].data);
 			// auto it = shaders_by_hash.find(hash);
-			std::unordered_map<uint32_t, Shader_Definition>::iterator it = shaders_by_hash.find(hash);
+			std::unordered_map<uint32_t, Shader_Definition>::iterator it = pipeline_by_hash.find(hash);
 
-			if (it != shaders_by_hash.end()) {
+			if (it != pipeline_by_hash.end()) {
 				// shader is to be handled
 				// add the shader entry in the map by pipeline handle
 
@@ -226,20 +266,22 @@ static void on_init_pipeline(device* device, pipeline_layout layout, uint32_t su
 				//create the entry for handling shader by pipeline instead of Hash
 				Shader_Definition newShader(it->second.action, it->second.feature, it->second.replace_filename, it->second.draw_count);
 
-				if (it->second.action & action_replace)
+				if (it->second.action & action_replace_bind )
 				{
-					// clone the existing pipeline and load the modded shader in it
+					// either replace the shader code or clone the existing pipeline and load the modded shader in it
+					//load shader code
 					bool status = load_shader_code(shader_code, it->second.replace_filename);
 					if (!status) {
 						// log error
 						log_shader_code_error(pipelineHandle, hash, it);
 					}
-					else {
+					else
+					{
+						// no error, clone pipeline
 						//keep hash for debug messages
 						newShader.hash = hash;
 						// if not done, clone the pipeline to have a new version with fixed color for PS
 						clone_pipeline(device, layout, subobjectCount, subobjects, pipelineHandle, shader_code, &newShader);
-
 					}
 				}
 
@@ -259,11 +301,12 @@ static void on_init_pipeline(device* device, pipeline_layout layout, uint32_t su
 				}
 
 				// store new shader to re use it later 
-				shaders_by_handle.emplace(pipelineHandle.handle, newShader);
+				pipeline_by_handle.emplace(pipelineHandle.handle, newShader);
 			}
 			break;
 		}
 	}
+	// else log_invalid_subobjectCount(pipelineHandle);
 }
 
 // *******************************************************************************************************
@@ -287,10 +330,10 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 	{
 		
 		//find if the pipeline is related to a shader of the mod
-		std::unordered_map<uint32_t, Shader_Definition>::iterator it;
-		it = shaders_by_handle.find(pipelineHandle.handle);
+		std::unordered_map<uint64_t, Shader_Definition>::iterator it;
+		it = pipeline_by_handle.find(pipelineHandle.handle);
 
-		if (it != shaders_by_handle.end()) {
+		if (it != pipeline_by_handle.end()) {
 
 			// debug message
 			log_pipeline_to_process(pipelineHandle, it);
@@ -349,12 +392,14 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 			}	
 			
 			// shader is to be handled
-			if (it->second.action & action_replace)
+			// if (it->second.action & action_replace)
+			if (it->second.action & action_replace || it->second.action & action_replace_bind)
 			{
 				
 				// optimization : do not push CB if same shader is replaced again and no "count" action used for the shader 
 				// possible because CB13 is not used by the game
-				if (last_replaced_shader != pipelineHandle.handle || it->second.action & action_count)
+				// if (last_replaced_shader != pipelineHandle.handle || it->second.action & action_count)
+				if (last_feature != it->second.feature || it->second.action & action_count || shared_data.disable_optimisation)
 				{
 					// use push constant() to push the mod parameter in CB13,a sit is assumed a replaced shader will need mod parameters
 					// pipeline_layout for CB initialized in init_pipeline() once for all
@@ -368,14 +413,17 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 					);
 					log_CB_injected();
 
-					last_replaced_shader = pipelineHandle.handle;
+					// last_replaced_shader = pipelineHandle.handle;
+					last_feature = it->second.feature;
 				}
-				
-				// shader is to be replaced by the new one created in on_Init_Pipeline
-				commandList->bind_pipeline(stages, it->second.substitute_pipeline);
+				if (it->second.action & action_replace_bind)
+				{
+					// shader is to be replaced by the new one created in on_Init_Pipeline
+					commandList->bind_pipeline(stages, it->second.substitute_pipeline);
 
-				// log infos
-				log_pipeline_replaced(pipelineHandle, it);	
+					// log infos
+					log_pipeline_replaced(pipelineHandle, it);
+				}
 			}
 			
 			if (it->second.action & action_skip && shared_data.cb_inject_values.NS430Flag && it->second.feature == Feature::NS430)
@@ -621,10 +669,10 @@ static void on_destroy_pipeline(
 	reshade::api::pipeline pipeline) 
 {
 	
-	std::unordered_map<uint32_t, Shader_Definition>::iterator it;
-	it = shaders_by_handle.find(pipeline.handle);
+	std::unordered_map<uint64_t, Shader_Definition>::iterator it;
+	it = pipeline_by_handle.find(pipeline.handle);
 
-	if (it != shaders_by_handle.end()) {
+	if (it != pipeline_by_handle.end()) {
 		device->destroy_pipeline(it->second.substitute_pipeline);
 		log_destroy_pipeline(pipeline, it);
 	}
@@ -647,9 +695,9 @@ void cleanup()
 {
 
 	shader_code.clear(); 
-	shaders_by_handle.clear();
-	texture_resource_by_handle.clear();
-	shaders_by_hash.clear();
+	pipeline_by_handle.clear();
+	// texture_resource_by_handle.clear();
+	pipeline_by_hash.clear();
 
 }
 
@@ -681,6 +729,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD fdwReason, LPVOID)
 			reshade::register_event<reshade::addon_event::draw_indexed>(on_draw_indexed);
 			reshade::register_event<reshade::addon_event::draw_or_dispatch_indirect>(on_drawOrDispatch_indirect);
 			reshade::register_event<reshade::addon_event::push_descriptors>(on_push_descriptors);
+			reshade::register_event<reshade::addon_event::create_pipeline>(on_create_pipeline);
+			reshade::register_event<reshade::addon_event::init_pipeline>(on_after_create_pipeline);
 
 			reshade::register_event<reshade::addon_event::reshade_present>(on_present);
 	
@@ -689,6 +739,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD fdwReason, LPVOID)
 
 			// load stored settings and init shared variables
 			load_setting_IniFile();
+
+			// init mod features regarding the selection of GUI
+			init_mod_features();
 
 		}
 		break;
@@ -701,6 +754,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD fdwReason, LPVOID)
 		reshade::unregister_event<reshade::addon_event::draw_indexed>(on_draw_indexed);
 		reshade::unregister_event<reshade::addon_event::draw_or_dispatch_indirect>(on_drawOrDispatch_indirect);
 		reshade::unregister_event<reshade::addon_event::push_descriptors>(on_push_descriptors);
+		reshade::unregister_event<reshade::addon_event::create_pipeline>(on_create_pipeline);
+		reshade::unregister_event<reshade::addon_event::init_pipeline>(on_after_create_pipeline);
 
 		reshade::unregister_event<reshade::addon_event::reshade_present>(on_present);
 

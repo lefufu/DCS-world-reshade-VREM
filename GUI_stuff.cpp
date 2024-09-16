@@ -68,6 +68,19 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 	{
 		//-----------------------------------------------------------------------------------------------------------------
 		// enable/disable color changes
+		ImGui::Checkbox("Activate Color feature", &shared_data.color_feature);
+		if (shared_data.color_feature != shared_data.init_color_feature)
+		{
+			ImGui::SameLine();
+			ImGui::Text("Game restart needed (option saved)");
+			saveShaderTogglerIniFile();
+
+		}
+
+		if (!shared_data.color_feature)
+		{
+			ImGui::BeginDisabled();
+		}
 		ImGui::SliderFloat("Enable color changes", &shared_data.cb_inject_values.colorFlag, 0.0f, 1.0f, "Active: %1.0f");
 		ImGui::Separator();
 		if (!shared_data.cb_inject_values.colorFlag)
@@ -89,13 +102,29 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		{
 			ImGui::EndDisabled();
 		}
+		if (!shared_data.color_feature)
+		{
+			ImGui::EndDisabled();
+		}
 		ImGui::Separator();
 
 	}
 	// *******************************************************************************************************
-	if (ImGui::CollapsingHeader("Cockpit sharpen, sky and sea deband"))
+	if (ImGui::CollapsingHeader("Cockpit sharpen, sky and sea deband, label masking"))
 	{
 		
+		ImGui::Checkbox("Activate sharpen/deband/labels feature", &shared_data.sharpenDeband_feature);
+		if (shared_data.sharpenDeband_feature != shared_data.init_sharpenDeband_feature)
+		{
+			ImGui::SameLine();
+			ImGui::Text("Game restart needed (option saved)");
+			saveShaderTogglerIniFile();
+
+		}
+		if (!shared_data.sharpenDeband_feature)
+		{
+			ImGui::BeginDisabled();
+		}
 		//-----------------------------------------------------------------------------------------------------------------
 		// enable/disable cockpit sharpen
 		ImGui::SliderFloat("Enable cockpit sharpen", &shared_data.cb_inject_values.sharpenFlag, 0.0f, 1.0f, "Active: %1.0f");
@@ -121,14 +150,21 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		{
 			ImGui::BeginDisabled();
 		}
-
 		// set deband options
 		ImGui::SliderFloat("NoiseStrength", &shared_data.cb_inject_values.Threshold, 0.0f, 4096.0f, "Noise: %1.0f");
 		ImGui::SliderFloat("DitherStrength", &shared_data.cb_inject_values.Range, 1.0f, 64.0f, "Range: %1.0f");
 		// ImGui::SliderFloat("Iterations", &shared_data.cb_inject_values.Iterations, 1.0f, 16.0f, "Iterations: %1.0f");
 		ImGui::SliderFloat("Grain", &shared_data.cb_inject_values.Grain, 0.0f, 4096.0f, "Grain: %1.0f");
-
 		if (!shared_data.cb_inject_values.debandFlag)
+		{
+			ImGui::EndDisabled();
+		}
+		ImGui::Separator();
+		//-----------------------------------------------------------------------------------------------------------------
+		// enable/disable label fix
+		ImGui::SliderFloat("Labels hidden by cockpit frame", &shared_data.cb_inject_values.maskLabels, 0.0f, 1.0f, "Active: %1.0f");
+
+		if (!shared_data.sharpenDeband_feature)
 		{
 			ImGui::EndDisabled();
 		}
@@ -136,10 +172,20 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 	}
 
 	// *******************************************************************************************************
-	if (ImGui::CollapsingHeader("Mics: Labels, Haze, A10C instrument reflection, NVG size"))
+	if (ImGui::CollapsingHeader("Mics: Haze control, A10C instrument reflection, NVG size"))
 	{
-		// enable/disable label fix
-		ImGui::SliderFloat("Labels hidden by cockpit frame", &shared_data.cb_inject_values.maskLabels, 0.0f, 1.0f, "Active: %1.0f");
+		ImGui::Checkbox("Activate Haze, instrument reflection, NVG features", &shared_data.misc_feature);
+		if (shared_data.misc_feature != shared_data.init_misc_feature)
+		{
+			ImGui::SameLine();
+			ImGui::Text("Game restart needed (option saved)");
+			saveShaderTogglerIniFile();
+
+		}
+		if (!shared_data.misc_feature)
+		{
+			ImGui::BeginDisabled();
+		}
 
 		// set Haze factor
 		ImGui::SliderFloat("Haze strenght", &shared_data.cb_inject_values.hazeReduction, 0.0f, 1.0f, "Strenght: %.2f");
@@ -152,12 +198,31 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 
 		// set NVG YPOS
 		ImGui::SliderFloat("NVG vert. Pos", &shared_data.cb_inject_values.NVGYPos, -0.5f, 1.0f, "YPos: %.2f");
+
+		if (!shared_data.misc_feature)
+		{
+			ImGui::EndDisabled();
+		}
+
 	}
 
 
 	// *******************************************************************************************************
 	if (ImGui::CollapsingHeader("Helicopter"))
 	{
+		
+		ImGui::Checkbox("Activate Helicopter features", &shared_data.helo_feature);
+		if (shared_data.helo_feature != shared_data.init_helo_feature)
+		{
+			ImGui::SameLine();
+			ImGui::Text("Game restart needed (option saved)");
+			saveShaderTogglerIniFile();
+
+		}
+		if (!shared_data.helo_feature)
+		{
+			ImGui::BeginDisabled();
+		}
 		// enable/disable rotor fix
 		ImGui::SliderFloat("Disable Epileptic flashing rotor", &shared_data.cb_inject_values.rotorFlag, 0.0f, 1.0f, "active: %1.0f");
 
@@ -195,11 +260,30 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		{
 			ImGui::EndDisabled();
 		}
+
+		if (!shared_data.helo_feature)
+		{
+			ImGui::EndDisabled();
+		}
 	}
 
 	// *******************************************************************************************************
 	if (ImGui::CollapsingHeader("NS430"))
 	{
+		
+		ImGui::Checkbox("Activate NS430 features", &shared_data.NS430_feature);
+		if (shared_data.NS430_feature != shared_data.init_NS430_feature)
+		{
+			ImGui::SameLine();
+			ImGui::Text("Game restart needed (option saved)");
+			saveShaderTogglerIniFile();
+
+		}
+		if (!shared_data.NS430_feature)
+		{
+			ImGui::BeginDisabled();
+		}
+		
 		// enable/disable label fix
 		ImGui::SliderFloat("Hide NS430", &shared_data.cb_inject_values.NS430Flag, 0.0f, 1.0f, "Active: %1.0f");
 		if (!shared_data.cb_inject_values.NS430Flag)
@@ -213,6 +297,10 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		ImGui::SliderFloat("NS430 Offset", &shared_data.cb_inject_values.NS430Convergence, 0.5f, 1.5f, "Offset: %.3f");
 		ImGui::SliderFloat("NS430 Area YScale ", &shared_data.cb_inject_values.GUIYScale, 1.0f, 2.0f, "YScale: %.2f");
 		if (!shared_data.cb_inject_values.NS430Flag)
+		{
+			ImGui::EndDisabled();
+		}
+		if (!shared_data.NS430_feature)
 		{
 			ImGui::EndDisabled();
 		}
@@ -256,12 +344,17 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 	// *******************************************************************************************************
 	if (ImGui::CollapsingHeader("Debug options"))
 	{
+		// Disable optimization
+		ImGui::Checkbox("Disable optimization", &shared_data.disable_optimisation);
+
 		// verbose logs in reshade.log
 		ImGui::Checkbox("Debug messages in log", &debug_flag);
-
-		if (!debug_flag)
+		if (debug_flag != shared_data.init_debug_feature)
 		{
-			ImGui::BeginDisabled();
+			ImGui::SameLine();
+			ImGui::Text("Game restart needed (option saved)");
+			saveShaderTogglerIniFile();
+
 		}
 
 		// define the number of draw to differentiate
@@ -277,10 +370,6 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		else
 		{
 			shared_data.button_capture = false;
-		}
-		if (!debug_flag)
-		{
-			ImGui::EndDisabled();
 		}
 
 	}

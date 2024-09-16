@@ -267,7 +267,7 @@ void log_start_monitor(std::string texture_name)
 /// Log pipeline is replaced
 /// </summary>
 /// 
-void log_pipeline_replaced(pipeline pipelineHandle, std::unordered_map<uint32_t, Shader_Definition>::iterator it)
+void log_pipeline_replaced(pipeline pipelineHandle, std::unordered_map<uint64_t, Shader_Definition>::iterator it)
 {
 	if (debug_flag && flag_capture)
 	{
@@ -297,7 +297,7 @@ void log_texture_injected(std::string texture_name)
 /// Log the pipeline to process
 /// </summary>
 /// 
-void log_pipeline_to_process(pipeline pipelineHandle, std::unordered_map<uint32_t, Shader_Definition>::iterator it)
+void log_pipeline_to_process(pipeline pipelineHandle, std::unordered_map<uint64_t, Shader_Definition>::iterator it)
 {
 	if (debug_flag && flag_capture)
 	{
@@ -359,7 +359,7 @@ void log_on_drawOrDispatch_indirect( indirect_command type, resource buffer, uin
 /// </summary>
 /// 
 /// 
-void log_destroy_pipeline(reshade::api::pipeline pipeline, std::unordered_map<uint32_t, Shader_Definition>::iterator it)
+void log_destroy_pipeline(reshade::api::pipeline pipeline, std::unordered_map<uint64_t, Shader_Definition>::iterator it)
 {
 	if (debug_flag)
 	{
@@ -370,7 +370,7 @@ void log_destroy_pipeline(reshade::api::pipeline pipeline, std::unordered_map<ui
 
 // *******************************************************************************************************
 /// <summary>
-/// Log error when loading shader code
+/// Log error when loading shader code in init_pipeline
 /// </summary>
 /// 
 /// 
@@ -381,6 +381,25 @@ void log_shader_code_error(pipeline pipelineHandle, uint32_t hash, std::unordere
 
 	s << "onInitPipeline, pipelineHandle: " << (void*)pipelineHandle.handle << "), ";
 	s << "hash to handle = " << std::hex << hash << " ;";
+	s << "!!! Error in loading code for :" << to_string(it->second.replace_filename) << "; !!!";
+
+	reshade::log_message(reshade::log_level::error, s.str().c_str());
+	s.str("");
+	s.clear();
+}
+
+// *******************************************************************************************************
+/// <summary>
+/// Log error when loading shader code in create_pipeline
+/// </summary>
+/// 
+/// 
+void log_shader_code_error_oncreate(uint32_t hash, std::unordered_map<uint32_t, Shader_Definition>::iterator it)
+{
+
+	std::stringstream s;
+
+	s << "onCreatePipeline, hash to handle = " << std::hex << hash << " ;";
 	s << "!!! Error in loading code for :" << to_string(it->second.replace_filename) << "; !!!";
 
 	reshade::log_message(reshade::log_level::error, s.str().c_str());
@@ -542,5 +561,38 @@ void log_CB_injected()
 	if (debug_flag && flag_capture)
 	{
 		reshade::log_message(reshade::log_level::info, " -> on_bind_pipeline: CB injected");
+	}
+}
+
+// *******************************************************************************************************
+/// <summary>
+/// error message if pipeline has more than 1 object
+/// </summary>
+/// 
+void log_invalid_subobjectCount(pipeline pipelineHandle)
+{
+	std::stringstream s;
+
+	s << "on_init_pipeline_layout(" << reinterpret_cast<void*>(&pipelineHandle) << " ). !!! Error more than 1 object in pipeline !!!;";
+	reshade::log_message(reshade::log_level::warning, s.str().c_str());
+}
+
+// *******************************************************************************************************
+/// <summary>
+/// Log shader code replacement in create_pipeline
+/// </summary>
+/// 
+/// 
+void log_replaced_shader_code(uint32_t hash, std::unordered_map<uint32_t, Shader_Definition>::iterator it)
+{
+
+	if (debug_flag)
+	{
+		std::stringstream s;
+
+		s << "onCreatePipeline, hash to handle = " << std::hex << hash << " ;";
+		s << "shader code replaced by :" << to_string(it->second.replace_filename) << ";";
+
+		reshade::log_message(reshade::log_level::info, s.str().c_str());
 	}
 }

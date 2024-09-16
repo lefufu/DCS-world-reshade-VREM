@@ -50,7 +50,7 @@
 
 //mod actions
 // 
-//replace = the shader will be replaced by a modded one
+//replace = the shader will be replaced by a modded one during init
 static const uint32_t action_replace = 0b00000001;
 // skip : the shader is to be skipped after a count of draw
 static const uint32_t action_skip = 0b00000010;
@@ -62,11 +62,15 @@ static const uint32_t action_identify = 0b00001000;
 static const uint32_t action_injectText = 0b00010000;
 //inject count : the shader will trigger call count 
 static const uint32_t action_count = 0b00100000;
+//replace_bind = the shader will be replaced by a modded one during bind
+static const uint32_t action_replace_bind = 0b01000000;
 
 
 // mod features
 enum class Feature : uint32_t
 {
+	//null
+	Null = 0,
 	// Rotor : disable rotor when in cockpit view
 	Rotor = 1,
 	// Global : global effects, change color, sharpen, ... for cockpit or outside
@@ -115,9 +119,12 @@ struct Shader_Definition {
 
 };
 
-// definition of all the shaders to hanlde, but by pipeline (used for most processing)
-extern std::unordered_map<uint32_t, Shader_Definition> shaders_by_handle;
+// map of pipeline detected, by using hash from map below
+extern std::unordered_map<uint64_t, Shader_Definition> pipeline_by_handle;
 
-// definition of all the shaders to hanlde by hash (used to ID shader and initialize the map above, declaration in main.cpp)
-extern std::unordered_map<uint32_t, Shader_Definition> shaders_by_hash;
+// map to detect pipeline to process regarding the features enabled in GUI
+extern std::unordered_map<uint32_t, Shader_Definition> pipeline_by_hash;
+
+// map containing all shaders of the mod, filtered in init_mod_features() to build map above
+extern std::unordered_map<uint32_t, Shader_Definition> shader_by_hash;
 

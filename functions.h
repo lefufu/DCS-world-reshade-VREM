@@ -12,9 +12,13 @@ extern void displaySettings(reshade::api::effect_runtime* runtime);
 
 extern bool load_shader_code(std::vector<std::vector<uint8_t>>& shaderCode, wchar_t filename[]);
 
+extern bool load_shader_code_crosire(device_api device_type, shader_desc& desc, std::vector<std::vector<uint8_t>>& data_to_delete);
+
 extern void clone_pipeline(reshade::api::device* device, reshade::api::pipeline_layout layout, uint32_t subobjectCount, const reshade::api::pipeline_subobject* subobjects, reshade::api::pipeline pipeline, std::vector<std::vector<uint8_t>>& ReplaceshaderCode, Shader_Definition* newShader);
 
 extern void load_setting_IniFile();
+
+extern void init_mod_features();
 
 extern void saveShaderTogglerIniFile();
 
@@ -40,11 +44,11 @@ extern void log_not_increase_draw_count();
 
 extern void log_start_monitor(std::string texture_name);
 
-extern void log_pipeline_replaced(pipeline pipelineHandle, std::unordered_map<uint32_t, Shader_Definition>::iterator it);
+extern void log_pipeline_replaced(pipeline pipelineHandle, std::unordered_map<uint64_t, Shader_Definition>::iterator it);
 
 extern void log_texture_injected(std::string texture_name);
 
-extern void log_pipeline_to_process(pipeline pipelineHandle, std::unordered_map<uint32_t, Shader_Definition>::iterator it);
+extern void log_pipeline_to_process(pipeline pipelineHandle, std::unordered_map<uint64_t, Shader_Definition>::iterator it);
 
 extern void log_ondraw(uint32_t vertex_count, uint32_t instance_count, uint32_t first_vertex, uint32_t first_instance);
 
@@ -52,7 +56,7 @@ extern void log_on_draw_indexed(uint32_t index_count, uint32_t instance_count, u
 
 extern void log_on_drawOrDispatch_indirect(indirect_command type, resource buffer, uint64_t offset, uint32_t draw_count, uint32_t stride);
 
-extern void log_destroy_pipeline(reshade::api::pipeline pipeline, std::unordered_map<uint32_t, Shader_Definition>::iterator it);
+extern void log_destroy_pipeline(reshade::api::pipeline pipeline, std::unordered_map<uint64_t, Shader_Definition>::iterator it);
 
 extern void log_shader_code_error(pipeline pipelineHandle, uint32_t hash, std::unordered_map<uint32_t, Shader_Definition>::iterator it);
 
@@ -73,3 +77,9 @@ extern void log_error_creating_RVlayout();
 extern void log_clear_action_log(std::string varname);
 
 extern void log_CB_injected();
+
+extern void log_invalid_subobjectCount(pipeline pipelineHandle);
+
+extern void log_shader_code_error_oncreate(uint32_t hash, std::unordered_map<uint32_t, Shader_Definition>::iterator it);
+
+extern void log_replaced_shader_code(uint32_t hash, std::unordered_map<uint32_t, Shader_Definition>::iterator it);

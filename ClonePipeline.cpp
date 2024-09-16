@@ -50,6 +50,13 @@
 
 using namespace reshade::api;
 
+
+// *******************************************************************************************************
+/// <summary>
+/// clone pipeline with a shader and replace code by the modded one
+/// </summary>
+/// 
+/// 
 void clone_pipeline(
     device* device,
     reshade::api::pipeline_layout layout,
@@ -64,8 +71,8 @@ void clone_pipeline(
         void* data = nullptr;
         size_t size = 0;
     };
-    std::stringstream s;
 
+    std::stringstream s;
     if (debug_flag)
     {
         //log beginning of copy
@@ -146,4 +153,5 @@ void clone_pipeline(
         free(cache->data);
     }
 }
+
 
