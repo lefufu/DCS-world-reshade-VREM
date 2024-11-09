@@ -58,13 +58,19 @@ void intialize_counters()
 	do_not_draw = false;
 	shared_data.cb_inject_values.GUItodraw = 0.0;
 
+	shared_data.render_effect = false;
+	shared_data.track_for_render_target = false;
+
+	shared_data.render_target_res->copied = false;
+
 	// initialize flags for copy
 	for (int i = 0; i < MAXVIEWSPERDRAW; i++)
 	{
 		shared_data.depthStencil_res[i].copied = false;
 		shared_data.NS430_res[i].copied = false;
+		shared_data.render_target_rv_nrgb[i].created = false;
+		shared_data.render_target_rv_rgb[i].created = false;
 	}
-
 }
 
 // *******************************************************************************************************
@@ -153,8 +159,11 @@ void handle_keypress(effect_runtime* runtime)
 void on_present(effect_runtime* runtime)
 {
 
-	// initialize counter to identfiy what to do when in the frame
+	// initialize counter to identfiy what to do when in the next frame
 	intialize_counters();
+
+	// store runtime for effect in on_draw()
+	// shared_data.runtime = runtime;
 
 	// frame counter 
 	if (shared_data.frame_counter != 0x7FFFFFFF) shared_data.frame_counter += 1;
@@ -189,4 +198,15 @@ void on_present(effect_runtime* runtime)
 
 		}
 	}
+
+	/*
+	//load activated techniques list
+	if (shared_data.button_technique  || shared_data.technique_init == 1)
+	{
+		shared_data.button_technique = false;
+		shared_data.technique_init = 0;
+		enumerateTechniques(runtime);
+	}
+	*/
+
 }

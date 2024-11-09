@@ -586,7 +586,7 @@ inline auto to_string(reshade::api::pipeline_subobject_type value) {
 	}
 }
 
-inline auto to_string(uint32_t action) {
+inline auto to_string(const uint32_t action) {
 	switch (action) {
 	default: return "NDef";
 	case action_replace: return "replace";
@@ -600,6 +600,7 @@ inline auto to_string(uint32_t action) {
 
 inline auto to_string(Feature feature) {
 	switch (feature) {
+	default: return "NDef";
 	case Feature::Rotor: return "Rotor";
 	case Feature::Global: return "Global";
 	case Feature::Label: return "Label";
@@ -614,6 +615,7 @@ inline auto to_string(Feature feature) {
 	case Feature::NS430: return "NS430";
 	case Feature::NVG: return "NVG";
 	case Feature::GUI: return "GUI";
+	case Feature::Effects: return "Effects";
 		
 	}
 }

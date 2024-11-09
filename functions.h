@@ -4,6 +4,7 @@
 #include <reshade.hpp>
 #include <filesystem>
 
+#include "global_shared.hpp"
 #include "shader_definitions.h"
 
 using namespace reshade::api;
@@ -28,6 +29,8 @@ extern bool copy_depthStencil(reshade::api::command_list* cmd_list, reshade::api
 
 extern bool copy_NS430_text(command_list* cmd_list, shader_stage stages, pipeline_layout layout, uint32_t param_index, const descriptor_table_update& update);
 
+extern void enumerateTechniques(effect_runtime* runtime);
+
 extern void log_push_descriptor(reshade::api::shader_stage stages, reshade::api::pipeline_layout layout, uint32_t param_index, const reshade::api::descriptor_table_update& update);
 
 extern void log_resource_created(std::string texture_name, device* dev, resource_desc check_new_res);
@@ -38,7 +41,7 @@ extern void log_copy_texture(std::string texture_name);
 
 extern void log_MSAA();
 
-extern void log_increase_draw_count();
+extern void log_increase_count_display();
 
 extern void log_not_increase_draw_count();
 
@@ -83,3 +86,18 @@ extern void log_invalid_subobjectCount(pipeline pipelineHandle);
 extern void log_shader_code_error_oncreate(uint32_t hash, std::unordered_map<uint32_t, Shader_Definition>::iterator it);
 
 extern void log_replaced_shader_code(uint32_t hash, std::unordered_map<uint32_t, Shader_Definition>::iterator it);
+
+extern void log_renderTarget_depth(uint32_t count, const resource_view* rtvs, resource_view dsv);
+
+extern void log_create_rendertarget_view(reshade::api::device* dev, reshade::api::resource rendert_res, reshade::api::resource_desc desc);
+
+extern void log_error_for_rendertarget();
+
+// extern void log_effect(technique_trace tech);
+
+extern void log_effect_requested();
+
+extern void log_texture_view(reshade::api::device* dev, std::string name, reshade::api::resource_view rview);
+
+extern void log_technique_info(effect_runtime* runtime, effect_technique technique, std::string& name, std::string& eff_name, bool technique_status);
+

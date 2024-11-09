@@ -110,10 +110,10 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 
 	}
 	// *******************************************************************************************************
-	if (ImGui::CollapsingHeader("Cockpit sharpen, sky and sea deband, label masking"))
+	if (ImGui::CollapsingHeader("Cockpit sharpen, sky and sea deband"))
 	{
 		
-		ImGui::Checkbox("Activate sharpen/deband/labels feature", &shared_data.sharpenDeband_feature);
+		ImGui::Checkbox("Activate sharpen/deband", &shared_data.sharpenDeband_feature);
 		if (shared_data.sharpenDeband_feature != shared_data.init_sharpenDeband_feature)
 		{
 			ImGui::SameLine();
@@ -159,10 +159,6 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		{
 			ImGui::EndDisabled();
 		}
-		ImGui::Separator();
-		//-----------------------------------------------------------------------------------------------------------------
-		// enable/disable label fix
-		ImGui::SliderFloat("Labels hidden by cockpit frame", &shared_data.cb_inject_values.maskLabels, 0.0f, 1.0f, "Active: %1.0f");
 
 		if (!shared_data.sharpenDeband_feature)
 		{
@@ -172,7 +168,7 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 	}
 
 	// *******************************************************************************************************
-	if (ImGui::CollapsingHeader("Mics: Haze control, A10C instrument reflection, NVG size"))
+	if (ImGui::CollapsingHeader("Mics: Haze control, A10C instrument reflection, NVG size, label masking"))
 	{
 		ImGui::Checkbox("Activate Haze, instrument reflection, NVG features", &shared_data.misc_feature);
 		if (shared_data.misc_feature != shared_data.init_misc_feature)
@@ -203,7 +199,9 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		{
 			ImGui::EndDisabled();
 		}
-
+		//-----------------------------------------------------------------------------------------------------------------
+		// enable/disable label fix
+		ImGui::SliderFloat("Labels hidden by cockpit frame", &shared_data.cb_inject_values.maskLabels, 0.0f, 1.0f, "Active: %1.0f");
 	}
 
 
@@ -348,7 +346,7 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		ImGui::Checkbox("Disable optimization", &shared_data.disable_optimisation);
 
 		// verbose logs in reshade.log
-		ImGui::Checkbox("Debug messages in log", &debug_flag);
+		ImGui::Checkbox("Debug messages in log / enable display mask", &debug_flag);
 		if (debug_flag != shared_data.init_debug_feature)
 		{
 			ImGui::SameLine();
@@ -372,5 +370,17 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 			shared_data.button_capture = false;
 		}
 
+		//log techniques 
+		/*
+		clicked = 0;
+		if (ImGui::Button("Refresh Techniques"))
+		{
+			shared_data.button_technique = true;
+		}
+		else
+		{
+			shared_data.button_technique = false;
+		}
+		*/
 	}
 }

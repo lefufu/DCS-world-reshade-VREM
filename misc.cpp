@@ -44,6 +44,9 @@
 #include "mod_injection.h"
 #include "shader_definitions.h"
 
+#include "functions.h"
+#include "to_string.hpp"
+
 using namespace reshade::api;
 
 // *******************************************************************************************************
@@ -270,13 +273,15 @@ void saveShaderTogglerIniFile()
 /// </summary>
 void init_mod_features()
 {
-	for (const auto& entry : shader_by_hash)
+	
+	// build the pipeline to use regarding options set
+	for (auto& entry : shader_by_hash)
 	{
 		
 		bool add_line = false;
 
 		// add misc entries
-		if (shared_data.misc_feature && (entry.second.feature == Feature::Label || entry.second.feature == Feature::NoReflect || entry.second.feature == Feature::NVG))
+		if (shared_data.misc_feature && (entry.second.feature == Feature::Label || entry.second.feature == Feature::NoReflect || entry.second.feature == Feature::NVG || entry.second.feature == Feature::Haze))
 		{
 			add_line = true;
 		}
@@ -293,15 +298,36 @@ void init_mod_features()
 			add_line = true;
 		}
 
-		// add entries for depthstencil, draw, global shader => color, sharpen, label, 
-		if  ((shared_data.color_feature || shared_data.sharpenDeband_feature)  && 
-			(entry.second.feature == Feature::GetStencil || entry.second.feature == Feature::Global || entry.second.feature == Feature::Label 
-				|| entry.second.feature == Feature::Haze || entry.second.feature == Feature::HazeMSAA2x || entry.second.feature == Feature::mapMode 
-				|| entry.second.feature == Feature::VRMode) )
+		// add entries for depthstencil,  for color, sharpen, label
+		if  ((shared_data.color_feature || shared_data.sharpenDeband_feature || shared_data.cb_inject_values.maskLabels)  && entry.second.feature == Feature::GetStencil)
 		{
 			add_line = true;
 		}
 
+		// safety : to ensure effects whatever settings
+		if ((entry.second.feature == Feature::Global || entry.second.feature == Feature::Haze || entry.second.feature == Feature::HazeMSAA2x || entry.second.feature == Feature::mapMode
+				|| entry.second.feature == Feature::VRMode))
+		{
+			add_line = true;
+		}
+
+		// optimization: do not load global shader if no color changes
+		if (entry.second.feature == Feature::Global && !shared_data.color_feature && !shared_data.sharpenDeband_feature && !shared_data.init_debug_feature)
+		{
+			entry.second.action = action_injectText | action_log;
+		}
+
+		/*
+		// add effect entries
+		if (entry.second.feature == Feature::Effects )
+		{
+			add_line = true;
+		}
+		*/
+
+		// std::stringstream s;
+		// s << "add shader : " << std::hex << entry.second.hash << ", " << entry.second.action << ", " << to_string(entry.second.feature) << ", " << entry.second.draw_count << ";";
+	
 		if (add_line)
 		{
 			pipeline_by_hash.emplace(
@@ -311,7 +337,13 @@ void init_mod_features()
 					entry.second.replace_filename,
 					entry.second.draw_count)
 			);
+
+
 		}
 
 	}
+	reshade::log_message(reshade::log_level::info, "End of shader table" );
+
+	// init flag to load technique list
+	// shared_data.technique_init == -1;
 }

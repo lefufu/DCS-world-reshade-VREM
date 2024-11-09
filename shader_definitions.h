@@ -97,6 +97,8 @@ enum class Feature : uint32_t
 	NVG = 13,
 	//GUI 
 	GUI = 14,
+	// Reshade effects
+	Effects = 15,
 	// Testing : for testing purpose
 	Testing = 20
 };

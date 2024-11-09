@@ -54,7 +54,7 @@
 using namespace reshade::api;
 
 extern "C" __declspec(dllexport) const char *NAME = "DCS VREM";
-extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v3.0";
+extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v4.0";
 
 // ***********************************************************************************************************************
 // definition of all shader of the mod (whatever feature selected in GUI)
@@ -88,21 +88,21 @@ std::unordered_map<uint32_t, Shader_Definition> shader_by_hash =
 	{ 0x6EF95548, Shader_Definition(action_replace, Feature::NS430, L"NS430_screen_back.cso", 0) },
 	// to filter out call for GUI and MFD
 	{ 0x55288581, Shader_Definition(action_log, Feature::GUI, L"", 0) },
-	 
-	// 
 	//  ** identify game config **
 	// to define if VR is active or not (2D mirror view of VR )
 	{ 0x886E31F2, Shader_Definition(action_identify, Feature::VRMode, L"", 0) },
 	// VS drawing cockpit parts to define if view is in welcome screen or map
 	{ 0xA337E177, Shader_Definition(action_identify, Feature::mapMode, L"", 0) },
 	//  ** haze control : illum PS: used for Haze control, to define which draw (eye + quad view) is current.  **
-	{ 0x51302692, Shader_Definition(action_replace | action_identify, Feature::Haze, L"illumNoAA_PS.cso", 0) },
-	{ 0x88AF23C6, Shader_Definition(action_replace | action_identify, Feature::HazeMSAA2x, L"illumMSAA2x_PS.cso", 0) },
-	{ 0xA055EDE4, Shader_Definition(action_replace, Feature::Haze, L"illumMSAA2xB_PS.cso", 0) },
+	{ 0x46A20412, Shader_Definition(action_replace | action_identify, Feature::Haze, L"illumNoAA_PS.cso", 0) },
+	{ 0xB0BFFD4C, Shader_Definition(action_replace | action_identify, Feature::HazeMSAA2x, L"illumMSAA2x_PS.cso", 0) },
+	{ 0x8ACB7C68, Shader_Definition(action_replace, Feature::Haze, L"illumMSAA2xB_PS.cso", 0) },
 	//  ** A10C cockpit instrument **
 	{ 0x4D8EB0B7, Shader_Definition(action_replace , Feature::NoReflect , L"A10C_instrument.cso", 0) },
 	//  ** NVG **
-	{ 0xE65FAB66, Shader_Definition(action_replace , Feature::NVG , L"NVG_extPS.cso", 0) }
+	{ 0xE65FAB66, Shader_Definition(action_replace , Feature::NVG , L"NVG_extPS.cso", 0) },
+	//  ** identify render target **
+	//{ 0x829504B1, Shader_Definition(action_log , Feature::Effects , L"", 0) }
 };
 
 // ***********************************************************************************************************************
@@ -127,6 +127,144 @@ static thread_local std::vector<std::vector<uint8_t>> shader_code;
 bool flag_capture = false;
 bool do_not_draw = false;
 static thread_local std::vector<std::vector<uint8_t>> s_data_to_delete;
+
+/*
+
+// ***********************************************************************************************************************
+// on_init_device :
+static void on_init_device(device* device)
+{
+	device->create_private_data<device_data>();
+	if (debug_flag)
+	{
+		std::stringstream s;
+		s << "on_init_device() : create device_data;";
+		reshade::log_message(reshade::log_level::info, s.str().c_str());
+	}
+}
+
+// ***********************************************************************************************************************
+// on_destroy_device :
+static void on_destroy_device(device* device)
+{
+	device->destroy_private_data<device_data>();
+	if (debug_flag)
+	{
+		std::stringstream s;
+		s << "on_destroy_device() : delete device_data;";
+		reshade::log_message(reshade::log_level::info, s.str().c_str());
+	}
+}
+
+
+
+// ***********************************************************************************************************************
+// on_execute : called at the end of the frame
+static void on_execute(command_queue* queue, command_list* cmd_list)
+{
+	if (debug_flag && flag_capture)
+	{
+		std::stringstream s;
+		s << "on_execute();";
+		reshade::log_message(reshade::log_level::info, s.str().c_str());
+	}
+}
+
+// ***********************************************************************************************************************
+// on_init_effect_runtime : called once !
+//
+static void on_init_effect_runtime(effect_runtime* runtime)
+{
+	
+	auto& dev_data = runtime->get_device()->get_private_data<device_data>();
+	if (std::addressof(dev_data) == nullptr)
+		return;
+
+	// store runtime
+	dev_data.main_runtime = runtime;
+
+	if (debug_flag)
+	{
+		std::stringstream s;
+		s << "on_init_effect_runtime() : store runtime in device_data;";
+		reshade::log_message(reshade::log_level::info, s.str().c_str());
+	}
+}
+//
+
+// ***********************************************************************************************************************
+// on_init_resource_view
+//to debug resources
+
+static void on_init_resource_view(
+	reshade::api::device* device,
+	reshade::api::resource resource,
+	reshade::api::resource_usage usage_type,
+	const reshade::api::resource_view_desc& desc,
+	reshade::api::resource_view view
+) {
+	/* auto& data = device->get_private_data<device_data>();
+	std::unique_lock lock(data.mutex);
+	if (data.resourceViews.contains(view.handle)) {
+		if (traceRunning || presentCount < MAX_PRESENT_COUNT) {
+			std::stringstream s;
+			s << "init_resource_view(reused view: "
+				<< reinterpret_cast<void*>(view.handle)
+				<< ")";
+			reshade::log_message(reshade::log_level::info, s.str().c_str());
+		}
+		if (!resource.handle) {
+			data.resourceViews.erase(view.handle);
+			return;
+		}
+	}
+	if (resource.handle) {
+		data.resourceViews.emplace(view.handle, resource.handle);
+	}
+
+	if (!forceAll && !traceRunning && presentCount >= MAX_PRESENT_COUNT) return; */
+/*
+	std::stringstream s;
+	s << "init_resource_view("
+		<< reinterpret_cast<void*>(view.handle)
+		<< ", view type: " << to_string(desc.type) << " (0x" << std::hex << (uint32_t)desc.type << std::dec << ")"
+		<< ", view format: " << to_string(desc.format) << " (0x" << std::hex << (uint32_t)desc.format << std::dec << ")"
+		<< ", resource: " << reinterpret_cast<void*>(resource.handle)
+		<< ", resource usage: " << to_string(usage_type) << " 0x" << std::hex << (uint32_t)usage_type << std::dec;
+	// if (desc.type == reshade::api::resource_view_type::buffer) return;
+	if (resource.handle) {
+		const auto resourceDesc = device->get_resource_desc(resource);
+		s << ", resource type: " << to_string(resourceDesc.type);
+
+		switch (resourceDesc.type) {
+		default:
+		case reshade::api::resource_type::unknown:
+			break;
+		case reshade::api::resource_type::buffer:
+			// if (!traceRunning) return;
+			return;
+			s << ", buffer offset: " << desc.buffer.offset;
+			s << ", buffer size: " << desc.buffer.size;
+			break;
+		case reshade::api::resource_type::texture_1d:
+		case reshade::api::resource_type::texture_2d:
+		case reshade::api::resource_type::surface:
+			s << ", texture format: " << to_string(resourceDesc.texture.format);
+			s << ", texture width: " << resourceDesc.texture.width;
+			s << ", texture height: " << resourceDesc.texture.height;
+			break;
+		case reshade::api::resource_type::texture_3d:
+			s << ", texture format: " << to_string(resourceDesc.texture.format);
+			s << ", texture width: " << resourceDesc.texture.width;
+			s << ", texture height: " << resourceDesc.texture.height;
+			s << ", texture depth: " << resourceDesc.texture.depth_or_layers;
+			break;
+		}
+	}
+	s << ")";
+	reshade::log_message(reshade::log_level::info, s.str().c_str());
+}
+*/
 
 // *******************************************************************************************************
 // on_create_pipeline() : called once per pipeline, used to replace shader code if option setup for shader
@@ -293,6 +431,7 @@ static void on_init_pipeline(device* device, pipeline_layout layout, uint32_t su
 						shared_data.cb_inject_values.VRMode = 1.0;
 					}
 
+					// identify if cockpit VS is used
 					if (it->second.feature == Feature::mapMode)
 					{
 						shared_data.cb_inject_values.mapMode = 0.0;
@@ -457,6 +596,27 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 					log_start_monitor("NS430");
 				}
 
+				// set flag for tracking render target
+				if (it->second.feature == Feature::Effects)
+				{
+
+					// if (shared_data.render_target_view[shared_data.count_display].created)
+					{
+						// TODO : check if needed shared_data.render_effect = false;
+						log_start_monitor("     shared_data.render_target_view[shared_data.count_display].created is true, Render target tracked");
+						shared_data.track_for_render_target = true;
+						// log infos
+						log_start_monitor("Render target");
+
+
+	
+					}
+					/* else
+					{
+						shared_data.track_for_render_target = false;
+					} */
+				}
+
 				// PS for GUI : set flag
 				if (it->second.feature == Feature::GUI)
 				{
@@ -466,19 +626,20 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 					log_start_monitor("GUItodraw");
 				}
 
-				// PS for GUI : reset flag
+				// PS for NS430 : reset flag
 				if (it->second.feature == Feature::NS430)
 				{
 					shared_data.cb_inject_values.GUItodraw = 0.0;
 
 					// log infos
-					log_clear_action_log("GUItodraw");
+					log_clear_action_log("NS430");
 				}
 				
 
 				// PS global color : increase draw count & GUI flag (to avoid MFD)
 				if (it->second.feature == Feature::Global)
 				{
+					
 					// if texure has been copied previously, increase draw count, otherwise do nothing, to avoid counting shader calls for MFD rendering
 					if (shared_data.depthStencil_copy_started)
 					{
@@ -487,14 +648,22 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 						shared_data.cb_inject_values.count_display = shared_data.count_display;
 
 						// log infos
-						log_increase_draw_count();
+						log_increase_count_display();
 
+						// handle effects : setup flag for draw
+						shared_data.render_effect = true;
+						shared_data.track_for_render_target = false;
+
+						// log infos
+						log_effect_requested();
 					}
 					else
 					{	
 						// log infos
 						log_not_increase_draw_count();
 					}
+
+
 				}
 			}
 
@@ -516,6 +685,14 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 
 					// log infos
 					log_MSAA();
+
+					/*
+					//load technique list once (use this shader as it should not be done too soon to ensure reshade will have time to compile them...
+					if (shared_data.technique_init == -1)
+					{
+						shared_data.technique_init = 1;
+					}
+					*/
 				}
 
 				// PS for no MSAA : setup the ratio for masking
@@ -527,6 +704,14 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 
 					//log
 					log_MSAA();
+
+					/*
+					//load technique list once (use this shader as it should not be done too soon to ensure reshade will have time to compile them...
+					if (shared_data.technique_init == -1)
+					{
+						shared_data.technique_init = 1;
+					}
+					*/
 				}
 
 			}
@@ -541,8 +726,33 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 // called a lot !
 static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pipeline_layout layout, uint32_t param_index, const descriptor_table_update& update)
 {
+	/* technique are not working if different render resolution, so code is "commented"
+	//engage effect if requested in previous draw()
+	if (shared_data.render_effect)
+	{
+		// engage effect
+		// shared_data.count_draw = 0;
+		shared_data.render_effect = false;
+		device* const device = cmd_list->get_device();
+		const auto& dev_data = device->get_private_data<device_data>();
 
-	//const std::shared_lock<std::shared_mutex> lock(shared_data.s_mutex);
+		if (debug_flag && flag_capture)
+		{
+			std::stringstream s;
+			s << "on_bind_render_targets_and_depth_stencil() shared_data.render_effect = true, shared_data.technique_vector.size() = " << shared_data.technique_vector.size() << ";";
+			reshade::log_message(reshade::log_level::info, s.str().c_str());
+		}
+		if (shared_data.count_display == 1 )
+		{
+			for (int i = 0; i < shared_data.technique_vector.size(); ++i)
+			{
+
+				dev_data.main_runtime->render_technique(shared_data.technique_vector[i].technique, cmd_list, shared_data.render_target_view[shared_data.count_display - 1].texresource_view, shared_data.render_target_view[shared_data.count_display - 1].texresource_view);
+				log_effect(shared_data.technique_vector[i]);
+			}
+		}
+	}
+	*/
 
 	//handle only shader_resource_view when needed
 	// 
@@ -582,18 +792,71 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 			shared_data.track_for_NS430 = false;
 		}
 
+	}
+
+}
+
+//*******************************************************************************************************
+// on_bind_render_targets_and_depth_stencil() : track render target
+static void on_bind_render_targets_and_depth_stencil(command_list *cmd_list, uint32_t count, const resource_view* rtvs, resource_view dsv)
+{
+	//cpy render target if tracking
+	if (shared_data.track_for_render_target && debug_flag && flag_capture)
+	{
+		std::stringstream s;
+		s << "on_bind_render_targets_and_depth_stencil() tracking render target, count_display " << shared_data.count_display << ", mapmode =" << shared_data.cb_inject_values.mapMode << ", count " << count << ")";
+		reshade::log_message(reshade::log_level::info, s.str().c_str());
+
+		reshade::api::device* dev = cmd_list->get_device();
+		if (count >0) log_texture_view(dev, "rtvs[0]", rtvs[0]);
+
+	}
+	
+	if (shared_data.track_for_render_target && shared_data.count_display > -1 && !shared_data.cb_inject_values.mapMode && count > 0)
+	{
+		
+		// only first render target view to get
+		shared_data.render_target_view[shared_data.count_display].texresource_view = rtvs[0];
+		shared_data.render_target_view[shared_data.count_display].created = true;
+
+		/*
+		shared_data.render_target_rv_rgb[shared_data.count_display - 1].texresource_view = rtvs[0];
+		shared_data.render_target_rv_rgb[shared_data.count_display - 1].created = true;
+
+		shared_data.render_target_rv_nrgb[shared_data.count_display - 1].texresource_view = rtvs[0];
+		shared_data.render_target_rv_nrgb[shared_data.count_display - 1].created = true;
+		*/
+
+		log_renderTarget_depth(count, rtvs, dsv);
+	}
+
+	/*
+	//engage effect if requested in previous draw()
+	if (shared_data.render_effect)
+	{
+		// engage effect
+		// shared_data.count_draw = 0;
+		shared_data.render_effect = false;
+		device* const device = cmd_list->get_device();
+		const auto& dev_data = device->get_private_data<device_data>();
+
 		if (debug_flag && flag_capture)
 		{
 			std::stringstream s;
-			s << "   on_push_descriptor, text. width= " << NS430_res_desc.texture.width << ", texture.height =" << NS430_res_desc.texture.height << ";";
+			s << "on_bind_render_targets_and_depth_stencil() shared_data.render_effect = true, shared_data.technique_vector.size() = " << shared_data.technique_vector.size() << ";";
 			reshade::log_message(reshade::log_level::info, s.str().c_str());
-			s.str("");
-			s.clear();
 		}
 
-	}
-}
+		for (int i = 0; i < shared_data.technique_vector.size(); ++i)
+		{
 
+			dev_data.main_runtime->render_technique(shared_data.technique_vector[i].technique, cmd_list, shared_data.render_target_view[shared_data.count_display-1].texresource_view, shared_data.render_target_view[shared_data.count_display-1].texresource_view);
+			log_effect(shared_data.technique_vector[i]);
+		}
+	}
+	*/
+
+}
 //*******************************************************************************************************
 // clear tracking flags to avoid tracking resources if push_descriptor did not detect it...
 static void clear_tracking_flags()
@@ -622,6 +885,61 @@ static bool on_draw(command_list* commandList, uint32_t vertex_count, uint32_t i
 
 	// clear tracking flags
 	clear_tracking_flags();
+
+	// handle effects if needed
+	if (shared_data.render_effect && 0)
+	{
+		if (debug_flag && flag_capture)
+			reshade::log_message(reshade::log_level::info, "on draw : shared_data.render_effect true");
+
+		shared_data.render_effect = false;
+		shared_data.count_draw += 1;
+
+
+		// try to use existing views
+		//create resource views if not existing
+		// if (!shared_data.render_target_rv_nrgb[shared_data.count_display-1].created)
+		if (1 == 0)
+		{
+			
+			if (debug_flag && flag_capture)
+				reshade::log_message(reshade::log_level::info, "Create resources");
+			
+			reshade::api::device* dev = commandList->get_device();
+
+			reshade::api::resource_view rtrv = shared_data.render_target_view[shared_data.count_display-1].texresource_view;
+			reshade::api::resource rendert_res = dev->get_resource_from_view(rtrv);
+			reshade::api::resource_desc desc = dev->get_resource_desc(rendert_res);
+
+			if (static_cast<uint32_t>(desc.usage & resource_usage::render_target))
+			{
+
+				if (debug_flag && flag_capture)
+					reshade::log_message(reshade::log_level::info, "Start creation of RT views");
+				/*
+				// create the resource view, it is assumed DCS will always use r8g8b8a8_typeless for RT
+				reshade::api::format format_non_srgb = reshade::api::format_to_default_typed(reshade::api::format::r8g8b8a8_typeless, 0);
+				reshade::api::format format_non_rgb = reshade::api::format_to_default_typed(reshade::api::format::r8g8b8a8_typeless, 1);
+
+				dev->create_resource_view(rendert_res, resource_usage::render_target,
+					resource_view_desc(format_non_srgb), &shared_data.render_target_rv_nrgb[shared_data.count_display-1].texresource_view);
+				shared_data.render_target_rv_nrgb[shared_data.count_display-1].created = true;
+
+				dev->create_resource_view(rendert_res, resource_usage::render_target,
+					resource_view_desc(format_non_rgb), &shared_data.render_target_rv_rgb[shared_data.count_display-1].texresource_view);
+				shared_data.render_target_rv_rgb[shared_data.count_display-1].created = true;
+
+
+				//log creation
+				if (debug_flag && flag_capture)
+					log_create_rendertarget_view(dev, rendert_res, desc);
+				*/
+			}
+			else
+				log_error_for_rendertarget();
+		}
+		
+	}
 
 	return skip;
 }
@@ -691,7 +1009,7 @@ static void on_destroy_pipeline(
 }
 
 //delete vectors and maps
-void cleanup()
+void clean_up()
 {
 
 	shader_code.clear(); 
@@ -732,8 +1050,20 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD fdwReason, LPVOID)
 			reshade::register_event<reshade::addon_event::create_pipeline>(on_create_pipeline);
 			reshade::register_event<reshade::addon_event::init_pipeline>(on_after_create_pipeline);
 
+			reshade::register_event<reshade::addon_event::bind_render_targets_and_depth_stencil>(on_bind_render_targets_and_depth_stencil);
+
 			reshade::register_event<reshade::addon_event::reshade_present>(on_present);
 	
+			/*
+			reshade::register_event<reshade::addon_event::init_resource_view>(on_init_resource_view);
+			
+			reshade::register_event<reshade::addon_event::execute_command_list>(on_execute);
+			reshade::register_event<reshade::addon_event::init_effect_runtime>(on_init_effect_runtime);
+			reshade::register_event<reshade::addon_event::init_device>(on_init_device);
+			reshade::register_event<reshade::addon_event::destroy_device>(on_destroy_device);
+			*/
+
+
 			// setup GUI
 			reshade::register_overlay(nullptr, &displaySettings);
 
@@ -757,9 +1087,21 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD fdwReason, LPVOID)
 		reshade::unregister_event<reshade::addon_event::create_pipeline>(on_create_pipeline);
 		reshade::unregister_event<reshade::addon_event::init_pipeline>(on_after_create_pipeline);
 
+		reshade::unregister_event<reshade::addon_event::bind_render_targets_and_depth_stencil>(on_bind_render_targets_and_depth_stencil);
+		
+		/*
+		reshade::unregister_event<reshade::addon_event::execute_command_list>(on_execute);
+		reshade::unregister_event<reshade::addon_event::init_effect_runtime>(on_init_effect_runtime);
+		reshade::unregister_event<reshade::addon_event::init_device>(on_init_device);
+		reshade::unregister_event<reshade::addon_event::destroy_device>(on_destroy_device);
+		reshade::unregister_event<reshade::addon_event::init_resource_view>(on_init_resource_view);
+		*/
+
 		reshade::unregister_event<reshade::addon_event::reshade_present>(on_present);
 
-		cleanup();
+		
+
+		clean_up();
 		reshade::unregister_overlay(nullptr, &displaySettings);
 
 		reshade::unregister_addon(hModule);

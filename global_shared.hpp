@@ -44,6 +44,10 @@
 #include <string>
 #include <shared_mutex>
 
+constexpr size_t CHAR_BUFFER_SIZE = 256;
+
+using namespace reshade::api;
+
 extern std::string settings_iniFileName;
 
 //GUI variables to use in functions
@@ -61,8 +65,16 @@ struct resourceview_trace {
 	reshade::api::resource_view texresource_view;
 };
 
+/*
+struct technique_trace {
+	effect_technique technique;
+	std::string name[CHAR_BUFFER_SIZE];
+};
+*/
+
+
 // maximum resources or reource_views per draw, to copy DepthStencil texture
-// should be 2x per eye x 2 for quad view + margin. No add view/resources for for AA   
+// should be 2x per eye x 2 for quad view + margin. No added view/resources for AA   
 #define MAXVIEWSPERDRAW 6
 
 // a class to host all global variables shared between reshade on_* functions. 
@@ -104,6 +116,31 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	// for logging shader_resource_view in push_descriptors() to get depthStencil 
 	bool track_for_depthStencil = false;
 
+	// technique : copy render target, flag for draw
+	resource_trace render_target_res[MAXVIEWSPERDRAW];
+	resourceview_trace render_target_view[MAXVIEWSPERDRAW];
+	resourceview_trace render_target_rv_nrgb[MAXVIEWSPERDRAW];
+	resourceview_trace render_target_rv_rgb[MAXVIEWSPERDRAW];
+
+	bool track_for_render_target = false;
+	bool render_effect = false;
+	uint32_t count_draw = 0;
+
+	/*
+	// for technique init
+	char technique_init = -1;
+
+	// for technique refresh
+	bool button_technique = false;
+
+	// copy from one function to another
+	reshade::api::effect_runtime* runtime;
+	reshade::api::command_list* commandList;
+
+	//map of technique selected 
+	std::vector<technique_trace> technique_vector;
+	*/
+
 	//NS430 texture
 	resource_trace NS430_res[MAXVIEWSPERDRAW];
 	resourceview_trace NS430_view[MAXVIEWSPERDRAW];
@@ -119,6 +156,9 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 
 	// counter for skip seems not working !
 	uint32_t counter_testing = 0;
+
+	// for logging render targets  
+	bool track_for_rt = false;
 
 	//disable optimisation
 	bool disable_optimisation = false;
@@ -143,3 +183,7 @@ extern struct global_shared shared_data;
 
 extern bool do_not_draw;
 
+struct __declspec(uuid("7251932A-ADAF-4DFC-B5CB-9A4E8CD5D6EB")) device_data
+{
+	effect_runtime* main_runtime = nullptr;
+};
