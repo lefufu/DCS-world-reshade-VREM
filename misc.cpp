@@ -342,7 +342,7 @@ void init_mod_features()
 		}
 
 	}
-	reshade::log_message(reshade::log_level::info, "End of shader table" );
+	reshade::log::message(reshade::log::level::info, "End of shader table" );
 
 	// init flag to load technique list
 	// shared_data.technique_init == -1;

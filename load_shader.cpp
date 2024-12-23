@@ -83,7 +83,7 @@ bool load_shader_code(std::vector<std::vector<uint8_t>>& shaderCode, wchar_t fil
 	// log info
 	std::stringstream s;
 	s << "Shader readed, size = " << (void*)shaderCode.size() << ")";
-	reshade::log_message(reshade::log_level::info, s.str().c_str());
+	reshade::log::message(reshade::log::level::info, s.str().c_str());
 
 	return true;
 }

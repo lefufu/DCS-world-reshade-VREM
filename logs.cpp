@@ -63,7 +63,7 @@ void log_push_descriptor(shader_stage stages, pipeline_layout layout, uint32_t p
 	{
 		std::stringstream s;
 		s << "on_push_descriptors(" << to_string(stages) << ", " << (void*)layout.handle << ", " << param_index << ", { " << to_string(update.type) << ", " << update.binding << ", " << update.count << " })";
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 		s.str("");
 		s.clear();
 
@@ -74,12 +74,12 @@ void log_push_descriptor(shader_stage stages, pipeline_layout layout, uint32_t p
 			{
 				auto item = static_cast<const reshade::api::resource_view*>(update.descriptors)[i];
 				s << "=> on_push_descriptors(), resource_view[" << i << "],  handle = " << reinterpret_cast<void*>(item.handle) << " })";
-				reshade::log_message(reshade::log_level::info, s.str().c_str());
+				reshade::log::message(reshade::log::level::info, s.str().c_str());
 				s.str("");
 				s.clear();
 			}
 		}
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 	}
 }
 
@@ -120,7 +120,7 @@ void log_resource_created(std:: string texture_name, device* dev, resource_desc 
 			break;
 		}
 		s << ";";
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 		s.str("");
 		s.clear();
 
@@ -143,7 +143,7 @@ void log_resource_created(std:: string texture_name, device* dev, resource_desc 
 			break;
 		}
 		s << ";";
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 		s.str("");
 		s.clear();
 
@@ -165,7 +165,7 @@ void log_resource_created(std:: string texture_name, device* dev, resource_desc 
 			break;
 		}
 		s << ";";
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 		s.str("");
 		s.clear();
 
@@ -183,7 +183,7 @@ void log_creation_start(std::string texture_name)
 	{
 		std::stringstream s;
 		s << " = > copy_" << texture_name << "( "<< shared_data.count_display << ") : create resource";
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 	}
 }
 
@@ -200,7 +200,7 @@ void log_copy_texture(std::string texture_name)
 	{
 		std::stringstream s;
 		s << " = > copy_" << texture_name << ": for draw (" << shared_data.count_display << ") : resource copied";
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 
 	}
 }
@@ -217,7 +217,7 @@ void log_MSAA()
 	{
 		std::stringstream s;
 		s << " => on_bind_pipeline : flag MSAA2x, Xfactor = " << shared_data.cb_inject_values.AAxFactor << ", Yfactor = " << shared_data.cb_inject_values.AAyFactor << ";";
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 	}
 }
 // *******************************************************************************************************
@@ -231,7 +231,7 @@ void log_increase_count_display()
 	{
 		std::stringstream s;
 		s << " => on_bind_pipeline : update draw count : " << shared_data.count_display << ";";
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 	}
 }
 
@@ -246,7 +246,7 @@ void log_not_increase_draw_count()
 	{
 		std::stringstream s;
 		s << " => on_bind_pipeline : depthstencil not copied => do not update draw count, texture not copied;";
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 	}
 }
 
@@ -261,7 +261,7 @@ void log_start_monitor(std::string texture_name)
 	{
 		std::stringstream s;
 		s << " => on_bind_pipeline : start monitor " << texture_name << ", draw : " << shared_data.count_display << "; ";
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 	}
 }
 
@@ -276,7 +276,7 @@ void log_pipeline_replaced(pipeline pipelineHandle, std::unordered_map<uint64_t,
 	{
 		std::stringstream s;
 		s << " => on_bind_pipeline : pipeline shader replaced (" << reinterpret_cast<void*>(pipelineHandle.handle) << ") by  " << reinterpret_cast<void*>(it->second.substitute_pipeline.handle) << ", hash =" << std::hex << it->second.hash << ", feature =" << to_string(it->second.feature) << ";";
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 	}
 }
 
@@ -292,7 +292,7 @@ void log_texture_injected(std::string texture_name)
 		std::stringstream s;
 		s << " => on_bind_pipeline : "<< texture_name << " textures injected for draw index : ";
 		s << shared_data.count_display << ";";
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 	}
 }
 // *******************************************************************************************************
@@ -308,7 +308,7 @@ void log_pipeline_to_process(pipeline pipelineHandle, std::unordered_map<uint64_
 		s << "on_bind_pipeline : Pipeline handle to process found: " << reinterpret_cast<void*>(pipelineHandle.handle) << ", hash =";
 		s << std::hex << it->second.hash << ", associated cloned pipeline handle: " << reinterpret_cast<void*>(it->second.substitute_pipeline.handle);
 		s << ", feature =" << to_string(it->second.feature) << ";";
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 	}
 }
 
@@ -323,10 +323,10 @@ void log_ondraw( uint32_t vertex_count, uint32_t instance_count, uint32_t first_
 	{
 		std::stringstream s;
 		s << "draw(" << vertex_count << ", " << instance_count << ", " << first_vertex << ", " << first_instance << ")";
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 		s.str("");
 		s.clear();
-		reshade::log_message(reshade::log_level::info, "Clear tracking flags");
+		reshade::log::message(reshade::log::level::info, "Clear tracking flags");
 		s.str("");
 		s.clear();
 
@@ -348,10 +348,10 @@ void log_on_draw_indexed(uint32_t index_count, uint32_t instance_count, uint32_t
 	{
 		std::stringstream s;
 		s << "draw_indexed(" << index_count << ", " << instance_count << ", " << first_index << ", " << vertex_offset << ", " << first_instance << ")";
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 		s.str("");
 		s.clear();
-		reshade::log_message(reshade::log_level::info, "Clear tracking flags");
+		reshade::log::message(reshade::log::level::info, "Clear tracking flags");
 	}
 }
 // *******************************************************************************************************
@@ -365,10 +365,10 @@ void log_on_drawOrDispatch_indirect( indirect_command type, resource buffer, uin
 	{
 		std::stringstream s;
 		s << "draw_indexed_indirect(" << (void*)buffer.handle << ", " << offset << ", " << draw_count << ", " << stride << ")";
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 		s.str("");
 		s.clear();
-		reshade::log_message(reshade::log_level::info, "Clear tracking flags");
+		reshade::log::message(reshade::log::level::info, "Clear tracking flags");
 	}
 }
 
@@ -402,7 +402,7 @@ void log_shader_code_error(pipeline pipelineHandle, uint32_t hash, std::unordere
 	s << "hash to handle = " << std::hex << hash << " ;";
 	s << "!!! Error in loading code for :" << to_string(it->second.replace_filename) << "; !!!";
 
-	reshade::log_message(reshade::log_level::error, s.str().c_str());
+	reshade::log::message(reshade::log::level::error, s.str().c_str());
 	s.str("");
 	s.clear();
 }
@@ -421,7 +421,7 @@ void log_shader_code_error_oncreate(uint32_t hash, std::unordered_map<uint32_t, 
 	s << "onCreatePipeline, hash to handle = " << std::hex << hash << " ;";
 	s << "!!! Error in loading code for :" << to_string(it->second.replace_filename) << "; !!!";
 
-	reshade::log_message(reshade::log_level::error, s.str().c_str());
+	reshade::log::message(reshade::log::level::error, s.str().c_str());
 	s.str("");
 	s.clear();
 }
@@ -445,7 +445,7 @@ void log_init_pipeline(pipeline pipelineHandle, pipeline_layout layout, uint32_t
 		s << "hash to handle = " << std::hex << hash << " ;";
 		s << "Action = " << to_string(it->second.action) << "; Feature = " << to_string(it->second.feature) << "; fileName =" << to_string(it->second.replace_filename) << ";";
 
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 		s.str("");
 		s.clear();
 	}
@@ -462,7 +462,7 @@ void log_init_pipeline_params(const uint32_t paramCount, const reshade::api::pip
 	{
 		std::stringstream s;
 		s << "* looping on  paramCount : param = " << to_string(paramIndex) << ", param.type = " << to_string(param.type) << ", param.push_descriptors.type = " << to_string(param.push_descriptors.type);
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 		s.str("");
 		s.clear();
 	}
@@ -480,7 +480,7 @@ void log_create_CBlayout()
 		std::stringstream s;
 		s << "on_init_pipeline_layout: new pipeline created, hash =" << reinterpret_cast<void*>(&shared_data.saved_pipeline_layout_CB.handle) << " ).  DX11 layout created for CB;";
 		s << "dx_register_index=" << CBINDEX << ", CBIndex =" << shared_data.CBIndex << "; ";
-		reshade::log_message(reshade::log_level::warning, s.str().c_str());
+		reshade::log::message(reshade::log::level::warning, s.str().c_str());
 		s.str("");
 		s.clear();
 	}
@@ -498,7 +498,7 @@ void log_error_creating_CBlayout()
 	std::stringstream s; 
 	
 	s << "on_init_pipeline_layout(" << reinterpret_cast<void*>(&shared_data.saved_pipeline_layout_CB.handle) << " ). !!! Error in creating DX11 layout for CB!!!;";
-	reshade::log_message(reshade::log_level::warning, s.str().c_str());
+	reshade::log::message(reshade::log::level::warning, s.str().c_str());
 	s.str("");
 	s.clear();
 }
@@ -517,7 +517,7 @@ void log_create_RVlayout()
 		std::stringstream s;
 		s << "on_init_pipeline_layout: new pipeline created, hash =" << reinterpret_cast<void*>(&shared_data.saved_pipeline_layout_RV.handle) << " ).  DX11 layout created for RV;";
 		s << "dx_register_index=" << RVINDEX << ", RVIndex =" << shared_data.RVIndex << "; ";
-		reshade::log_message(reshade::log_level::warning, s.str().c_str());
+		reshade::log::message(reshade::log::level::warning, s.str().c_str());
 		s.str("");
 		s.clear();
 	}
@@ -534,7 +534,7 @@ void log_error_creating_RVlayout()
 {
 	std::stringstream s;
 	s << "on_init_pipeline_layout(" << reinterpret_cast<void*>(&shared_data.saved_pipeline_layout_CB.handle) << " ). !!! Error in creating DX11 layout for RV !!!;";
-	reshade::log_message(reshade::log_level::warning, s.str().c_str());
+	reshade::log::message(reshade::log::level::warning, s.str().c_str());
 	s.str("");
 	s.clear();
 }
@@ -550,7 +550,7 @@ void log_reset_tracking()
 {
 	if ((debug_flag && flag_capture) || FORCE_LOG)
 	{
-		reshade::log_message(reshade::log_level::info, " -> on_draw*: All tracking resetted");
+		reshade::log::message(reshade::log::level::info, " -> on_draw*: All tracking resetted");
 	}
 }
 
@@ -566,7 +566,7 @@ void log_clear_action_log(std::string varname)
 	{
 		std::stringstream s;
 		s << " => on_bind_pipeline : reset variable :" << varname << " ;";
-		reshade::log_message(reshade::log_level::warning, s.str().c_str());
+		reshade::log::message(reshade::log::level::warning, s.str().c_str());
 	}
 }
 
@@ -580,7 +580,7 @@ void log_CB_injected()
 {
 	if ((debug_flag && flag_capture) || FORCE_LOG)
 	{
-		reshade::log_message(reshade::log_level::info, " -> on_bind_pipeline: CB injected");
+		reshade::log::message(reshade::log::level::info, " -> on_bind_pipeline: CB injected");
 	}
 }
 
@@ -594,7 +594,7 @@ void log_invalid_subobjectCount(pipeline pipelineHandle)
 	std::stringstream s;
 
 	s << "on_init_pipeline_layout(" << reinterpret_cast<void*>(&pipelineHandle) << " ). !!! Error more than 1 object in pipeline !!!;";
-	reshade::log_message(reshade::log_level::warning, s.str().c_str());
+	reshade::log::message(reshade::log::level::warning, s.str().c_str());
 }
 
 // *******************************************************************************************************
@@ -613,7 +613,7 @@ void log_replaced_shader_code(uint32_t hash, std::unordered_map<uint32_t, Shader
 		s << "onCreatePipeline, hash to handle = " << std::hex << hash << " ;";
 		s << "shader code replaced by :" << to_string(it->second.replace_filename) << ";";
 
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 	}
 }
 
@@ -630,7 +630,7 @@ void log_renderTarget_depth(uint32_t count, const resource_view* rtvs, resource_
 		std::stringstream s;
 
 		s << "bind_render_targets_and_depth_stencil():  tracking render target ";
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 		s.str("");
 		s.clear();
 
@@ -638,12 +638,12 @@ void log_renderTarget_depth(uint32_t count, const resource_view* rtvs, resource_
 		for (uint32_t i = 0; i < count; ++i)
 			s << (void*)rtvs[i].handle << ", ";
 		s << " }, dsv = " << (void*)dsv.handle << ")";
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 		s.str("");
 		s.clear();
 
 		s << "    shared_data.render_target_view[" << shared_data.count_display << "].created = " << shared_data.render_target_view[shared_data.count_display].created << ";";
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 
 	}
 }
@@ -660,14 +660,14 @@ void log_create_rendertarget_view(reshade::api::device* dev, reshade::api::resou
 	{
 		std::stringstream s;
 		s << "=> on_draw(): resource view for render target effect created, count_display = " << shared_data.count_display;
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 		s.str("");
 		s.clear();
 
 		//display infos on resources.
 		s << "  renter target resource handle " << (void*)rendert_res.handle << " , type =" << to_string(desc.type) << " , usage =" << " 0x" << std::hex << (uint32_t)desc.usage ;
 		s << ", width: " << desc.texture.width << ", height: " << desc.texture.height << ", levels: " << desc.texture.levels << ", format: " << to_string(desc.texture.format);
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 		s.str("");
 		s.clear();
 
@@ -693,7 +693,7 @@ void log_error_for_rendertarget()
 		std::stringstream s;
 		s << "=> on_draw(): !!!! Error in resource view for render target effect creation, count_display =" << shared_data.count_display << " !!!!";
 
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 	}
 }
 
@@ -711,7 +711,7 @@ void log_effect(technique_trace tech)
 		std::stringstream s;
 		s << "=> on_push_descriptors(): engage render effects for technique, " << tech.name ;
 		s << ", resource_view, " << (void*)shared_data.render_target_view[shared_data.count_display - 1].texresource_view.handle;
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 	}
 }
 */
@@ -727,7 +727,7 @@ void log_effect_requested()
 	{
 		std::stringstream s;
 		s << "=> on_bind_pipeline(): set flag for engaging rendering at next draw, ";
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 	}
 }
 
@@ -748,13 +748,13 @@ void log_texture_view(reshade::api::device * dev, std::string name, reshade::api
 
 		std::stringstream s;
 		s << "  resource view " << name << ", handle = " << (void*)rview.handle << " , type =" << to_string(descv.type) << " , format =" << (to_string)(descv.format) << ";";
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 		s.str("");
 		s.clear();
 
 		s << "  associated resource handle " << (void*)res.handle << " , type =" << to_string(desc_res.type) << " , usage =" << " 0x" << std::hex << (uint32_t)desc_res.usage;
 		s << ", width: " << desc_res.texture.width << ", height: " << desc_res.texture.height << ", levels: " << desc_res.texture.levels << ", format: " << to_string(desc_res.texture.format);
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 		s.str("");
 		s.clear();
 	}
@@ -773,7 +773,7 @@ void log_technique_info(effect_runtime* runtime, effect_technique technique, std
 		// Write to ReShade log
 		std::stringstream s;
 		s << "init_mod_features(): add technique in vector, Technique Name: " << name << ", Effect Name: " << eff_name << ", Technique status : " << technique_status;
-		reshade::log_message(reshade::log_level::info, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 		s.str("");
 		s.clear();
 	}

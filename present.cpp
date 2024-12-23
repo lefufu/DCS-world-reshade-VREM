@@ -179,8 +179,8 @@ void on_present(effect_runtime* runtime)
 	{
 		if (debug_flag)
 		{
-			reshade::log_message(reshade::log_level::info, "present()");
-			reshade::log_message(reshade::log_level::info, "--- End Frame ---");
+			reshade::log::message(reshade::log::level::info, "present()");
+			reshade::log::message(reshade::log::level::info, "--- End Frame ---");
 		}
 		flag_capture = false;
 	}
@@ -193,7 +193,7 @@ void on_present(effect_runtime* runtime)
 			flag_capture = true;
 			if (debug_flag)
 			{
-				reshade::log_message(reshade::log_level::info, "--- Frame ---");
+				reshade::log::message(reshade::log::level::info, "--- Frame ---");
 			}
 
 		}

@@ -82,7 +82,7 @@ void clone_pipeline(
             << ", Hash = " << std::hex << newShader->hash << ";"
             << ", subobjects counts: " << (subobjectCount)
             << " )";
-        reshade::log_message(reshade::log_level::info, s.str().c_str());
+        reshade::log::message(reshade::log::level::info, s.str().c_str());
         s.str("");
         s.clear();
     }
@@ -135,7 +135,7 @@ void clone_pipeline(
                     << ", orig pipeline handle: " << reinterpret_cast<void*>(pipeline.handle)
                     << ", cloned pipeline handle: " << reinterpret_cast<void*>(pipelineClone.handle)
                     << ")";
-                reshade::log_message(reshade::log_level::info, s.str().c_str());
+                reshade::log::message(reshade::log::level::info, s.str().c_str());
                 s.str("");
                 s.clear();
             }
@@ -146,7 +146,7 @@ void clone_pipeline(
             s << "!!! Error in cloning pipeline !!! ("
                 << ", orig pipeline: " << reinterpret_cast<void*>(pipeline.handle)
                 << ")";
-            reshade::log_message(reshade::log_level::info, s.str().c_str());
+            reshade::log::message(reshade::log::level::info, s.str().c_str());
         }
 
         // free allocated memory as the shader is created or failed
