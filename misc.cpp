@@ -317,13 +317,11 @@ void init_mod_features()
 			entry.second.action = action_injectText | action_log;
 		}
 
-		/*
 		// add effect entries
 		if (entry.second.feature == Feature::Effects )
 		{
 			add_line = true;
 		}
-		*/
 
 		// std::stringstream s;
 		// s << "add shader : " << std::hex << entry.second.hash << ", " << entry.second.action << ", " << to_string(entry.second.feature) << ", " << entry.second.draw_count << ";";

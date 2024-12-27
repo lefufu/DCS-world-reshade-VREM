@@ -65,12 +65,10 @@ struct resourceview_trace {
 	reshade::api::resource_view texresource_view;
 };
 
-/*
 struct technique_trace {
 	effect_technique technique;
 	std::string name[CHAR_BUFFER_SIZE];
 };
-*/
 
 
 // maximum resources or reource_views per draw, to copy DepthStencil texture
@@ -126,7 +124,7 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	bool render_effect = false;
 	uint32_t count_draw = 0;
 
-	/*
+
 	// for technique init
 	char technique_init = -1;
 
@@ -139,7 +137,7 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 
 	//map of technique selected 
 	std::vector<technique_trace> technique_vector;
-	*/
+
 
 	//NS430 texture
 	resource_trace NS430_res[MAXVIEWSPERDRAW];

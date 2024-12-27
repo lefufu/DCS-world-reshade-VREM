@@ -163,7 +163,7 @@ void on_present(effect_runtime* runtime)
 	intialize_counters();
 
 	// store runtime for effect in on_draw()
-	// shared_data.runtime = runtime;
+	shared_data.runtime = runtime;
 
 	// frame counter 
 	if (shared_data.frame_counter != 0x7FFFFFFF) shared_data.frame_counter += 1;
@@ -199,14 +199,17 @@ void on_present(effect_runtime* runtime)
 		}
 	}
 
-	/*
+
 	//load activated techniques list
 	if (shared_data.button_technique  || shared_data.technique_init == 1)
 	{
 		shared_data.button_technique = false;
 		shared_data.technique_init = 0;
 		enumerateTechniques(runtime);
+		flag_capture = true;
 	}
-	*/
+	
+	// to debug crash at launch
+	// flag_capture = true;
 
 }

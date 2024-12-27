@@ -230,7 +230,7 @@ void log_increase_count_display()
 	if ((debug_flag && flag_capture) || FORCE_LOG)
 	{
 		std::stringstream s;
-		s << " => on_bind_pipeline : update draw count : " << shared_data.count_display << ";";
+		s << " => on_bind_pipeline : update draw count : " << shared_data.count_display << ", mapMode = " << shared_data.cb_inject_values.mapMode << ";";
 		reshade::log::message(reshade::log::level::info, s.str().c_str());
 	}
 }
@@ -623,27 +623,31 @@ void log_replaced_shader_code(uint32_t hash, std::unordered_map<uint32_t, Shader
 /// </summary>
 /// 
 /// 
-void log_renderTarget_depth(uint32_t count, const resource_view* rtvs, resource_view dsv)
+void log_renderTarget_depth(uint32_t count, const resource_view* rtvs, resource_view dsv, command_list* cmd_list)
 {
 	if ((debug_flag && flag_capture) || FORCE_LOG)
 	{
 		std::stringstream s;
 
-		s << "bind_render_targets_and_depth_stencil():  tracking render target ";
+		s << "bind_render_targets_and_depth_stencil():  render target stored ";
 		reshade::log::message(reshade::log::level::info, s.str().c_str());
 		s.str("");
 		s.clear();
 
-		s << "    rt logged, count = " << count << ", rtvs = { ";
+		s << "    rt count = " << count << ", rtvs = { ";
 		for (uint32_t i = 0; i < count; ++i)
 			s << (void*)rtvs[i].handle << ", ";
-		s << " }, dsv = " << (void*)dsv.handle << ")";
+			s << " }, dsv = " << (void*)dsv.handle << ")";
 		reshade::log::message(reshade::log::level::info, s.str().c_str());
 		s.str("");
 		s.clear();
 
 		s << "    shared_data.render_target_view[" << shared_data.count_display << "].created = " << shared_data.render_target_view[shared_data.count_display].created << ";";
 		reshade::log::message(reshade::log::level::info, s.str().c_str());
+
+		
+		reshade::api::device* dev = cmd_list->get_device();
+		log_texture_view(dev, "render target (rtvs[0])", rtvs[0]);
 
 	}
 }
@@ -691,7 +695,7 @@ void log_error_for_rendertarget()
 	if ((debug_flag && flag_capture) || FORCE_LOG)
 	{
 		std::stringstream s;
-		s << "=> on_draw(): !!!! Error in resource view for render target effect creation, count_display =" << shared_data.count_display << " !!!!";
+		s << "=> on_draw(): !!!! Error in resource view for render target effect creation, count_display =" << shared_data.count_display << ", resource not matching criteron !!!!";
 
 		reshade::log::message(reshade::log::level::info, s.str().c_str());
 	}
@@ -703,18 +707,32 @@ void log_error_for_rendertarget()
 /// </summary>
 /// 
 /// 
-/*
-void log_effect(technique_trace tech)
+void log_effect(technique_trace tech, command_list* cmd_list, resource_view rv)
 {
 	if ((debug_flag && flag_capture) || FORCE_LOG)
 	{
+
+
 		std::stringstream s;
-		s << "=> on_push_descriptors(): engage render effects for technique, " << tech.name ;
-		s << ", resource_view, " << (void*)shared_data.render_target_view[shared_data.count_display - 1].texresource_view.handle;
+		s << "=> on_push_descriptors(): engage render effects for technique, " << tech.name;
+		reshade::api::device* dev = cmd_list->get_device();
 		reshade::log::message(reshade::log::level::info, s.str().c_str());
+		s.str("");
+		s.clear();
+
+		if (shared_data.render_target_view[shared_data.count_display - 1].created)
+		{
+			log_texture_view(dev, "render target for effect", rv);
+		}
+		else
+		{
+			s << "!!! resource view not catched for " << shared_data.count_display - 1 << "!!!";
+			reshade::log::message(reshade::log::level::info, s.str().c_str());
+		}
+		// s << ", resource_view, " << (void*)shared_data.render_target_view[shared_data.count_display - 1].texresource_view.handle;
+		
 	}
 }
-*/
 
 // *******************************************************************************************************
 /// <summary>
@@ -757,6 +775,7 @@ void log_texture_view(reshade::api::device * dev, std::string name, reshade::api
 		reshade::log::message(reshade::log::level::info, s.str().c_str());
 		s.str("");
 		s.clear();
+
 	}
 }
 
@@ -777,4 +796,5 @@ void log_technique_info(effect_runtime* runtime, effect_technique technique, std
 		s.str("");
 		s.clear();
 	}
+
 }

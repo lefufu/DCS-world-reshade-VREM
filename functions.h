@@ -87,13 +87,13 @@ extern void log_shader_code_error_oncreate(uint32_t hash, std::unordered_map<uin
 
 extern void log_replaced_shader_code(uint32_t hash, std::unordered_map<uint32_t, Shader_Definition>::iterator it);
 
-extern void log_renderTarget_depth(uint32_t count, const resource_view* rtvs, resource_view dsv);
+extern void log_renderTarget_depth(uint32_t count, const resource_view* rtvs, resource_view dsv, command_list* cmd_list);
 
 extern void log_create_rendertarget_view(reshade::api::device* dev, reshade::api::resource rendert_res, reshade::api::resource_desc desc);
 
 extern void log_error_for_rendertarget();
 
-// extern void log_effect(technique_trace tech);
+extern void log_effect(technique_trace tech, command_list* cmd_list, resource_view rv);
 
 extern void log_effect_requested();
 

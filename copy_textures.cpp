@@ -59,6 +59,7 @@ bool copy_depthStencil(command_list* cmd_list, shader_stage stages, pipeline_lay
 	device* dev = cmd_list->get_device();
 	resource scr_resource = dev->get_resource_from_view(src_resource_view_depth);
 
+
 	// to do once per draw number : if resource and view not created, create them
 	if (!shared_data.depthStencil_res[shared_data.count_display].created)
 	{
@@ -70,6 +71,10 @@ bool copy_depthStencil(command_list* cmd_list, shader_stage stages, pipeline_lay
 		//log start of creation process
 		log_creation_start("depthStencil");
 
+		// not working : try to optimize things by avoiding texture copy => only &shared_data.stencil_view[shared_data.count_display].texresource_view are updated
+		// shared_data.stencil_view[shared_data.count_display].texresource_view = static_cast<const reshade::api::resource_view*>(update.descriptors)[4];		
+
+		
 		// create the target resource for texture
 		dev->create_resource(src_resource_desc, nullptr, resource_usage::shader_resource, &shared_data.depthStencil_res[shared_data.count_display].texresource, nullptr);
 		// flag creation to avoid to create it again 
@@ -81,8 +86,11 @@ bool copy_depthStencil(command_list* cmd_list, shader_stage stages, pipeline_lay
 		shared_data.depth_view[shared_data.count_display].created = true;
 		resource_view_desc resview_desc_stencil = dev->get_resource_view_desc(src_resource_view_stencil);
 		dev->create_resource_view(shared_data.depthStencil_res[shared_data.count_display].texresource, resource_usage::shader_resource, resview_desc_stencil, &shared_data.stencil_view[shared_data.count_display].texresource_view);
+		
+		
 		shared_data.stencil_view[shared_data.count_display].created = true;
 
+		
 		// setup the descriptor table
 		shared_data.update.binding = 0; // t3 as 3 is defined in pipeline_layout
 		shared_data.update.count = 1;
@@ -91,8 +99,10 @@ bool copy_depthStencil(command_list* cmd_list, shader_stage stages, pipeline_lay
 		//log infos and check resource view created
 		resource_desc check_new_res = dev->get_resource_desc(shared_data.depthStencil_res[shared_data.count_display].texresource);
 		log_resource_created("depthStencil", dev, check_new_res);
+		
 	}
 	
+
 	// to do before binding of global illum shader in associated push_descriptor: copy current resource to new resource for later usage in another shader
 	// do it once per frame
 	if (! shared_data.depthStencil_res[shared_data.count_display].copied)

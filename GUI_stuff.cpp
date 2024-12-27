@@ -371,7 +371,6 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		}
 
 		//log techniques 
-		/*
 		clicked = 0;
 		if (ImGui::Button("Refresh Techniques"))
 		{
@@ -381,6 +380,6 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		{
 			shared_data.button_technique = false;
 		}
-		*/
+
 	}
 }
