@@ -60,6 +60,48 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		ImGui::TextUnformatted("See DCS world forums (Home / English / Digital Combat Simulator / DCS World Topics / DCS Modding / Utility/Program Mods for DCS World / Reshade VREM) for more info");
 		ImGui::PopTextWrapPos();
 	}
+	ImGui::Separator();
+
+	// *******************************************************************************************************
+	if (ImGui::CollapsingHeader("Reshade effects in VR displays"))
+	{
+		// enable/disable Reshade effects changes
+		ImGui::Checkbox("Activate reshade effects in VR", &shared_data.effects_feature);
+		if (shared_data.effects_feature != shared_data.init_effects_feature)
+		{
+			ImGui::SameLine();
+			ImGui::Text("Game restart needed (option saved)");
+			saveShaderTogglerIniFile();
+
+		}
+
+		if (!shared_data.effects_feature)
+		{
+			ImGui::BeginDisabled();
+		}
+
+		// define technique QV render targets
+		ImGui::Text("Target area for effect if Quad View:");
+		ImGui::RadioButton("All", &shared_data.effect_target_QV, 0); ImGui::SameLine();
+		ImGui::RadioButton("Outer only", &shared_data.effect_target_QV, 1); ImGui::SameLine();
+		ImGui::RadioButton("Inner only", &shared_data.effect_target_QV, 2);
+
+		// refresh techniques 
+		if (ImGui::Button("Refresh Techniques"))
+		{
+			shared_data.button_technique = true;
+		}
+		else
+		{
+			shared_data.button_technique = false;
+		}
+
+
+		if (!shared_data.effects_feature)
+		{
+			ImGui::EndDisabled();
+		}
+	}
 
 	ImGui::Separator();
 
@@ -102,6 +144,8 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		{
 			ImGui::EndDisabled();
 		}
+
+
 		if (!shared_data.color_feature)
 		{
 			ImGui::EndDisabled();
@@ -368,17 +412,6 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		else
 		{
 			shared_data.button_capture = false;
-		}
-
-		//log techniques 
-		clicked = 0;
-		if (ImGui::Button("Refresh Techniques"))
-		{
-			shared_data.button_technique = true;
-		}
-		else
-		{
-			shared_data.button_technique = false;
 		}
 
 	}

@@ -84,8 +84,8 @@ void enumerateTechniques(effect_runtime* runtime)
         technique_status = rt->get_technique_state(technique);
 
         // add technique in vector if active
-        // if (technique_status)
-        if (name == "ColorMatrix")
+        if (technique_status)
+        // if (name == "ColorMatrix")
         {
 
             // add the tehcnique in the vector

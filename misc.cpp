@@ -81,6 +81,10 @@ void load_setting_IniFile()
 		
 		// file not existing : set default values
 		debug_flag = false;
+
+		shared_data.effects_feature = false;
+		shared_data.effect_target_QV = 0;
+
 		shared_data.cb_inject_values.rotorFlag = 0.0;
 		shared_data.cb_inject_values.disable_video_IHADSS = 0.0;
 		shared_data.cb_inject_values.IHADSSBoresight = 0.0;
@@ -123,6 +127,12 @@ void load_setting_IniFile()
 	debug_flag = iniFile.GetBool("debug_flag", "Debug");
 	shared_data.cb_inject_values.testFlag = iniFile.GetFloat("testFlag", "Debug");
 	shared_data.disable_optimisation = iniFile.GetBool("disable_optimisation", "Debug");
+	
+	// reshade effects
+	shared_data.effects_feature = iniFile.GetBool("effects_feature", "Effects");
+	shared_data.effect_target_QV = iniFile.GetInt("QV_render_target", "Effects");
+	if (shared_data.effect_target_QV == INT_MIN) shared_data.effect_target_QV = 0;
+
 
 	// helicopter
 	shared_data.helo_feature = iniFile.GetBool("helo_feature", "Helo");
@@ -222,6 +232,9 @@ void saveShaderTogglerIniFile()
 	iniFile.SetFloat("IHADSSBoresight", shared_data.cb_inject_values.IHADSSBoresight, "Flag to enable boresight IHADSS convergence", "Helo");
 	iniFile.SetFloat("IHADSSxOffset", shared_data.cb_inject_values.IHADSSxOffset, "convergence offset value for boresighting IHADSS", "Helo");
 
+	// reshade effects
+	iniFile.SetBool("effects_feature", shared_data.effects_feature, "Enable Reshade effects", "Effects");
+	iniFile.SetInt("QV_render_target", shared_data.effect_target_QV, "QV render target", "Effects");
 
 	// debug
 	iniFile.SetBool("debug_feature", debug_flag, "Enable debug features", "Debug");

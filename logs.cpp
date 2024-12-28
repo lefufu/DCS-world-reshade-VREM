@@ -791,7 +791,7 @@ void log_technique_info(effect_runtime* runtime, effect_technique technique, std
 	{
 		// Write to ReShade log
 		std::stringstream s;
-		s << "init_mod_features(): add technique in vector, Technique Name: " << name << ", Effect Name: " << eff_name << ", Technique status : " << technique_status;
+		s << "init of technique in vector, Technique Name: " << name << ", Effect Name: " << eff_name << ", Technique status : " << technique_status;
 		reshade::log::message(reshade::log::level::info, s.str().c_str());
 		s.str("");
 		s.clear();

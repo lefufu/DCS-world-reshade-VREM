@@ -1021,6 +1021,16 @@ static bool on_drawOrDispatch_indirect(command_list* commandList, indirect_comma
 
 }
 
+//*******************************************************************************************************
+// onReshadeReloadedEffects() : initialize technique list
+
+static void on_reshade_reloaded_effects(effect_runtime* runtime)
+{
+	enumerateTechniques(runtime);
+
+}
+
+
 // *******************************************************************************************************
 // Cleanup : delete created things
 //
@@ -1096,6 +1106,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD fdwReason, LPVOID)
 			reshade::register_event<reshade::addon_event::bind_render_targets_and_depth_stencil>(on_bind_render_targets_and_depth_stencil);
 
 			reshade::register_event<reshade::addon_event::reshade_present>(on_present);
+
+			reshade::register_event< reshade::addon_event::reshade_reloaded_effects>(on_reshade_reloaded_effects);
 	
 			/*
 			reshade::register_event<reshade::addon_event::init_resource_view>(on_init_resource_view);
@@ -1131,6 +1143,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD fdwReason, LPVOID)
 		reshade::unregister_event<reshade::addon_event::init_pipeline>(on_after_create_pipeline);
 
 		reshade::unregister_event<reshade::addon_event::bind_render_targets_and_depth_stencil>(on_bind_render_targets_and_depth_stencil);
+
+		reshade::unregister_event< reshade::addon_event::reshade_reloaded_effects>(on_reshade_reloaded_effects);
 		
 		/*
 		reshade::unregister_event<reshade::addon_event::execute_command_list>(on_execute);

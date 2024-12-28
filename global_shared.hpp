@@ -138,6 +138,8 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	//map of technique selected 
 	std::vector<technique_trace> technique_vector;
 
+	// render target (all(0)/outer(1)/inner(2)) for effect
+	int effect_target_QV = 0;
 
 	//NS430 texture
 	resource_trace NS430_res[MAXVIEWSPERDRAW];
@@ -161,7 +163,10 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	//disable optimisation
 	bool disable_optimisation = false;
 
+	//effect
+
 	// flag for features
+	bool effects_feature = false;
 	bool color_feature = false;
 	bool sharpenDeband_feature = false;
 	bool misc_feature = false;
@@ -169,6 +174,7 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	bool NS430_feature = false;
 	// bool debug_feature = false;
 	// initial value of flag above, to display 'relaunch' message
+	bool init_effects_feature = false;
 	bool init_color_feature = false;
 	bool init_sharpenDeband_feature = false;
 	bool init_misc_feature = false;
