@@ -43,6 +43,7 @@
 #include "mod_injection.h"
 #include <string>
 #include <shared_mutex>
+#include "shader_definitions.h"
 
 constexpr size_t CHAR_BUFFER_SIZE = 256;
 
@@ -67,7 +68,9 @@ struct resourceview_trace {
 
 struct technique_trace {
 	effect_technique technique;
-	std::string name[CHAR_BUFFER_SIZE];
+	std::string name;
+	std::string eff_name;
+	bool technique_status;
 };
 
 
@@ -103,6 +106,8 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 
 	// to handle parallel access (not used)
 	std::shared_mutex s_mutex;
+
+	// to avoid "holes" in 
 
 	// to copy texture
 	reshade::api::descriptor_table_update update;
@@ -150,6 +155,9 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 
 	// counter for the current display (eye + quad view)
 	short int count_display = 0;
+
+	// to avoid "holes" in count_display, as the PS used to increment can be called 2 time consecutivelly
+	Feature last_feature = Feature::Null;
 
 	// to used as seed for random
 	uint32_t frame_counter = 0;

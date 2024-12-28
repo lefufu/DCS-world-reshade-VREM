@@ -48,19 +48,6 @@ static size_t g_charBufferSize;
 static char g_charBuffer[CHAR_BUFFER_SIZE];
 static bool technique_status;
 
-// moved to log.cpp ?
-/*
-void LogTechniqueInfo(effect_runtime* runtime, effect_technique technique, std::string& name, std::string& eff_name, bool technique_status)
-{
-    // Write to ReShade log
-    std::stringstream s;
-    s << "   log technique(), Technique Name: " << name << ", Effect Name: " << eff_name << ", Technique status : " << technique_status;
-    reshade::log::message(reshade::log::level::info, s.str().c_str());
-    s.str("");
-    s.clear();
-}
-*/
-
 void enumerateTechniques(effect_runtime* runtime)
 {
     
@@ -85,11 +72,10 @@ void enumerateTechniques(effect_runtime* runtime)
 
         // add technique in vector if active
         if (technique_status)
-        // if (name == "ColorMatrix")
         {
 
             // add the tehcnique in the vector
-            shared_data.technique_vector.push_back({ technique, name });
+            shared_data.technique_vector.push_back({ technique, name, eff_name , technique_status });
 
             //log 
             log_technique_info(rt, technique, name, eff_name, technique_status);

@@ -714,7 +714,7 @@ void log_effect(technique_trace tech, command_list* cmd_list, resource_view rv)
 
 
 		std::stringstream s;
-		s << "=> on_push_descriptors(): engage render effects for technique, " << tech.name;
+		s << "=> on_push_descriptors(): engage render effects for technique = " << tech.name << " / " << tech.eff_name <<";";
 		reshade::api::device* dev = cmd_list->get_device();
 		reshade::log::message(reshade::log::level::info, s.str().c_str());
 		s.str("");

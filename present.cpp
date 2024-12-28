@@ -49,9 +49,9 @@
 //
 void intialize_counters()
 {
-	// to know the current display : 2D, VR standard: left/right, VR quad view : left/right + eye left/right
-
+	// to know the current display : 2D, VR standard: left/right, VR quad view : left eye outer + inner + right eye outer+inner
 	shared_data.count_display = 0;
+
 	shared_data.cb_inject_values.mapMode = 1.0;
 	shared_data.depthStencil_copy_started = false;
 	shared_data.counter_testing = 0;
@@ -62,6 +62,8 @@ void intialize_counters()
 	shared_data.track_for_render_target = false;
 
 	shared_data.render_target_res->copied = false;
+
+	shared_data.last_feature = Feature::Null;
 
 	// initialize flags for copy
 	for (int i = 0; i < MAXVIEWSPERDRAW; i++)
