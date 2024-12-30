@@ -119,10 +119,8 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	bool track_for_depthStencil = false;
 
 	// technique : copy render target, flag for draw
-	resource_trace render_target_res[MAXVIEWSPERDRAW];
+	// resource_trace render_target_res[MAXVIEWSPERDRAW];
 	resourceview_trace render_target_view[MAXVIEWSPERDRAW];
-	resourceview_trace render_target_rv_nrgb[MAXVIEWSPERDRAW];
-	resourceview_trace render_target_rv_rgb[MAXVIEWSPERDRAW];
 
 	bool track_for_render_target = false;
 	bool render_effect = false;

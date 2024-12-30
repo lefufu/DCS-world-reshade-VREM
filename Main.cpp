@@ -54,7 +54,7 @@
 using namespace reshade::api;
 
 extern "C" __declspec(dllexport) const char *NAME = "DCS VREM";
-extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v5.0-effects";
+extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v6.0";
 
 // ***********************************************************************************************************************
 // definition of all shader of the mod (whatever feature selected in GUI)
@@ -379,12 +379,10 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 				if (it->second.feature == Feature::NS430 && shared_data.NS430_copy_started && shared_data.cb_inject_values.NS430Flag)
 				{
 					// NS430 texture in VR menu GUI aera shaders as only 1 copy is done per frame, use 0 for all draws
-					// if (shared_data.NS430_view[shared_data.count_display].created)
 					if (shared_data.NS430_view[0].created)
 					{
 						// push the texture for NS430, descriptor initialized in copy_texture()
 						shared_data.update.binding = 2; // t5
-						// shared_data.update.descriptors = &shared_data.NS430_view[shared_data.count_display].texresource_view;
 						shared_data.update.descriptors = &shared_data.NS430_view[0].texresource_view;
 						commandList->push_descriptors(reshade::api::shader_stage::pixel, shared_data.saved_pipeline_layout_RV, 0, shared_data.update);
 
@@ -443,7 +441,6 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 				if (it->second.feature == Feature::GetStencil)
 				{	
 					// engage tracking shader_resource_view in push_descriptors() to get depthStencil 
-					// const std::unique_lock<std::shared_mutex> lock(shared_data.s_mutex);
 					shared_data.track_for_depthStencil = true;
 
 					// log infos
@@ -454,7 +451,6 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 				if (it->second.feature == Feature::NS430)
 				{
 					// engage tracking shader_resource_view in push_descriptors() to get depthStencil 
-					// const std::unique_lock<std::shared_mutex> lock(shared_data.s_mutex);
 					shared_data.track_for_NS430 = true;
 
 					// log infos
@@ -583,8 +579,7 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 // called a lot !
 static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pipeline_layout layout, uint32_t param_index, const descriptor_table_update& update)
 {
-	// technique are not working if different render resolution, so code is "commented"
-	//engage effect if requested in previous draw() 
+	//engage effect if requested in previous draw(), depending of option in effect settings (for QV only)
 	if (shared_data.render_effect && shared_data.effects_feature && ( 
 		(shared_data.count_display <= 2 && shared_data.effect_target_QV == 1) ||
 		(shared_data.count_display > 2 && shared_data.effect_target_QV == 2) ||
@@ -592,34 +587,21 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 		)
 	{
 		// engage effect
-		// shared_data.count_draw = 0;
 		shared_data.render_effect = false;
-		// device* const device = cmd_list->get_device();
 
-		// do not engage effect if render target view is not identified and limit effect to left eye ext. or 2D
-		// if (shared_data.render_target_view[shared_data.count_display - 1].created && shared_data.count_display == 1)
-		// if (shared_data.render_target_rv_nrgb[shared_data.count_display - 1].created && shared_data.count_display <=  5)
-		if (shared_data.render_target_rv_nrgb[shared_data.count_display - 1].created)
+		// do not engage effect if render target view is not identified 
+		if (shared_data.render_target_view[shared_data.count_display - 1].created)
 		{
 			for (int i = 0; i < shared_data.technique_vector.size(); ++i)
 			{
-				if (debug_flag && flag_capture)
-				{
-					std::stringstream s;
-					s << "** launch effect using shared_data.render_target_rv_nrgb[" << shared_data.count_display - 1 << "].texresource_view;";
-					reshade::log::message(reshade::log::level::info, s.str().c_str());
-				}
-
-				log_effect(shared_data.technique_vector[i], cmd_list, shared_data.render_target_rv_nrgb[shared_data.count_display - 1].texresource_view);
-				//shared_data.runtime->render_technique(shared_data.technique_vector[i].technique, cmd_list, shared_data.render_target_view[shared_data.count_display - 1].texresource_view, shared_data.render_target_view[shared_data.count_display - 1].texresource_view);
-				shared_data.runtime->render_technique(shared_data.technique_vector[i].technique, cmd_list, shared_data.render_target_rv_nrgb[shared_data.count_display - 1].texresource_view, shared_data.render_target_rv_rgb[shared_data.count_display - 1].texresource_view);
+				shared_data.runtime->render_technique(shared_data.technique_vector[i].technique, cmd_list, shared_data.render_target_view[shared_data.count_display - 1].texresource_view, shared_data.render_target_view[shared_data.count_display - 1].texresource_view);
+				log_effect(shared_data.technique_vector[i], cmd_list, shared_data.render_target_view[shared_data.count_display - 1].texresource_view);
 
 			}
 		}
 	}
 
 	//handle only shader_resource_view when needed
-	// 
 	// handle depthStencil
 	if (shared_data.track_for_depthStencil && update.type == descriptor_type::shader_resource_view &&  stages == shader_stage::pixel && update.count == 6)
 	{
@@ -665,42 +647,13 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 static void on_bind_render_targets_and_depth_stencil(command_list *cmd_list, uint32_t count, const resource_view* rtvs, resource_view dsv)
 {
 	// copy render target if tracking
-
-	/*
-	if (shared_data.track_for_render_target && debug_flag && flag_capture)
-	{
-		std::stringstream s;
-		s << "on_bind_render_targets_and_depth_stencil() tracking render target, count_display " << shared_data.count_display << ", mapmode =" << shared_data.cb_inject_values.mapMode << ", count " << count << ")";
-		reshade::log::message(reshade::log::level::info, s.str().c_str());
-
-		reshade::api::device* dev = cmd_list->get_device();
-		if (count >0) log_texture_view(dev, "rtvs[0]", rtvs[0]);
-
-	}
-	*/
-	
 	if (shared_data.track_for_render_target && shared_data.count_display > -1 && !shared_data.cb_inject_values.mapMode && count > 0 && shared_data.effects_feature)
 	{
 		
 		// only first render target view to get
 		shared_data.render_target_view[shared_data.count_display].texresource_view = rtvs[0];
 		shared_data.render_target_view[shared_data.count_display].created = true;
-		/*
-		if (debug_flag && flag_capture)
-		{
-			std::stringstream s;
-			s << "** on_bind_render_targets_and_depth_stencil() : shared_data.render_target_view/rgb/nrgb[" << shared_data.count_display << "].texresource_view = rtvs[0]" << ")";
-			reshade::log::message(reshade::log::level::info, s.str().c_str());
-		}
-		*/
 		
-		shared_data.render_target_rv_rgb[shared_data.count_display].texresource_view = rtvs[0];
-		shared_data.render_target_rv_rgb[shared_data.count_display].created = true;
-
-		shared_data.render_target_rv_nrgb[shared_data.count_display].texresource_view = rtvs[0];
-		shared_data.render_target_rv_nrgb[shared_data.count_display].created = true;
-		
-
 		log_renderTarget_depth(count, rtvs, dsv, cmd_list);
 	}
 
@@ -734,76 +687,6 @@ static bool on_draw(command_list* commandList, uint32_t vertex_count, uint32_t i
 	// clear tracking flags
 	clear_tracking_flags();
 
-	// handle effects if needed
-	
-	if (shared_data.render_effect)
-	{
-		
-		/*
-		if (debug_flag && flag_capture)
-			reshade::log::message(reshade::log::level::info, "on draw : shared_data.render_effect true");
-		*/
-
-
-		// try to use existing views
-		//create resource views if not existing
-		if (!shared_data.render_target_rv_nrgb[shared_data.count_display-1].created && shared_data.render_target_view[shared_data.count_display - 1].created)
-		{
-			
-			if (debug_flag && flag_capture)
-				reshade::log::message(reshade::log::level::info, "Create resources");
-			
-			reshade::api::device* dev = commandList->get_device();
-
-			if (debug_flag && flag_capture)
-			{
-				std::stringstream s;
-				s << " => on_draw :  " << shared_data.count_display << ", shared_data.render_target_view[shared_data.count_display-1].created = " << shared_data.render_target_view[shared_data.count_display - 1].created << ";";
-				reshade::log::message(reshade::log::level::info, s.str().c_str());
-			}
-
-			reshade::api::resource_view rtrv = shared_data.render_target_view[shared_data.count_display-1].texresource_view;
-			reshade::api::resource rendert_res = dev->get_resource_from_view(rtrv);
-			reshade::api::resource_desc desc = dev->get_resource_desc(rendert_res);
-
-			if (static_cast<uint32_t>(desc.usage & resource_usage::render_target))
-			{
-
-				if (debug_flag && flag_capture)
-					reshade::log::message(reshade::log::level::info, "Start creation of RT views");
-
-				/*
-				// create the resource view, it is assumed DCS will always use r8g8b8a8_typeless for RT
-				reshade::api::format format_non_srgb = reshade::api::format_to_default_typed(reshade::api::format::r8g8b8a8_unorm, 0);
-				reshade::api::format format_non_rgb = reshade::api::format_to_default_typed(reshade::api::format::r8g8b8a8_unorm, 1);
-				*/
-
-				//align with resource format
-				dev->create_resource_view(rendert_res, resource_usage::render_target,
-					resource_view_desc(desc.texture.format), &shared_data.render_target_rv_nrgb[shared_data.count_display - 1].texresource_view);
-
-				shared_data.render_target_rv_nrgb[shared_data.count_display-1].created = true;
-
-				//align with resource format
-				dev->create_resource_view(rendert_res, resource_usage::render_target,
-					resource_view_desc(desc.texture.format), &shared_data.render_target_rv_rgb[shared_data.count_display - 1].texresource_view);
-				shared_data.render_target_rv_rgb[shared_data.count_display-1].created = true;
-
-
-				//log creation
-				if (debug_flag && flag_capture)
-					log_create_rendertarget_view(dev, rendert_res, desc);
-
-			}
-			else
-				log_error_for_rendertarget();
-		}
-
-		
-		
-	}
-	
-
 	return skip;
 }
 
@@ -826,7 +709,6 @@ static bool on_draw_indexed(command_list* commandList, uint32_t index_count, uin
 // On draw* : skip draw
 static bool on_drawOrDispatch_indirect(command_list* commandList, indirect_command type, resource buffer, uint64_t offset, uint32_t draw_count, uint32_t stride)
 {
-
 
 	bool skip = false;
 	if (do_not_draw) skip = true;
@@ -929,16 +811,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD fdwReason, LPVOID)
 
 			reshade::register_event< reshade::addon_event::reshade_reloaded_effects>(on_reshade_reloaded_effects);
 	
-			/*
-			reshade::register_event<reshade::addon_event::init_resource_view>(on_init_resource_view);
-			
-			reshade::register_event<reshade::addon_event::execute_command_list>(on_execute);
-			reshade::register_event<reshade::addon_event::init_effect_runtime>(on_init_effect_runtime);
-			reshade::register_event<reshade::addon_event::init_device>(on_init_device);
-			reshade::register_event<reshade::addon_event::destroy_device>(on_destroy_device);
-			*/
-
-
 			// setup GUI
 			reshade::register_overlay(nullptr, &displaySettings);
 
@@ -966,14 +838,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD fdwReason, LPVOID)
 
 		reshade::unregister_event< reshade::addon_event::reshade_reloaded_effects>(on_reshade_reloaded_effects);
 		
-		/*
-		reshade::unregister_event<reshade::addon_event::execute_command_list>(on_execute);
-		reshade::unregister_event<reshade::addon_event::init_effect_runtime>(on_init_effect_runtime);
-		reshade::unregister_event<reshade::addon_event::init_device>(on_init_device);
-		reshade::unregister_event<reshade::addon_event::destroy_device>(on_destroy_device);
-		reshade::unregister_event<reshade::addon_event::init_resource_view>(on_init_resource_view);
-		*/
-
 		reshade::unregister_event<reshade::addon_event::reshade_present>(on_present);
 
 		

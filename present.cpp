@@ -61,7 +61,7 @@ void intialize_counters()
 	shared_data.render_effect = false;
 	shared_data.track_for_render_target = false;
 
-	shared_data.render_target_res->copied = false;
+	// shared_data.render_target_res->copied = false;
 
 	shared_data.last_feature = Feature::Null;
 
@@ -70,8 +70,7 @@ void intialize_counters()
 	{
 		shared_data.depthStencil_res[i].copied = false;
 		shared_data.NS430_res[i].copied = false;
-		shared_data.render_target_rv_nrgb[i].created = false;
-		shared_data.render_target_rv_rgb[i].created = false;
+		shared_data.render_target_view[i].created = false;
 	}
 }
 

@@ -676,11 +676,7 @@ void log_create_rendertarget_view(reshade::api::device* dev, reshade::api::resou
 		s.clear();
 
 		//display infos on resources views
-
-		log_texture_view(dev, "shared_data.render_target_rv_nrgb[shared_data.count_display - 1].texresource_view", shared_data.render_target_rv_nrgb[shared_data.count_display - 1].texresource_view);
-
-		log_texture_view(dev, "shared_data.render_target_rv_rgb[shared_data.count_display - 1].texresource_view", shared_data.render_target_rv_rgb[shared_data.count_display - 1].texresource_view);
-
+		log_texture_view(dev, "shared_data.render_target_rv_nrgb[shared_data.count_display - 1].texresource_view", shared_data.render_target_view[shared_data.count_display - 1].texresource_view);
 	}
 }
 
