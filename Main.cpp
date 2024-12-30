@@ -461,8 +461,8 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 					log_start_monitor("NS430");
 				}
 
-				// set flag for tracking render target
-				if (it->second.feature == Feature::Effects)
+				// set flag for tracking render target if feature enabled and not in 2D
+				if (it->second.feature == Feature::Effects && shared_data.effects_feature && shared_data.count_draw > 1)
 				{
 				
 					// if (shared_data.render_target_view[shared_data.count_display].created)
@@ -501,6 +501,7 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 				
 
 				// PS global color : increase draw count & GUI flag (to avoid MFD)
+				// setup flag to launch render effect and stop tracking render target
 				// handle a case where the Ps is called 2 time consecutivelly
 				if (it->second.feature == Feature::Global && shared_data.last_feature != Feature::Global)
 				{
@@ -510,18 +511,23 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 					{
 
 						shared_data.count_display += 1;
+						// log max of count_display to enable or not features for VR / Quad view
+						shared_data.count_draw = max(shared_data.count_draw, shared_data.count_display);
 						// it's stupid but I'm too lazy to change code now..
 						shared_data.cb_inject_values.count_display = shared_data.count_display;
 
 						// log infos
 						log_increase_count_display();
 
-						// handle effects : setup flag for draw
-						shared_data.render_effect = true;
-						shared_data.track_for_render_target = false;
+						if (shared_data.effects_feature)
+						{
+							// handle effects : setup flag for draw
+							shared_data.render_effect = true;
+							shared_data.track_for_render_target = false;
 
-						// log infos
-						log_effect_requested();
+							// log infos
+							log_effect_requested();
+						}
 					}
 					else
 					{	
@@ -551,12 +557,6 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 
 					// log infos
 					log_MSAA();
-
-					//load technique list once (use this shader as it should not be done too soon to ensure reshade will have time to compile them...
-					// if (shared_data.technique_init == -1)
-					// {
-						// shared_data.technique_init = 1;
-					// }
 				}
 
 				// PS for no MSAA : setup the ratio for masking
@@ -568,12 +568,6 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 
 					//log
 					log_MSAA();
-
-					//load technique list once (use this shader as it should not be done too soon to ensure reshade will have time to compile them...
-					// if (shared_data.technique_init == -1)
-					// {
-						// shared_data.technique_init = 1;
-					// }
 				}
 
 			}
@@ -670,7 +664,9 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 // on_bind_render_targets_and_depth_stencil() : track render target
 static void on_bind_render_targets_and_depth_stencil(command_list *cmd_list, uint32_t count, const resource_view* rtvs, resource_view dsv)
 {
-	//cpy render target if tracking
+	// copy render target if tracking
+
+	/*
 	if (shared_data.track_for_render_target && debug_flag && flag_capture)
 	{
 		std::stringstream s;
@@ -681,20 +677,22 @@ static void on_bind_render_targets_and_depth_stencil(command_list *cmd_list, uin
 		if (count >0) log_texture_view(dev, "rtvs[0]", rtvs[0]);
 
 	}
+	*/
 	
-	if (shared_data.track_for_render_target && shared_data.count_display > -1 && !shared_data.cb_inject_values.mapMode && count > 0 )
+	if (shared_data.track_for_render_target && shared_data.count_display > -1 && !shared_data.cb_inject_values.mapMode && count > 0 && shared_data.effects_feature)
 	{
 		
 		// only first render target view to get
 		shared_data.render_target_view[shared_data.count_display].texresource_view = rtvs[0];
 		shared_data.render_target_view[shared_data.count_display].created = true;
-
+		/*
 		if (debug_flag && flag_capture)
 		{
 			std::stringstream s;
 			s << "** on_bind_render_targets_and_depth_stencil() : shared_data.render_target_view/rgb/nrgb[" << shared_data.count_display << "].texresource_view = rtvs[0]" << ")";
 			reshade::log::message(reshade::log::level::info, s.str().c_str());
 		}
+		*/
 		
 		shared_data.render_target_rv_rgb[shared_data.count_display].texresource_view = rtvs[0];
 		shared_data.render_target_rv_rgb[shared_data.count_display].created = true;
@@ -705,32 +703,6 @@ static void on_bind_render_targets_and_depth_stencil(command_list *cmd_list, uin
 
 		log_renderTarget_depth(count, rtvs, dsv, cmd_list);
 	}
-
-	/*
-	//engage effect if requested in previous draw()
-	if (shared_data.render_effect)
-	{
-		// engage effect
-		// shared_data.count_draw = 0;
-		shared_data.render_effect = false;
-		device* const device = cmd_list->get_device();
-		const auto& dev_data = device->get_private_data<device_data>();
-
-		if (debug_flag && flag_capture)
-		{
-			std::stringstream s;
-			s << "on_bind_render_targets_and_depth_stencil() shared_data.render_effect = true, shared_data.technique_vector.size() = " << shared_data.technique_vector.size() << ";";
-			reshade::log::message(reshade::log::level::info, s.str().c_str());
-		}
-
-		for (int i = 0; i < shared_data.technique_vector.size(); ++i)
-		{
-
-			dev_data.main_runtime->render_technique(shared_data.technique_vector[i].technique, cmd_list, shared_data.render_target_view[shared_data.count_display-1].texresource_view, shared_data.render_target_view[shared_data.count_display-1].texresource_view);
-			log_effect(shared_data.technique_vector[i]);
-		}
-	}
-	*/
 
 }
 //*******************************************************************************************************
@@ -766,12 +738,11 @@ static bool on_draw(command_list* commandList, uint32_t vertex_count, uint32_t i
 	
 	if (shared_data.render_effect)
 	{
+		
+		/*
 		if (debug_flag && flag_capture)
 			reshade::log::message(reshade::log::level::info, "on draw : shared_data.render_effect true");
-
-		// shared_data.render_effect = false;
-		// shared_data.count_draw += 1;
-
+		*/
 
 
 		// try to use existing views
@@ -796,29 +767,23 @@ static bool on_draw(command_list* commandList, uint32_t vertex_count, uint32_t i
 			reshade::api::resource_desc desc = dev->get_resource_desc(rendert_res);
 
 			if (static_cast<uint32_t>(desc.usage & resource_usage::render_target))
-			// try to copy resource only if 
-			// if (static_cast<uint32_t>(desc.usage & resource_usage::render_target) && (desc.texture.format == reshade::api::format::r8g8b8a8_unorm))
 			{
 
 				if (debug_flag && flag_capture)
 					reshade::log::message(reshade::log::level::info, "Start creation of RT views");
 
+				/*
 				// create the resource view, it is assumed DCS will always use r8g8b8a8_typeless for RT
-				// reshade::api::format format_non_srgb = reshade::api::format_to_default_typed(reshade::api::format::r8g8b8a8_typeless, 0);
-				// reshade::api::format format_non_rgb = reshade::api::format_to_default_typed(reshade::api::format::r8g8b8a8_typeless, 1);
 				reshade::api::format format_non_srgb = reshade::api::format_to_default_typed(reshade::api::format::r8g8b8a8_unorm, 0);
 				reshade::api::format format_non_rgb = reshade::api::format_to_default_typed(reshade::api::format::r8g8b8a8_unorm, 1);
+				*/
 
-				//dev->create_resource_view(rendert_res, resource_usage::render_target,
-				//	resource_view_desc(format_non_srgb), &shared_data.render_target_rv_nrgb[shared_data.count_display-1].texresource_view);
 				//align with resource format
 				dev->create_resource_view(rendert_res, resource_usage::render_target,
 					resource_view_desc(desc.texture.format), &shared_data.render_target_rv_nrgb[shared_data.count_display - 1].texresource_view);
 
 				shared_data.render_target_rv_nrgb[shared_data.count_display-1].created = true;
 
-				// dev->create_resource_view(rendert_res, resource_usage::render_target,
-				// 	resource_view_desc(format_non_rgb), &shared_data.render_target_rv_rgb[shared_data.count_display-1].texresource_view);
 				//align with resource format
 				dev->create_resource_view(rendert_res, resource_usage::render_target,
 					resource_view_desc(desc.texture.format), &shared_data.render_target_rv_rgb[shared_data.count_display - 1].texresource_view);
