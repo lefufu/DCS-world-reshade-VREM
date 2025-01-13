@@ -92,8 +92,8 @@ void handle_keypress(effect_runtime* runtime)
 	}
 	*/
 
-	// CTRL+I toggle on/off video in IHADSS
-	if (runtime->is_key_pressed('I') && runtime->is_key_down(VK_CONTROL))
+	// default CTRL+I toggle on/off video in IHADSS
+	if (runtime->is_key_pressed(shared_data.key_TADS_video[0]) && runtime->is_key_down(VK_CONTROL))
 	{
 		// Toggle the value of disable_video_IHADSS between 0.0 and 1.0
 		if (shared_data.cb_inject_values.disable_video_IHADSS == 1.0)
@@ -106,8 +106,8 @@ void handle_keypress(effect_runtime* runtime)
 		}
 	}
 
-	// SHIFT+I toggle on/off boresight convergence of IHADSS
-	if (runtime->is_key_pressed('I') && runtime->is_key_down(VK_SHIFT))
+	// default SHIFT+I toggle on/off boresight convergence of IHADSS
+	if (runtime->is_key_pressed(shared_data.key_TADS_video[0]) && runtime->is_key_down(VK_SHIFT))
 	{
 		// Toggle the value of disable_video_IHADSS between 0.0 and 1.0
 		if (shared_data.cb_inject_values.IHADSSBoresight == 1.0)
@@ -120,8 +120,8 @@ void handle_keypress(effect_runtime* runtime)
 		}
 	}
 
-	// ALT+I toggle on/off lest eye of IHADSS
-	if (runtime->is_key_pressed('I') && runtime->is_key_down(VK_MENU))
+	// default ALT+I toggle on/off lest eye of IHADSS
+	if (runtime->is_key_pressed(shared_data.key_TADS_video[0]) && runtime->is_key_down(VK_MENU))
 	{
 		// Toggle the value of disable_video_IHADSS between 0.0 and 1.0
 		if (shared_data.cb_inject_values.IHADSSNoLeft == 1.0)
@@ -134,8 +134,8 @@ void handle_keypress(effect_runtime* runtime)
 		}
 	}
 
-	// ALT+v toggle NS430 hiding and screen texture display in GUI
-	if (runtime->is_key_pressed('V') && runtime->is_key_down(VK_MENU))
+	// default ALT+V toggle NS430 hiding and screen texture display in GUI
+	if (runtime->is_key_pressed(shared_data.key_NS430[0]) && runtime->is_key_down(VK_MENU))
 	{
 		// Toggle the value of disable_video_IHADSS between 0.0 and 1.0
 		if (shared_data.cb_inject_values.NS430Flag == 1.0)
@@ -146,6 +146,22 @@ void handle_keypress(effect_runtime* runtime)
 		{
 			shared_data.cb_inject_values.NS430Flag = 1.0;
 		}
+	}
+
+	// default SHIFT+1 toggle ON limiter
+	if (runtime->is_key_pressed(shared_data.key_fps[0]) && runtime->is_key_down(VK_SHIFT) ) // && shared_data.fps_feature)
+	{
+		shared_data.fps_enabled = true;
+		shared_data.fps_started = false;
+
+	}
+
+	// default CTRL+1 toggle OFF limiter
+	if (runtime->is_key_pressed(shared_data.key_fps[0]) && runtime->is_key_down(VK_CONTROL) ) // && shared_data.fps_feature)
+	{
+		// Toggle the value of disable_video_IHADSS between 0.0 and 1.0
+		shared_data.fps_enabled = false;
+
 	}
 
 }
@@ -207,9 +223,29 @@ void on_present(effect_runtime* runtime)
 		shared_data.button_technique = false;
 		shared_data.technique_init = 0;
 		enumerateTechniques(runtime);
-		flag_capture = true;
+		// flag_capture = true;
 	}
 	
+	//fps limiter
+	if (shared_data.fps_enabled && shared_data.fps_feature)
+	{
+
+		if (!shared_data.fps_started)
+		{
+			shared_data.fps_started = true;
+			shared_data.fps_last_point = std::chrono::high_resolution_clock::now();
+		}
+
+		// const auto time_per_frame = std::chrono::high_resolution_clock::duration(std::chrono::seconds(1)) / shared_data.fps_limit;
+		const auto next_point = shared_data.fps_last_point + shared_data.time_per_frame;
+
+		while (next_point > std::chrono::high_resolution_clock::now())
+			std::this_thread::sleep_for(std::chrono::high_resolution_clock::duration(std::chrono::milliseconds(1)));
+
+		shared_data.fps_last_point = next_point;
+	}
+
+
 	// to debug crash at launch
 	// flag_capture = true;
 

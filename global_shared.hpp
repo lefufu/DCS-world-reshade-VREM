@@ -142,6 +142,8 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 
 	// render target (all(0)/outer(1)/inner(2)) for effect
 	int effect_target_QV = 0;
+	// to flag PS shader is used for 2D mirror of VR and not VR rendering
+	short int mirror_VR = -1;
 
 	//NS430 texture
 	resource_trace NS430_res[MAXVIEWSPERDRAW];
@@ -168,7 +170,12 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	//disable optimisation
 	bool disable_optimisation = false;
 
-	//effect
+	// fps limiter
+	std::chrono::high_resolution_clock::duration time_per_frame;
+	uint32_t fps_limit;
+	bool fps_started = false;
+	std::chrono::high_resolution_clock::time_point fps_last_point;
+	bool fps_enabled = false;
 
 	// flag for features
 	bool effects_feature = false;
@@ -177,6 +184,7 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	bool misc_feature = false;
 	bool helo_feature = false;
 	bool NS430_feature = false;
+	bool fps_feature = false;
 	// bool debug_feature = false;
 	// initial value of flag above, to display 'relaunch' message
 	bool init_effects_feature = false;
@@ -186,6 +194,11 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	bool init_helo_feature = false;
 	bool init_NS430_feature = false;
 	bool init_debug_feature = false;
+
+	// key binding
+	std::string key_TADS_video;
+	std::string key_NS430;
+	std::string key_fps;
 };
 
 extern struct global_shared shared_data;

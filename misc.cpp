@@ -89,6 +89,8 @@ void load_setting_IniFile()
 		shared_data.cb_inject_values.disable_video_IHADSS = 0.0;
 		shared_data.cb_inject_values.IHADSSBoresight = 0.0;
 		shared_data.cb_inject_values.IHADSSxOffset = 0.0;
+		shared_data.cb_inject_values.TADSDay = 0.28;
+		shared_data.cb_inject_values.TADSNight = 0.02;
 
 		shared_data.cb_inject_values.maskLabels = 0.0;
 		shared_data.cb_inject_values.hazeReduction = 1.0;
@@ -119,6 +121,15 @@ void load_setting_IniFile()
 
 		shared_data.disable_optimisation = false;
 
+		shared_data.fps_limit = 120;
+		shared_data.fps_feature = false;
+
+		shared_data.key_NS430 = "V";
+		shared_data.key_TADS_video = "I";
+		shared_data.key_fps = "1";
+
+
+
 		return;
 	}
 
@@ -133,6 +144,13 @@ void load_setting_IniFile()
 	shared_data.effect_target_QV = iniFile.GetInt("QV_render_target", "Effects");
 	if (shared_data.effect_target_QV == INT_MIN) shared_data.effect_target_QV = 0;
 
+	//keybind
+	shared_data.key_TADS_video = iniFile.GetString("key_TADS_video", "KeyBind");
+	if (shared_data.key_TADS_video == "") shared_data.key_TADS_video = "I";
+	shared_data.key_NS430 = iniFile.GetString("key_NS430", "KeyBind");
+	if (shared_data.key_NS430 == "") shared_data.key_NS430 = "V";
+	shared_data.key_fps = iniFile.GetString("key_fps", "KeyBind");
+	if (shared_data.key_fps == "") shared_data.key_fps = "1";
 
 	// helicopter
 	shared_data.helo_feature = iniFile.GetBool("helo_feature", "Helo");
@@ -144,6 +162,10 @@ void load_setting_IniFile()
 	if (shared_data.cb_inject_values.IHADSSBoresight == FLT_MIN) shared_data.cb_inject_values.IHADSSBoresight = 0.0;
 	shared_data.cb_inject_values.IHADSSxOffset = iniFile.GetFloat("IHADSSxOffset", "Helo");
 	if (shared_data.cb_inject_values.IHADSSxOffset == FLT_MIN) shared_data.cb_inject_values.IHADSSxOffset = 0.0;
+	shared_data.cb_inject_values.TADSDay = iniFile.GetFloat("TADSDayValue", "Helo");
+	if (shared_data.cb_inject_values.TADSDay == FLT_MIN) shared_data.cb_inject_values.TADSDay = 0.28;
+	shared_data.cb_inject_values.TADSNight = iniFile.GetFloat("TADSnightValue", "Helo");
+	if (shared_data.cb_inject_values.TADSNight == FLT_MIN) shared_data.cb_inject_values.TADSNight = 0.02;
 	//misc
 	shared_data.misc_feature = iniFile.GetBool("misc_feature", "Misc");
 	shared_data.cb_inject_values.maskLabels = iniFile.GetFloat("maskLabels", "Misc");
@@ -198,7 +220,16 @@ void load_setting_IniFile()
 	shared_data.cb_inject_values.GUIYScale = iniFile.GetFloat("GUIYScale", "NS430");
 	if (shared_data.cb_inject_values.GUIYScale == FLT_MIN) shared_data.cb_inject_values.GUIYScale = 1.0;
 
-	
+	// reshade effects
+	shared_data.effects_feature = iniFile.GetBool("effects_feature", "Effects");
+	shared_data.effect_target_QV = iniFile.GetInt("QV_render_target", "Effects");
+	if (shared_data.effect_target_QV == INT_MIN) shared_data.effect_target_QV = 0;
+
+	// fps limiter
+	shared_data.fps_limit = iniFile.GetInt("fps_limit", "fps");
+	if (shared_data.fps_limit == INT_MIN) shared_data.fps_limit = 120;
+	shared_data.fps_feature = iniFile.GetBool("fps_feature", "fps");
+
 
 	// init global variables not saved in file
 	shared_data.cb_inject_values.disable_video_IHADSS = 0.0;
@@ -225,12 +256,21 @@ void saveShaderTogglerIniFile()
 	// format: first section with # of groups, then per group a section with pixel and vertex shaders, as well as their name and key value.
 	// groups are stored with "Group" + group counter, starting with 0.
 	CDataFile iniFile;
+
+	//keybind
+	iniFile.SetValue("key_TADS_video", shared_data.key_TADS_video, "key used for IHADSS and TADS Hello features", "KeyBind");
+	iniFile.SetValue("key_NS430", shared_data.key_NS430, "key used for NS430 features", "KeyBind");
+	iniFile.SetValue("key_fps", shared_data.key_fps, "key used for fps limiter", "KeyBind");
+	
+
 	// helicopter
 	iniFile.SetBool("helo_feature", shared_data.helo_feature, "Helicopter features", "Helo");
 	iniFile.SetFloat("rotorFlag", shared_data.cb_inject_values.rotorFlag, "Flag to hide helicopters rotor", "Helo");
 	iniFile.SetFloat("disable_video_IHADSS", shared_data.cb_inject_values.disable_video_IHADSS, "Flag to enable/disable video in TADS", "Helo");
 	iniFile.SetFloat("IHADSSBoresight", shared_data.cb_inject_values.IHADSSBoresight, "Flag to enable boresight IHADSS convergence", "Helo");
 	iniFile.SetFloat("IHADSSxOffset", shared_data.cb_inject_values.IHADSSxOffset, "convergence offset value for boresighting IHADSS", "Helo");
+	iniFile.SetFloat("TADSDayValue", shared_data.cb_inject_values.TADSDay, "trigger value to disable TADS video during day", "Helo");
+	iniFile.SetFloat("TADSNightValue", shared_data.cb_inject_values.TADSNight, "trigger value to disable TADS video during night", "Helo");
 
 	// reshade effects
 	iniFile.SetBool("effects_feature", shared_data.effects_feature, "Enable Reshade effects", "Effects");
@@ -275,6 +315,9 @@ void saveShaderTogglerIniFile()
 	iniFile.SetFloat("Convergence", shared_data.cb_inject_values.NS430Convergence, "convergence of NS430 in VR GUI", "NS430");
 	iniFile.SetFloat("GUIYScale", shared_data.cb_inject_values.GUIYScale, "Y size of VR GUI", "NS430");
 	
+	// fps limiter
+	iniFile.SetInt("fps_limit", shared_data.fps_limit, "fps_limiter", "fps");
+	iniFile.SetBool("fps_feature", shared_data.fps_feature, "Enable fps limiter feature", "fps");
 
 	iniFile.SetFileName(settings_iniFileName);
 	iniFile.Save();
@@ -354,6 +397,8 @@ void init_mod_features()
 
 	}
 	reshade::log::message(reshade::log::level::info, "End of shader table" );
+
+	shared_data.time_per_frame = std::chrono::high_resolution_clock::duration(std::chrono::seconds(1)) / shared_data.fps_limit;
 
 	// init flag to load technique list
 	// shared_data.technique_init == -1;

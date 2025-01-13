@@ -101,3 +101,4 @@ extern void log_texture_view(reshade::api::device* dev, std::string name, reshad
 
 extern void log_technique_info(effect_runtime* runtime, effect_technique technique, std::string& name, std::string& eff_name, bool technique_status);
 
+extern void log_mirror_view();

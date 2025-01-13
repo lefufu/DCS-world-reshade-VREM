@@ -54,7 +54,7 @@ using namespace reshade::api;
 /// </summary>
 bool copy_depthStencil(command_list* cmd_list, shader_stage stages, pipeline_layout layout, uint32_t param_index, const descriptor_table_update& update)
 {
-	// get resource info 
+	// get resource info (depth = t3)
 	resource_view src_resource_view_depth = static_cast<const reshade::api::resource_view*>(update.descriptors)[3];
 	device* dev = cmd_list->get_device();
 	resource scr_resource = dev->get_resource_from_view(src_resource_view_depth);
@@ -64,9 +64,22 @@ bool copy_depthStencil(command_list* cmd_list, shader_stage stages, pipeline_lay
 	if (!shared_data.depthStencil_res[shared_data.count_display].created)
 	{
 		
-		//get additional infos
+		//get additional infos (stencil = t4)
 		resource_view src_resource_view_stencil = static_cast<const reshade::api::resource_view*>(update.descriptors)[4];
 		resource_desc src_resource_desc = dev->get_resource_desc(scr_resource);
+		/*
+		resource_desc new_resource_desc;
+		new_resource_desc.flags = src_resource_desc.flags;
+		new_resource_desc.heap = src_resource_desc.heap;
+		new_resource_desc.texture.depth_or_layers = src_resource_desc.texture.depth_or_layers;
+		new_resource_desc.texture.format = reshade::api::format::d32_float_s8_uint;
+		new_resource_desc.texture.height = src_resource_desc.texture.height;
+		new_resource_desc.texture.levels = src_resource_desc.texture.levels;
+		new_resource_desc.texture.samples = src_resource_desc.texture.samples;
+		new_resource_desc.texture.width = src_resource_desc.texture.width;
+		new_resource_desc.type = src_resource_desc.type;
+		new_resource_desc.usage = src_resource_desc.usage;
+		*/
 
 		//log start of creation process
 		log_creation_start("depthStencil");
@@ -77,6 +90,9 @@ bool copy_depthStencil(command_list* cmd_list, shader_stage stages, pipeline_lay
 		
 		// create the target resource for texture
 		dev->create_resource(src_resource_desc, nullptr, resource_usage::shader_resource, &shared_data.depthStencil_res[shared_data.count_display].texresource, nullptr);
+		//dev->create_resource(new_resource_desc, nullptr, resource_usage::shader_resource, &shared_data.depthStencil_res[shared_data.count_display].texresource, nullptr);
+		
+		
 		// flag creation to avoid to create it again 
 		shared_data.depthStencil_res[shared_data.count_display].created = true;
 
@@ -86,8 +102,7 @@ bool copy_depthStencil(command_list* cmd_list, shader_stage stages, pipeline_lay
 		shared_data.depth_view[shared_data.count_display].created = true;
 		resource_view_desc resview_desc_stencil = dev->get_resource_view_desc(src_resource_view_stencil);
 		dev->create_resource_view(shared_data.depthStencil_res[shared_data.count_display].texresource, resource_usage::shader_resource, resview_desc_stencil, &shared_data.stencil_view[shared_data.count_display].texresource_view);
-		
-		
+			
 		shared_data.stencil_view[shared_data.count_display].created = true;
 
 		
@@ -140,7 +155,7 @@ bool copy_depthStencil(command_list* cmd_list, shader_stage stages, pipeline_lay
 /// 
 bool copy_NS430_text(command_list* cmd_list, shader_stage stages, pipeline_layout layout, uint32_t param_index, const descriptor_table_update& update)
 {
-	// get resource info 
+	// get resource info (t0)
 	resource_view src_resource_view_NS430 = static_cast<const reshade::api::resource_view*>(update.descriptors)[0];
 	device* dev = cmd_list->get_device();
 	resource scr_resource = dev->get_resource_from_view(src_resource_view_NS430);

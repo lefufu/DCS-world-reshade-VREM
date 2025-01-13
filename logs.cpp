@@ -92,7 +92,8 @@ void log_push_descriptor(shader_stage stages, pipeline_layout layout, uint32_t p
 void log_resource_created(std:: string texture_name, device* dev, resource_desc check_new_res)
 {
 
-	if ((debug_flag && flag_capture) || FORCE_LOG)
+	// if ((debug_flag && flag_capture) || FORCE_LOG)
+	if ((debug_flag ) || FORCE_LOG)
 	{
 
 		// display resource info
@@ -149,7 +150,7 @@ void log_resource_created(std:: string texture_name, device* dev, resource_desc 
 
 		check_new_res2 = dev->get_resource_view_desc(shared_data.stencil_view[shared_data.count_display].texresource_view);
 		// s << " => copy_depthStencil: create depth resource view , type: " << to_string(check_new_res2.type);
-		s << " => copy_" << texture_name << ": create depth resource view , type: " << to_string(check_new_res2.type);
+		s << " => copy_" << texture_name << ": create stencil resource view , type: " << to_string(check_new_res2.type);
 
 		switch (check_new_res2.type) {
 		default:
@@ -785,7 +786,6 @@ void log_technique_info(effect_runtime* runtime, effect_technique technique, std
 	
 	if ((debug_flag) || FORCE_LOG)
 	{
-		// Write to ReShade log
 		std::stringstream s;
 		s << "init of technique in vector, Technique Name: " << name << ", Effect Name: " << eff_name << ", Technique status : " << technique_status;
 		reshade::log::message(reshade::log::level::info, s.str().c_str());
@@ -794,3 +794,23 @@ void log_technique_info(effect_runtime* runtime, effect_technique technique, std
 	}
 
 }
+
+/// *******************************************************************************************************
+/// <summary>
+/// Log view used for mirror 
+/// </summary>
+/// 
+void log_mirror_view()
+{
+
+	if ((debug_flag && flag_capture) || FORCE_LOG)
+	{
+		std::stringstream s;
+		s << "= > on_bind_pipeline() : count_display used for mirror view = " << shared_data.count_display << "; ";
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
+		s.str("");
+		s.clear();
+	}
+
+}
+

@@ -46,7 +46,7 @@ static const int CBINDEX = 13;
 static const int RVINDEX = 3;
 
 // size of the constant buffer containing all mod parameters, to be injected in shaders
-static const int CBSIZE = 40;
+static const int CBSIZE = 44;
 
 // Must be 32bit aligned
 struct ShaderInjectData {
@@ -90,6 +90,10 @@ struct ShaderInjectData {
 	float GUIYScale; //9.y
 	float GUItodraw; //9.z
 	float NVGYPos; //9.w
+	float TADSNight; //10.x
+	float TADSDay; //10.y
+	float dunmmy1; //10.z
+	float dunmmy2; //10.w
 };
 
 

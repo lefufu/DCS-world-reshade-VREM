@@ -54,7 +54,7 @@
 using namespace reshade::api;
 
 extern "C" __declspec(dllexport) const char *NAME = "DCS VREM";
-extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v6.0";
+extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v6.2";
 
 // ***********************************************************************************************************************
 // definition of all shader of the mod (whatever feature selected in GUI)
@@ -90,7 +90,7 @@ std::unordered_map<uint32_t, Shader_Definition> shader_by_hash =
 	{ 0x55288581, Shader_Definition(action_log, Feature::GUI, L"", 0) },
 	//  ** identify game config **
 	// to define if VR is active or not (2D mirror view of VR )
-	{ 0x886E31F2, Shader_Definition(action_identify, Feature::VRMode, L"", 0) },
+	{ 0x886E31F2, Shader_Definition(action_identify | action_log, Feature::VRMode, L"", 0) },
 	// VS drawing cockpit parts to define if view is in welcome screen or map
 	{ 0xA337E177, Shader_Definition(action_identify, Feature::mapMode, L"", 0) },
 	//  ** haze control : illum PS: used for Haze control, to define which draw (eye + quad view) is current.  **
@@ -301,7 +301,6 @@ static void on_init_pipeline(device* device, pipeline_layout layout, uint32_t su
 					{
 						shared_data.cb_inject_values.mapMode = 0.0;
 					}
-
 				}
 
 				// store new shader to re use it later 
@@ -458,7 +457,9 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 				}
 
 				// set flag for tracking render target if feature enabled and not in 2D
-				if (it->second.feature == Feature::Effects && shared_data.effects_feature && shared_data.count_draw > 1)
+				// if (it->second.feature == Feature::Effects && shared_data.effects_feature && shared_data.count_draw > 1)
+				// TODO test to make it work in 2D
+				if (it->second.feature == Feature::Effects && shared_data.effects_feature)
 				{
 				
 					// if (shared_data.render_target_view[shared_data.count_display].created)
@@ -498,40 +499,54 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 
 				// PS global color : increase draw count & GUI flag (to avoid MFD)
 				// setup flag to launch render effect and stop tracking render target
-				// handle a case where the Ps is called 2 time consecutivelly
-				if (it->second.feature == Feature::Global && shared_data.last_feature != Feature::Global)
+				
+				if (it->second.feature == Feature::Global)
 				{
-					
-					// if texure has been copied previously, increase draw count, otherwise do nothing, to avoid counting shader calls for MFD rendering
-					if (shared_data.depthStencil_copy_started )
+					// handle the case where the Ps is called 2 time consecutivelly because of mirror view
+					if (shared_data.last_feature != Feature::Global)
 					{
-
-						shared_data.count_display += 1;
-						// log max of count_display to enable or not features for VR / Quad view
-						shared_data.count_draw = max(shared_data.count_draw, shared_data.count_display);
-						// it's stupid but I'm too lazy to change code now..
-						shared_data.cb_inject_values.count_display = shared_data.count_display;
-
-						// log infos
-						log_increase_count_display();
-
-						if (shared_data.effects_feature)
+						
+						// if texure has been copied previously, increase draw count, otherwise do nothing, to avoid counting shader calls for MFD rendering
+						if (shared_data.depthStencil_copy_started)
 						{
-							// handle effects : setup flag for draw
-							shared_data.render_effect = true;
-							shared_data.track_for_render_target = false;
+
+							shared_data.count_display += 1;
+							// log max of count_display to enable or not features for VR / Quad view
+							shared_data.count_draw = max(shared_data.count_draw, shared_data.count_display);
+							// it's stupid but I'm too lazy to change code now..
+							shared_data.cb_inject_values.count_display = shared_data.count_display;
 
 							// log infos
-							log_effect_requested();
+							log_increase_count_display();
+
+
+							if (shared_data.effects_feature)
+							{
+								// handle effects : setup flag for draw
+								shared_data.render_effect = true;
+								shared_data.track_for_render_target = false;
+
+								// log infos
+								log_effect_requested();
+							}
+						}
+						else
+						{
+							// log infos
+							log_not_increase_draw_count();
 						}
 					}
-					else
-					{	
-						// log infos
-						log_not_increase_draw_count();
-					}
+				}
 
-
+				// identify which view was used before mirror view
+				if (it->second.feature == Feature::VRMode)
+				{
+					
+					shared_data.mirror_VR = shared_data.count_display;
+					// fix for quad view
+					if (shared_data.count_display == 2) shared_data.mirror_VR = 1;
+					if (shared_data.count_display == 3) shared_data.mirror_VR = 0;
+					log_mirror_view();
 				}
 			}
 
@@ -579,10 +594,14 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 // called a lot !
 static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pipeline_layout layout, uint32_t param_index, const descriptor_table_update& update)
 {
+	
+	short int display_to_use = shared_data.count_display - 1;
+	
 	//engage effect if requested in previous draw(), depending of option in effect settings (for QV only)
+	// display_to_use = 0 => outer left, 1 = outer right, 2 = Inner left, 3 = inner right.
 	if (shared_data.render_effect && shared_data.effects_feature && ( 
-		(shared_data.count_display <= 2 && shared_data.effect_target_QV == 1) ||
-		(shared_data.count_display > 2 && shared_data.effect_target_QV == 2) ||
+		(display_to_use <= 1 && shared_data.effect_target_QV == 1) ||
+		(display_to_use > 1 && shared_data.effect_target_QV == 2) ||
 		shared_data.effect_target_QV == 0)
 		)
 	{
@@ -592,14 +611,37 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 		// do not engage effect if render target view is not identified 
 		if (shared_data.render_target_view[shared_data.count_display - 1].created)
 		{
-			for (int i = 0; i < shared_data.technique_vector.size(); ++i)
-			{
-				shared_data.runtime->render_technique(shared_data.technique_vector[i].technique, cmd_list, shared_data.render_target_view[shared_data.count_display - 1].texresource_view, shared_data.render_target_view[shared_data.count_display - 1].texresource_view);
-				log_effect(shared_data.technique_vector[i], cmd_list, shared_data.render_target_view[shared_data.count_display - 1].texresource_view);
+		
+			// export DEPTH and STENCIL for reshade effects if created (must be done in 2D too !!)
+			// update DEPTH texture
+			shared_data.runtime->update_texture_bindings("DEPTH", shared_data.depth_view[display_to_use].texresource_view, shared_data.depth_view[display_to_use].texresource_view);
+			// update STENCIL texture
+			shared_data.runtime->update_texture_bindings("STENCIL", shared_data.stencil_view[display_to_use].texresource_view, shared_data.stencil_view[display_to_use].texresource_view);
 
+			
+			// render all activated techniques if not 2D mirror or in 2D (reshade is already rendering the effect)
+			if (shared_data.cb_inject_values.VRMode)
+			{
+				for (int i = 0; i < shared_data.technique_vector.size(); ++i)
+				{
+					shared_data.runtime->render_technique(shared_data.technique_vector[i].technique, cmd_list, shared_data.render_target_view[display_to_use].texresource_view, shared_data.render_target_view[display_to_use].texresource_view);
+					log_effect(shared_data.technique_vector[i], cmd_list, shared_data.render_target_view[display_to_use].texresource_view);
+
+				}
+			}
+
+			// push back the outer texture instead of inner or wrong eye for effect in mirror view
+			if (shared_data.mirror_VR != -1)
+			{
+				// update DEPTH texture 
+				shared_data.runtime->update_texture_bindings("DEPTH", shared_data.depth_view[shared_data.mirror_VR].texresource_view, shared_data.depth_view[shared_data.mirror_VR].texresource_view);
+				// update STENCIL texture
+				shared_data.runtime->update_texture_bindings("STENCIL", shared_data.stencil_view[shared_data.mirror_VR].texresource_view, shared_data.stencil_view[shared_data.mirror_VR].texresource_view);
 			}
 		}
 	}
+
+
 
 	//handle only shader_resource_view when needed
 	// handle depthStencil

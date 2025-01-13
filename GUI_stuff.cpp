@@ -161,9 +161,9 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		{
 			ImGui::EndDisabled();
 		}
-		ImGui::Separator();
-
 	}
+	ImGui::Separator();
+
 	// *******************************************************************************************************
 	if (ImGui::CollapsingHeader("Cockpit sharpen, sky and sea deband"))
 	{
@@ -208,7 +208,6 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		// set deband options
 		ImGui::SliderFloat("NoiseStrength", &shared_data.cb_inject_values.Threshold, 0.0f, 4096.0f, "Noise: %1.0f");
 		ImGui::SliderFloat("DitherStrength", &shared_data.cb_inject_values.Range, 1.0f, 64.0f, "Range: %1.0f");
-		// ImGui::SliderFloat("Iterations", &shared_data.cb_inject_values.Iterations, 1.0f, 16.0f, "Iterations: %1.0f");
 		ImGui::SliderFloat("Grain", &shared_data.cb_inject_values.Grain, 0.0f, 4096.0f, "Grain: %1.0f");
 		if (!shared_data.cb_inject_values.debandFlag)
 		{
@@ -219,8 +218,9 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		{
 			ImGui::EndDisabled();
 		}
-		ImGui::Separator();
+		
 	}
+	ImGui::Separator();
 
 	// *******************************************************************************************************
 	if (ImGui::CollapsingHeader("Mics: Haze control, A10C instrument reflection, NVG size, label masking"))
@@ -285,7 +285,9 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		{
 			ImGui::BeginDisabled();
 		}
-		ImGui::Text("Use CTRL+i in game to change");
+		ImGui::Text("Use CTRL+%s in game to change", shared_data.key_TADS_video);
+		ImGui::SliderFloat("Trigger value for Day", &shared_data.cb_inject_values.TADSDay, 0.0f, 1.0f, "Active: %0.2f");
+		ImGui::SliderFloat("Trigger Value for Night", &shared_data.cb_inject_values.TADSNight, 0.0f, 1.0f, "Active: %0.2f");
 		if (!shared_data.cb_inject_values.disable_video_IHADSS)
 		{
 			ImGui::EndDisabled();
@@ -297,7 +299,7 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 			ImGui::BeginDisabled();
 		}
 		ImGui::SliderFloat("Boresight convergence offset", &shared_data.cb_inject_values.IHADSSxOffset, -0.25f, 0.25f, "Offset: %.3f");
-		ImGui::Text("Enable/Disable boresight convergence for IHADSS : use SHIFT+I in game");
+		ImGui::Text("Use SHIFT+%s in game to enable/disable boresight convergence for IHADSS : ", shared_data.key_TADS_video);
 		if (!shared_data.cb_inject_values.IHADSSBoresight)
 		{
 			ImGui::EndDisabled();
@@ -308,7 +310,7 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		{
 			ImGui::BeginDisabled();
 		}
-		ImGui::Text("Use ALT+i in game to change");
+		ImGui::Text("Use ALT+%s in game to change", shared_data.key_TADS_video);
 		if (!shared_data.cb_inject_values.IHADSSNoLeft)
 		{
 			ImGui::EndDisabled();
@@ -319,6 +321,7 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 			ImGui::EndDisabled();
 		}
 	}
+	ImGui::Separator();
 
 	// *******************************************************************************************************
 	if (ImGui::CollapsingHeader("NS430"))
@@ -343,7 +346,7 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		{
 			ImGui::BeginDisabled();
 		}
-		ImGui::Text("Use ALT+v in game to change");
+		ImGui::Text("Use ALT+%s in game to change", shared_data.key_NS430);
 		ImGui::SliderFloat("NS430 Scale", &shared_data.cb_inject_values.NS430Scale, 3.0f, 10.0f, "Scale: %.2f");
 		ImGui::SliderFloat("NS430 Xposition ", &shared_data.cb_inject_values.NS430Xpos, 0.0f, 1.0f, "Xpos: %.2f");
 		ImGui::SliderFloat("NS430 Yposition ", &shared_data.cb_inject_values.NS430Ypos, 0.0f, 1.0f, "YPos: %.2f");
@@ -358,42 +361,58 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 			ImGui::EndDisabled();
 		}
 	}
+	ImGui::Separator();
+
+	// *******************************************************************************************************
+	if (ImGui::CollapsingHeader("Fps limiter"))
+	{
+
+		ImGui::Checkbox("Activate fps limiter features", &shared_data.fps_feature);
+		if (!shared_data.fps_feature)
+		{
+			ImGui::BeginDisabled();
+		}
+
+			if (ImGui::Checkbox("Enabled", &shared_data.fps_enabled))
+				shared_data.fps_started = false;
+
+			ImGui::Text("Use SHIFT+%s in game to enable, CTRL+%s to disable", shared_data.key_fps, shared_data.key_fps);
+
+			if (ImGui::SliderInt("Target FPS", reinterpret_cast<int*>(&shared_data.fps_limit), 30, 120))
+			{
+				shared_data.fps_started = false;
+				shared_data.time_per_frame = std::chrono::high_resolution_clock::duration(std::chrono::seconds(1)) / shared_data.fps_limit;
+			}
+		if (!shared_data.fps_feature)
+		{
+			ImGui::EndDisabled();
+		}
+
+	}
+	ImGui::Separator();
 
 	// *******************************************************************************************************
 	if (ImGui::CollapsingHeader("Save and Load"))
 	{
-		static int clicked = 0;
+		// static int clicked = 0;
 		if (ImGui::Button("Save mod settings"))
 		{
 			saveShaderTogglerIniFile();
 			ImGui::SameLine();
 			ImGui::Text("Settings saved");
 		}
-		/*
-		clicked++;
-		if (clicked & 1)
-		{
-			saveShaderTogglerIniFile();
-			ImGui::SameLine();
-			ImGui::Text("Settings saved");
-		}
-		*/
-		static int clicked2 = 0;
+
+		// static int clicked2 = 0;
 		if (ImGui::Button("Reload mod settings"))
 		{
 			load_setting_IniFile();
 			ImGui::SameLine();
 			ImGui::Text("Settings reloaded");
 		}
-		/*
-			clicked2++;
-		if (clicked2 & 1)
-		{
-			load_setting_IniFile();
-			ImGui::SameLine();
-			ImGui::Text("Settings reloaded");
-		}*/
+
 	}
+	ImGui::Separator();
+
 	// *******************************************************************************************************
 	if (ImGui::CollapsingHeader("Debug options"))
 	{
