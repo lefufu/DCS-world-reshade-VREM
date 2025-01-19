@@ -99,6 +99,6 @@ extern void log_effect_requested();
 
 extern void log_texture_view(reshade::api::device* dev, std::string name, reshade::api::resource_view rview);
 
-extern void log_technique_info(effect_runtime* runtime, effect_technique technique, std::string& name, std::string& eff_name, bool technique_status);
+extern void log_technique_info(effect_runtime* runtime, effect_technique technique, std::string& name, std::string& eff_name, bool technique_status, int QV_target, bool has_texture);
 
 extern void log_mirror_view();

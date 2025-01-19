@@ -287,10 +287,11 @@ static void on_init_pipeline(device* device, pipeline_layout layout, uint32_t su
 						clone_pipeline(device, layout, subobjectCount, subobjects, pipelineHandle, shader_code, &newShader);
 					}
 				}
-
+				// setup some global variables according to the feature
 				if (it->second.action & action_identify)
 				{
-					// setup some global variables according to the feature
+					/*
+					// moved to bind as it is not working when VR is set but HMD is off
 					if (it->second.feature == Feature::VRMode)
 					{
 						shared_data.cb_inject_values.VRMode = 1.0;
@@ -301,6 +302,7 @@ static void on_init_pipeline(device* device, pipeline_layout layout, uint32_t su
 					{
 						shared_data.cb_inject_values.mapMode = 0.0;
 					}
+					*/
 				}
 
 				// store new shader to re use it later 
@@ -537,17 +539,6 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 						}
 					}
 				}
-
-				// identify which view was used before mirror view
-				if (it->second.feature == Feature::VRMode)
-				{
-					
-					shared_data.mirror_VR = shared_data.count_display;
-					// fix for quad view
-					if (shared_data.count_display == 2) shared_data.mirror_VR = 1;
-					if (shared_data.count_display == 3) shared_data.mirror_VR = 0;
-					log_mirror_view();
-				}
 			}
 
 			if (it->second.action & action_identify)
@@ -581,6 +572,24 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 					log_MSAA();
 				}
 
+				// PS for mirror view : setup VR mode
+				if (it->second.feature == Feature::VRMode)
+				{
+					shared_data.cb_inject_values.VRMode = 1.0;
+					// identify which view was used before mirror view
+					shared_data.mirror_VR = shared_data.count_display;
+					// fix for quad view
+					if (shared_data.count_display == 2) shared_data.mirror_VR = 1;
+					if (shared_data.count_display == 3) shared_data.mirror_VR = 0;
+					log_mirror_view();
+				}
+
+				// identify if cockpit VS is used
+				if (it->second.feature == Feature::mapMode)
+				{
+					shared_data.cb_inject_values.mapMode = 0.0;
+				}
+
 			}
 			shared_data.last_feature = it->second.feature;
 
@@ -595,43 +604,57 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pipeline_layout layout, uint32_t param_index, const descriptor_table_update& update)
 {
 	
+	// display_to_use = 0 => outer left, 1 = outer right, 2 = Inner left, 3 = inner right.
 	short int display_to_use = shared_data.count_display - 1;
 	
-	//engage effect if requested in previous draw(), depending of option in effect settings (for QV only)
-	// display_to_use = 0 => outer left, 1 = outer right, 2 = Inner left, 3 = inner right.
+	/*
 	if (shared_data.render_effect && shared_data.effects_feature && ( 
 		(display_to_use <= 1 && shared_data.effect_target_QV == 1) ||
 		(display_to_use > 1 && shared_data.effect_target_QV == 2) ||
-		shared_data.effect_target_QV == 0)
+		shared_data.effect_target_QV == 0 ||	// 
+		!shared_data.cb_inject_values.VRMode )  // to push texture and uniform if in 2D
 		)
+		*/
+
+	if (shared_data.render_effect && shared_data.effects_feature)
 	{
-		// engage effect
+		// engage effect for each call of global pixel shader
+		// ensure to wait next good context after rendering
 		shared_data.render_effect = false;
 
 		// do not engage effect if render target view is not identified 
 		if (shared_data.render_target_view[shared_data.count_display - 1].created)
 		{
 		
-			// export DEPTH and STENCIL for reshade effects if created (must be done in 2D too !!)
-			// update DEPTH texture
-			shared_data.runtime->update_texture_bindings("DEPTH", shared_data.depth_view[display_to_use].texresource_view, shared_data.depth_view[display_to_use].texresource_view);
-			// update STENCIL texture
-			shared_data.runtime->update_texture_bindings("STENCIL", shared_data.stencil_view[display_to_use].texresource_view, shared_data.stencil_view[display_to_use].texresource_view);
-
-			
-			// render all activated techniques if not 2D mirror or in 2D (reshade is already rendering the effect)
+			if (shared_data.texture_needed)
+			{
+				// export DEPTH and STENCIL once for all effects (must be done in 2D too !!)
+				// update DEPTH texture
+				shared_data.runtime->update_texture_bindings("DEPTH", shared_data.depth_view[display_to_use].texresource_view, shared_data.depth_view[display_to_use].texresource_view);
+				// update STENCIL texture
+				shared_data.runtime->update_texture_bindings("STENCIL", shared_data.stencil_view[display_to_use].texresource_view, shared_data.stencil_view[display_to_use].texresource_view);
+			}
+		
+			// render all activated techniques if not 2D mirror or in 2D (reshade is already rendering the effect) 
 			if (shared_data.cb_inject_values.VRMode)
 			{
 				for (int i = 0; i < shared_data.technique_vector.size(); ++i)
 				{
-					shared_data.runtime->render_technique(shared_data.technique_vector[i].technique, cmd_list, shared_data.render_target_view[display_to_use].texresource_view, shared_data.render_target_view[display_to_use].texresource_view);
-					log_effect(shared_data.technique_vector[i], cmd_list, shared_data.render_target_view[display_to_use].texresource_view);
-
+					
+					// render if QV target are relevant for the technique 
+					if ((display_to_use <= 1 && shared_data.technique_vector[i].quad_view_target == QVOUTER) ||
+						(display_to_use > 1 && shared_data.technique_vector[i].quad_view_target == QVINNER) ||
+						(shared_data.technique_vector[i].quad_view_target == QVALL)
+						)
+					{
+						shared_data.runtime->render_technique(shared_data.technique_vector[i].technique, cmd_list, shared_data.render_target_view[display_to_use].texresource_view, shared_data.render_target_view[display_to_use].texresource_view);
+						log_effect(shared_data.technique_vector[i], cmd_list, shared_data.render_target_view[display_to_use].texresource_view);
+					}
 				}
 			}
 
 			// push back the outer texture instead of inner or wrong eye for effect in mirror view
-			if (shared_data.mirror_VR != -1)
+			if (shared_data.mirror_VR != -1 && shared_data.texture_needed)
 			{
 				// update DEPTH texture 
 				shared_data.runtime->update_texture_bindings("DEPTH", shared_data.depth_view[shared_data.mirror_VR].texresource_view, shared_data.depth_view[shared_data.mirror_VR].texresource_view);
@@ -640,8 +663,6 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 			}
 		}
 	}
-
-
 
 	//handle only shader_resource_view when needed
 	// handle depthStencil

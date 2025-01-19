@@ -53,6 +53,10 @@ void enumerateTechniques(effect_runtime* runtime)
     
     //purge the technique vector
     shared_data.technique_vector.clear();
+
+    // init flags for texture or uniform injection
+    shared_data.uniform_needed = false;
+    shared_data.texture_needed = false;
     
     // Pass the logging function as the callback
     runtime->enumerate_techniques(nullptr, [](effect_runtime* rt, effect_technique technique) {
@@ -74,11 +78,25 @@ void enumerateTechniques(effect_runtime* runtime)
         if (technique_status)
         {
 
-            // add the tehcnique in the vector
-            shared_data.technique_vector.push_back({ technique, name, eff_name , technique_status });
+            //check if shader is containing a VREM texture (¨DEPTH' or 'STENCIL'
+            bool has_depth_or_stencil = false;
+            if (rt->find_texture_variable(g_charBuffer, DEPTH_NAME) != 0 || rt->find_texture_variable(g_charBuffer, STENCIL_NAME) != 0)
+            {  
+                has_depth_or_stencil = true;
+                shared_data.texture_needed = true;
+            } 
+
+            //check if shader is containing VREM uniform
+            bool has_uniform = false;
+            reshade::api::effect_uniform_variable unif = rt->find_uniform_variable(g_charBuffer, QV_TARGET_NAME);
+            int QV_target = shared_data.effect_target_QV;
+            if (unif != 0) rt->get_uniform_value_int(unif, &QV_target, 1);
+           
+            // add the technique in the vector
+            shared_data.technique_vector.push_back({ technique, name, eff_name , technique_status, QV_target });
 
             //log 
-            log_technique_info(rt, technique, name, eff_name, technique_status);
+            log_technique_info(rt, technique, name, eff_name, technique_status, QV_target, has_depth_or_stencil);
         }
 
         });

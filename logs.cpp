@@ -781,16 +781,21 @@ void log_texture_view(reshade::api::device * dev, std::string name, reshade::api
 /// Log info on technique
 /// </summary>
 /// 
-void log_technique_info(effect_runtime* runtime, effect_technique technique, std::string& name, std::string& eff_name, bool technique_status)
+void log_technique_info(effect_runtime* runtime, effect_technique technique, std::string& name, std::string& eff_name, bool technique_status,  int QV_target, bool has_texture)
 {
 	
 	if ((debug_flag) || FORCE_LOG)
 	{
 		std::stringstream s;
-		s << "init of technique in vector, Technique Name: " << name << ", Effect Name: " << eff_name << ", Technique status : " << technique_status;
+		s << "init of technique in vector, Technique Name: " << name << ", Effect Name: " << eff_name << ", Technique status : " << technique_status << ", QV_target : " << QV_target << "; ";
 		reshade::log::message(reshade::log::level::info, s.str().c_str());
 		s.str("");
 		s.clear();
+		if (has_texture)
+			reshade::log::message(reshade::log::level::info, "   Has DEPTH or STENCIL");
+		else
+			reshade::log::message(reshade::log::level::info, "   Do not have DEPTH or STENCIL");
+
 	}
 
 }

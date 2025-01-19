@@ -63,7 +63,7 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 	ImGui::Separator();
 
 	// *******************************************************************************************************
-	if (ImGui::CollapsingHeader("Reshade effects in VR displays"))
+	if (ImGui::CollapsingHeader("Reshade Techniques in VR displays"))
 	{
 		//disable option if 2D
 		if (shared_data.count_draw <= 1)
@@ -72,11 +72,11 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 			ImGui::BeginDisabled();
 		}
 			// enable/disable Reshade effects changes
-			ImGui::Checkbox("Activate reshade effects in VR", &shared_data.effects_feature);
+			ImGui::Checkbox("Activate reshade Techniques in VR", &shared_data.effects_feature);
 			if (shared_data.effects_feature != shared_data.init_effects_feature)
 			{
 				ImGui::SameLine();
-				ImGui::Text("Game restart needed (option saved)");
+				ImGui::Text("clik on button Refresh Techniques");
 				saveShaderTogglerIniFile();
 
 			}
@@ -87,7 +87,7 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 			}
 
 			// define technique QV render targets
-			ImGui::Text("Target area for effect if Quad View:");
+			ImGui::Text("Target area for standard reshade Techniques if Quad View (no VREM Techniques):");
 			ImGui::RadioButton("All", &shared_data.effect_target_QV, 0); ImGui::SameLine();
 			ImGui::RadioButton("Outer only", &shared_data.effect_target_QV, 1); ImGui::SameLine();
 			ImGui::RadioButton("Inner only", &shared_data.effect_target_QV, 2);

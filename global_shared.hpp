@@ -45,6 +45,13 @@
 #include <shared_mutex>
 #include "shader_definitions.h"
 
+#define DEPTH_NAME "DepthBufferTex"
+#define STENCIL_NAME "StencilBufferTex"
+#define QV_TARGET_NAME "VREMQuadViewTarget"
+#define QVALL 0
+#define QVOUTER 1
+#define QVINNER 2
+
 constexpr size_t CHAR_BUFFER_SIZE = 256;
 
 using namespace reshade::api;
@@ -71,6 +78,7 @@ struct technique_trace {
 	std::string name;
 	std::string eff_name;
 	bool technique_status;
+	int quad_view_target; // 0 : all, 1 Outer, 2 Innner
 };
 
 
@@ -139,6 +147,9 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 
 	//map of technique selected 
 	std::vector<technique_trace> technique_vector;
+	// to share uniform / texture only if needed
+	bool uniform_needed = false;
+	bool texture_needed = false;
 
 	// render target (all(0)/outer(1)/inner(2)) for effect
 	int effect_target_QV = 0;
