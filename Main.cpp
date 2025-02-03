@@ -50,11 +50,12 @@
 #include "to_string.hpp"
 #include "shader_definitions.h"
 
+#include "CDataFile.h"
 
 using namespace reshade::api;
 
 extern "C" __declspec(dllexport) const char *NAME = "DCS VREM";
-extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v6.2";
+extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v7.1";
 
 // ***********************************************************************************************************************
 // definition of all shader of the mod (whatever feature selected in GUI)
@@ -62,8 +63,8 @@ std::unordered_map<uint32_t, Shader_Definition> shader_by_hash =
 {
 	// ** fix for rotor **
 	{ 0xC0CC8D69, Shader_Definition(action_replace, Feature::Rotor, L"AH64_rotorPS.cso", 0) },
-	{ 0x3858238A, Shader_Definition(action_replace, Feature::Rotor, L"AH64_rotor2PS.cso", 0) },
-	{ 0x13F2FB25, Shader_Definition(action_replace, Feature::Rotor, L"UH1_rotorPS.cso", 0) },
+	{ 0x349A1054, Shader_Definition(action_replace, Feature::Rotor, L"AH64_rotor2PS.cso", 0) },
+	{ 0xD3E172D4, Shader_Definition(action_replace, Feature::Rotor, L"UH1_rotorPS.cso", 0) },
 	// ** fix for IHADSS **
 	{ 0x2D713734, Shader_Definition(action_replace, Feature::IHADSS, L"IHADSS_PNVS_PS.cso", 0) },
 	{ 0x6AA19B8F, Shader_Definition(action_replace, Feature::IHADSS, L"IHADSS_PS.cso", 0) },
@@ -83,7 +84,7 @@ std::unordered_map<uint32_t, Shader_Definition> shader_by_hash =
 	// inject texture in global GUI and filter screen display (same shader for both)
 	{ 0x99D562, Shader_Definition(action_replace | action_injectText, Feature::NS430 , L"VR_GUI_MFD_PS.cso", 0) },
 	// disable NS430 frame, shared with some cockpit parts (can not be done by skip)
-	{ 0x1DD17F20, Shader_Definition(action_replace, Feature::NS430 , L"NS430__framePS.cso", 0) },
+	{ 0xEFD973A1, Shader_Definition(action_replace, Feature::NS430 , L"NS430__framePS.cso", 0) },
 	// disable NS430 screen background (done in shader because shared with other objects than NS430)
 	{ 0x6EF95548, Shader_Definition(action_replace, Feature::NS430, L"NS430_screen_back.cso", 0) },
 	// to filter out call for GUI and MFD
@@ -94,20 +95,23 @@ std::unordered_map<uint32_t, Shader_Definition> shader_by_hash =
 	// VS drawing cockpit parts to define if view is in welcome screen or map
 	{ 0xA337E177, Shader_Definition(action_identify, Feature::mapMode, L"", 0) },
 	//  ** haze control : illum PS: used for Haze control, to define which draw (eye + quad view) is current.  **
-	{ 0x21EC0545, Shader_Definition(action_replace | action_identify, Feature::Haze, L"illumNoAA_PS.cso", 0) },
-	{ 0xBFBF8AEC, Shader_Definition(action_replace | action_identify, Feature::HazeMSAA2x, L"illumMSAA2x_PS.cso", 0) },
-	{ 0xE0FC442E, Shader_Definition(action_replace, Feature::Haze, L"illumMSAA2xB_PS.cso", 0) },
+	{ 0x82349ABF, Shader_Definition(action_replace | action_identify, Feature::Haze, L"illumNoAA_PS.cso", 0) },
+	{ 0xCC6C6596, Shader_Definition(action_replace | action_identify, Feature::HazeMSAA2x, L"illumMSAA2x_PS.cso", 0) },
+	{ 0xA2433BF5, Shader_Definition(action_replace, Feature::Haze, L"illumMSAA2xB_PS.cso", 0) },
 	//  ** A10C cockpit instrument **
-	{ 0x6D3D5048, Shader_Definition(action_replace , Feature::NoReflect , L"A10C_instrument.cso", 0) },
+	{ 0xC9F547A7, Shader_Definition(action_replace , Feature::NoReflect , L"A10C_instrument.cso", 0) },
 	//  ** NVG **
 	{ 0xE65FAB66, Shader_Definition(action_replace , Feature::NVG , L"NVG_extPS.cso", 0) },
-	//  ** identify render target **
-	{ 0x4FF4BEC2, Shader_Definition(action_log , Feature::Effects , L"", 0) }
+	//  ** identify render target ** (first global PS)
+	{ 0x6656F8A6, Shader_Definition(action_log , Feature::Effects , L"", 0) }
 };
 
 // ***********************************************************************************************************************
-//init shared variables
+//init shared variables (path added in main)
 std::string settings_iniFileName = "DCS_VREM.ini";
+std::string technique_iniFileName = "DCS_VREM_techniques.ini";
+CDataFile technique_iniFile;
+
 //default value overwritten by setting file if exists
 bool debug_flag;
 struct global_shared shared_data;
@@ -517,6 +521,9 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 							shared_data.count_draw = max(shared_data.count_draw, shared_data.count_display);
 							// it's stupid but I'm too lazy to change code now..
 							shared_data.cb_inject_values.count_display = shared_data.count_display;
+							// fix for quad view
+							// if (shared_data.count_display == 2) shared_data.mirror_VR = 1;
+							// if (shared_data.count_display == 3) shared_data.mirror_VR = 0;
 
 							// log infos
 							log_increase_count_display();
@@ -577,10 +584,11 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 				{
 					shared_data.cb_inject_values.VRMode = 1.0;
 					// identify which view was used before mirror view
-					shared_data.mirror_VR = shared_data.count_display;
-					// fix for quad view
+					// defaut
+					shared_data.mirror_VR = 0;
+					// secure only 1 and 2 view processed
+					if (shared_data.count_display == 1) shared_data.mirror_VR = 0;
 					if (shared_data.count_display == 2) shared_data.mirror_VR = 1;
-					if (shared_data.count_display == 3) shared_data.mirror_VR = 0;
 					log_mirror_view();
 				}
 
@@ -607,14 +615,6 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 	// display_to_use = 0 => outer left, 1 = outer right, 2 = Inner left, 3 = inner right.
 	short int display_to_use = shared_data.count_display - 1;
 	
-	/*
-	if (shared_data.render_effect && shared_data.effects_feature && ( 
-		(display_to_use <= 1 && shared_data.effect_target_QV == 1) ||
-		(display_to_use > 1 && shared_data.effect_target_QV == 2) ||
-		shared_data.effect_target_QV == 0 ||	// 
-		!shared_data.cb_inject_values.VRMode )  // to push texture and uniform if in 2D
-		)
-		*/
 
 	if (shared_data.render_effect && shared_data.effects_feature)
 	{
@@ -622,10 +622,16 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 		// ensure to wait next good context after rendering
 		shared_data.render_effect = false;
 
+		if ((debug_flag && flag_capture))
+		{
+			std::stringstream s;
+			s << " => on_push_descriptors : engage effect :shared_data.render_target_view[shared_data.count_display - 1].created" << shared_data.render_target_view[shared_data.count_display - 1].created << " ;";
+			reshade::log::message(reshade::log::level::warning, s.str().c_str());
+		}
+
 		// do not engage effect if render target view is not identified 
 		if (shared_data.render_target_view[shared_data.count_display - 1].created)
-		{
-		
+		{			
 			if (shared_data.texture_needed)
 			{
 				// export DEPTH and STENCIL once for all effects (must be done in 2D too !!)
@@ -654,7 +660,7 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 			}
 
 			// push back the outer texture instead of inner or wrong eye for effect in mirror view
-			if (shared_data.mirror_VR != -1 && shared_data.texture_needed)
+			if (shared_data.mirror_VR != -1 && shared_data.texture_needed && !shared_data.VRonly_technique)
 			{
 				// update DEPTH texture 
 				shared_data.runtime->update_texture_bindings("DEPTH", shared_data.depth_view[shared_data.mirror_VR].texresource_view, shared_data.depth_view[shared_data.mirror_VR].texresource_view);
@@ -847,11 +853,14 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD fdwReason, LPVOID)
 	case DLL_PROCESS_ATTACH:
 		{
 					
+			//add reshade install dir. in filenames
 			WCHAR buf[MAX_PATH];
 			const std::filesystem::path dllPath = GetModuleFileNameW(nullptr, buf, ARRAYSIZE(buf)) ? buf : std::filesystem::path();		// <installpath>/shadertoggler.addon64
 			const std::filesystem::path basePath = dllPath.parent_path();																// <installpath>
 			const std::string& settings_FileName = settings_iniFileName;
 			settings_iniFileName = (basePath / settings_FileName).string();
+			const std::string& settings_FileName2 = technique_iniFileName;
+			technique_iniFileName = (basePath / settings_FileName2).string();
 		
 			if(!reshade::register_addon(hModule))
 			{
@@ -873,6 +882,8 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD fdwReason, LPVOID)
 			reshade::register_event<reshade::addon_event::reshade_present>(on_present);
 
 			reshade::register_event< reshade::addon_event::reshade_reloaded_effects>(on_reshade_reloaded_effects);
+
+			reshade::register_event<reshade::addon_event::reshade_set_technique_state>(onReshadeSetTechniqueState);
 	
 			// setup GUI
 			reshade::register_overlay(nullptr, &displaySettings);
@@ -900,6 +911,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD fdwReason, LPVOID)
 		reshade::unregister_event<reshade::addon_event::bind_render_targets_and_depth_stencil>(on_bind_render_targets_and_depth_stencil);
 
 		reshade::unregister_event< reshade::addon_event::reshade_reloaded_effects>(on_reshade_reloaded_effects);
+		reshade::unregister_event<reshade::addon_event::reshade_set_technique_state>(onReshadeSetTechniqueState);
 		
 		reshade::unregister_event<reshade::addon_event::reshade_present>(on_present);
 

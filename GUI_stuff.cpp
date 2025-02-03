@@ -66,11 +66,13 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 	if (ImGui::CollapsingHeader("Reshade Techniques in VR displays"))
 	{
 		//disable option if 2D
-		if (shared_data.count_draw <= 1)
+		/*
+		if (!shared_data.cb_inject_values.VRMode)
 		{
 			ImGui::Text("2D mode : Technique injection disabled");
 			ImGui::BeginDisabled();
 		}
+		*/
 			// enable/disable Reshade effects changes
 			ImGui::Checkbox("Activate reshade Techniques in VR", &shared_data.effects_feature);
 			if (shared_data.effects_feature != shared_data.init_effects_feature)
@@ -80,11 +82,12 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 				saveShaderTogglerIniFile();
 
 			}
-
+			/*
 			if (!shared_data.effects_feature || shared_data.count_draw <= 2)
 			{
 				ImGui::BeginDisabled();
 			}
+			*/
 
 			// define technique QV render targets
 			ImGui::Text("Target area for standard reshade Techniques if Quad View (no VREM Techniques):");
@@ -92,26 +95,52 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 			ImGui::RadioButton("Outer only", &shared_data.effect_target_QV, 1); ImGui::SameLine();
 			ImGui::RadioButton("Inner only", &shared_data.effect_target_QV, 2);
 
+			// enable/disable technique displayed only in VR
+			if (ImGui::Checkbox("Techniques only for VR views", &shared_data.VRonly_technique))
+			{
+				if (!shared_data.VRonly_technique)
+				{
+					// select techniques saved in techniqe.ini file
+					reEnableAllTechnique();
+				}
+				if (shared_data.VRonly_technique)
+				{
+					// deselect techniques
+					disableAllTechnique();
+				}
+			}
+		
+			if (shared_data.VRonly_technique)
+			{
+				ImGui::Text("!!! Technique are still active for VR, even if no more selected in Reshade !!!");
+				ImGui::Text("!!! Untick option to add or remove a new technique for VR, otherwise change will not be taken into account !!!");
+				ImGui::Text(" Technique(s) activated in VR: ");
+				ImGui::Text(" ----------------------------- ");
+
+				std::stringstream s;
+				for (int i = 0; i < shared_data.technique_vector.size(); ++i)
+				{
+					ImGui::Text(" > %s", shared_data.technique_vector[i].name.c_str());
+				}
+
+			}
+			/*
+			if (!shared_data.effects_feature || shared_data.count_draw <= 2)
+			{
+				ImGui::EndDisabled();
+			}
+			*/
 			// refresh techniques 
 			if (ImGui::Button("Refresh Techniques"))
 			{
 				shared_data.button_technique = true;
 			}
-			else
-			{
-				shared_data.button_technique = false;
-			}
-
-
-			if (!shared_data.effects_feature || shared_data.count_draw <= 2)
-			{
-				ImGui::EndDisabled();
-			}
-
-		if (shared_data.count_draw <= 1)
+		/*
+		if (!shared_data.cb_inject_values.VRMode)
 		{
 			ImGui::EndDisabled();
 		}
+		*/
 	}
 
 	ImGui::Separator();

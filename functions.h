@@ -23,6 +23,8 @@ extern void init_mod_features();
 
 extern void saveShaderTogglerIniFile();
 
+// extern void save_technique_status(std::string, bool technique_status);
+
 extern void on_present(reshade::api::effect_runtime* runtime);
 
 extern bool copy_depthStencil(reshade::api::command_list* cmd_list, reshade::api::shader_stage stages, reshade::api::pipeline_layout layout, uint32_t param_index, const reshade::api::descriptor_table_update& update);
@@ -30,6 +32,12 @@ extern bool copy_depthStencil(reshade::api::command_list* cmd_list, reshade::api
 extern bool copy_NS430_text(command_list* cmd_list, shader_stage stages, pipeline_layout layout, uint32_t param_index, const descriptor_table_update& update);
 
 extern void enumerateTechniques(effect_runtime* runtime);
+
+extern bool onReshadeSetTechniqueState(effect_runtime* runtime, effect_technique technique, bool enabled);
+
+extern void disableAllTechnique();
+
+extern void reEnableAllTechnique();
 
 extern void log_push_descriptor(reshade::api::shader_stage stages, reshade::api::pipeline_layout layout, uint32_t param_index, const reshade::api::descriptor_table_update& update);
 

@@ -69,6 +69,19 @@ uint32_t calculateShaderHash(void* shaderData)
 
 // *******************************************************************************************************
 /// <summary>
+/// Load one setting with default value
+/// </summary>
+static float read_float_with_defaut(CDataFile iniFile, std::string var_to_read, std::string category, float default_value)
+{
+	float result;
+
+	result = iniFile.GetFloat(var_to_read, category);
+	if (shared_data.cb_inject_values.rotorFlag == FLT_MIN) result = default_value;
+}
+
+
+// *******************************************************************************************************
+/// <summary>
 /// Loads the mod settings from the DCSVREM ini file.
 /// </summary>
 void load_setting_IniFile()
@@ -180,6 +193,8 @@ void load_setting_IniFile()
 	if (shared_data.cb_inject_values.NVGYPos == FLT_MIN) shared_data.cb_inject_values.NVGYPos = 0.0;
 	// color
 	shared_data.color_feature = iniFile.GetBool("color_feature", "Color");
+	shared_data.cb_inject_values.colorFlag = iniFile.GetFloat("colorFlag", "Color");
+	if (shared_data.cb_inject_values.colorFlag == FLT_MIN) shared_data.cb_inject_values.colorFlag = 0.0;
 	shared_data.cb_inject_values.cockpitAdd = iniFile.GetFloat("cockpitAdd", "Color");
 	if (shared_data.cb_inject_values.cockpitAdd == FLT_MIN) shared_data.cb_inject_values.cockpitAdd = 0.0;
 	shared_data.cb_inject_values.cockpitMul = iniFile.GetFloat("cockpitMul", "Color");
@@ -194,11 +209,15 @@ void load_setting_IniFile()
 	if (shared_data.cb_inject_values.extSat == FLT_MIN) shared_data.cb_inject_values.extSat = 0.0;
 	//sharpen
 	shared_data.sharpenDeband_feature = iniFile.GetBool("sharpenDeband_feature", "Sharpen");
+	shared_data.cb_inject_values.sharpenFlag = iniFile.GetFloat("sharpenFlag", "Sharpen");
+	if (shared_data.cb_inject_values.sharpenFlag == FLT_MIN) shared_data.cb_inject_values.sharpenFlag = 0.0;
 	shared_data.cb_inject_values.fSharpenIntensity = iniFile.GetFloat("sharpenIntensity", "Sharpen");
 	if (shared_data.cb_inject_values.fSharpenIntensity == FLT_MIN) shared_data.cb_inject_values.fSharpenIntensity = 1.0;
 	shared_data.cb_inject_values.lumaFactor = iniFile.GetFloat("lumaFactor", "Sharpen");
 	if (shared_data.cb_inject_values.lumaFactor == FLT_MIN) shared_data.cb_inject_values.lumaFactor = 1.0;
 	//deband
+	shared_data.cb_inject_values.debandFlag = iniFile.GetFloat("debandFlag", "Sharpen");
+	if (shared_data.cb_inject_values.debandFlag == FLT_MIN) shared_data.cb_inject_values.debandFlag = 0.0;
 	shared_data.cb_inject_values.Threshold = iniFile.GetFloat("Threshold", "Deband");
 	if (shared_data.cb_inject_values.Threshold == FLT_MIN) shared_data.cb_inject_values.Threshold = 128.0;
 	shared_data.cb_inject_values.Range = iniFile.GetFloat("Range", "Deband");
@@ -224,6 +243,7 @@ void load_setting_IniFile()
 	shared_data.effects_feature = iniFile.GetBool("effects_feature", "Effects");
 	shared_data.effect_target_QV = iniFile.GetInt("QV_render_target", "Effects");
 	if (shared_data.effect_target_QV == INT_MIN) shared_data.effect_target_QV = 0;
+	shared_data.VRonly_technique = iniFile.GetBool("VRonly_technique", "Effects");
 
 	// fps limiter
 	shared_data.fps_limit = iniFile.GetInt("fps_limit", "fps");
@@ -245,6 +265,8 @@ void load_setting_IniFile()
 	shared_data.init_helo_feature = shared_data.helo_feature;
 	shared_data.init_NS430_feature = shared_data.NS430_feature;
 	shared_data.init_debug_feature = debug_flag;
+	shared_data.init_VRonly_technique = shared_data.VRonly_technique;
+
 }
 
 // *******************************************************************************************************
@@ -275,6 +297,7 @@ void saveShaderTogglerIniFile()
 	// reshade effects
 	iniFile.SetBool("effects_feature", shared_data.effects_feature, "Enable Reshade effects", "Effects");
 	iniFile.SetInt("QV_render_target", shared_data.effect_target_QV, "QV render target", "Effects");
+	iniFile.SetBool("VRonly_technique", shared_data.VRonly_technique, "Reshade technique applied only on VR views", "Effects");
 
 	// debug
 	iniFile.SetBool("debug_feature", debug_flag, "Enable debug features", "Debug");
@@ -291,6 +314,7 @@ void saveShaderTogglerIniFile()
 	iniFile.SetFloat("NVGYPos", shared_data.cb_inject_values.NVGYPos, "height of NVG", "Misc");
 	// color
 	iniFile.SetBool("color_feature", shared_data.color_feature, "Enable Color features", "Color");
+	iniFile.SetFloat("colorFlag", shared_data.cb_inject_values.colorFlag, "Activate color change ", "Color");
 	iniFile.SetFloat("cockpitAdd", shared_data.cb_inject_values.cockpitAdd, "add to all cockpit color component ", "Color");
 	iniFile.SetFloat("cockpitMul", shared_data.cb_inject_values.cockpitMul, "multiply of all cockpit color component ", "Color");
 	iniFile.SetFloat("cockpitSat", shared_data.cb_inject_values.cockpitSat, "change saturation on all cockpit color component ", "Color");
@@ -299,9 +323,11 @@ void saveShaderTogglerIniFile()
 	iniFile.SetFloat("extSat", shared_data.cb_inject_values.extSat, "change saturation of all external color component ", "Color");
 	// sharpen
 	iniFile.SetBool("sharpenDeband_feature", shared_data.sharpenDeband_feature, "Enable Sharpen and deband features", "Sharpen");
+	iniFile.SetFloat("sharpenFlag", shared_data.cb_inject_values.sharpenFlag, "Enable sharpen", "Sharpen");
 	iniFile.SetFloat("fSharpenIntensity", shared_data.cb_inject_values.fSharpenIntensity, "Sharpen Intensity", "Sharpen");
 	iniFile.SetFloat("lumaFactor", shared_data.cb_inject_values.lumaFactor, "Luma", "Sharpen");
 	//deband
+	iniFile.SetFloat("debandFlag", shared_data.cb_inject_values.debandFlag, "Enable deband", "Sharpen");
 	iniFile.SetFloat("Threshold", shared_data.cb_inject_values.Threshold, "Deband Threshold", "Deband");
 	iniFile.SetFloat("Range", shared_data.cb_inject_values.Range, "Deband Range ", "Deband");
 	iniFile.SetFloat("Iterations", shared_data.cb_inject_values.Iterations, "Deband Iterations (not used)", "Deband");
@@ -322,6 +348,7 @@ void saveShaderTogglerIniFile()
 	iniFile.SetFileName(settings_iniFileName);
 	iniFile.Save();
 }
+
 
 // *******************************************************************************************************
 /// <summary>
@@ -355,7 +382,7 @@ void init_mod_features()
 		}
 
 		// add entries for depthstencil,  for color, sharpen, label
-		if  ((shared_data.color_feature || shared_data.sharpenDeband_feature || shared_data.cb_inject_values.maskLabels)  && entry.second.feature == Feature::GetStencil)
+		if  ((shared_data.color_feature || shared_data.sharpenDeband_feature || shared_data.cb_inject_values.maskLabels || shared_data.effects_feature) && entry.second.feature == Feature::GetStencil)
 		{
 			add_line = true;
 		}

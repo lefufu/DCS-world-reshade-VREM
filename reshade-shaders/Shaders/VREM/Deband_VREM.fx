@@ -219,10 +219,13 @@ bool is_water_or_sky(float2 texcoord)
 
 
 // get value and return original if not sea or sky
-float3 probe_sky_or_sea(float2 texcoord, float3 origcolor )
+float3 probe_sky_or_sea(float4 texcoord4, float3 origcolor )
 {
     
     float3 color;
+	
+	float2 texcoord;
+	texcoord.xy = texcoord4.xy;
 	
 	color = tex2Dlod(ReShade::BackBuffer, float4(texcoord, 0.0, 0.0)).rgb;
     if (!is_water_or_sky(texcoord))

@@ -55,7 +55,7 @@
 
 using namespace reshade::api;
 
-namespace
+namespace 
 {
 	/*
 	std::shared_mutex s_mutex;

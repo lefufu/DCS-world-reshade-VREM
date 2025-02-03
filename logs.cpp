@@ -42,10 +42,14 @@
 #include <reshade.hpp>
 #include <string.h>
 
+// #include "CDataFile.h"
+
 #include "functions.h"
 #include "global_shared.hpp"
 #include "mod_injection.h"
 #include "to_string.hpp"
+
+
 
 using namespace reshade::api;
 
@@ -811,7 +815,7 @@ void log_mirror_view()
 	if ((debug_flag && flag_capture) || FORCE_LOG)
 	{
 		std::stringstream s;
-		s << "= > on_bind_pipeline() : count_display used for mirror view = " << shared_data.count_display << "; ";
+		s << "= > on_bind_pipeline() : count_display used for mirror view = " << shared_data.count_display << ", mirror VR = "<< shared_data.mirror_VR << "; ";
 		reshade::log::message(reshade::log::level::info, s.str().c_str());
 		s.str("");
 		s.clear();

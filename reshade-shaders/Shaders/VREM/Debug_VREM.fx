@@ -25,6 +25,9 @@ uniform int display_mode <
     ;
 > = 0;
 
+uniform int bufferWidth < ui_type = "drag"; ui_label = "BUFFER Width"; ui_min = 0; ui_max = 4096; > = BUFFER_WIDTH;
+uniform int bufferHeight < ui_type = "drag"; ui_label = "BUFFER Height"; ui_min = 0; ui_max = 4096; > = BUFFER_HEIGHT;
+
 
 //****************************************
 // code
@@ -84,7 +87,7 @@ technique VREM_Test_masks
 {
     pass
     {
-        VertexShader = PostProcessVS;
+		VertexShader = PostProcessVS;
         PixelShader = Ps_VREM_Test; 
     }
 }

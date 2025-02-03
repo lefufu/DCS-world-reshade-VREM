@@ -44,6 +44,8 @@
 #include <string>
 #include <shared_mutex>
 #include "shader_definitions.h"
+// #include "CDataFile.h"
+
 
 #define DEPTH_NAME "DepthBufferTex"
 #define STENCIL_NAME "StencilBufferTex"
@@ -56,12 +58,15 @@ constexpr size_t CHAR_BUFFER_SIZE = 256;
 
 using namespace reshade::api;
 
+//file names (intialized in main)
 extern std::string settings_iniFileName;
+extern std::string technique_iniFileName;
 
 //GUI variables to use in functions
 extern bool debug_flag;
 extern bool flag_capture;
 
+// for resource handling
 struct resource_trace {
 	bool created = false;
 	bool copied = false;
@@ -73,6 +78,7 @@ struct resourceview_trace {
 	reshade::api::resource_view texresource_view;
 };
 
+// for technique settings
 struct technique_trace {
 	effect_technique technique;
 	std::string name;
@@ -111,10 +117,11 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	// for frame debugging
 	bool button_capture = false;
 
+	// setting file
+	// CDataFile iniFile;
+
 	// to handle parallel access (not used)
 	std::shared_mutex s_mutex;
-
-	// to avoid "holes" in 
 
 	// to copy texture
 	reshade::api::descriptor_table_update update;
@@ -126,20 +133,20 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	// for logging shader_resource_view in push_descriptors() to get depthStencil 
 	bool track_for_depthStencil = false;
 
-	// technique : copy render target, flag for draw
-	// resource_trace render_target_res[MAXVIEWSPERDRAW];
+	// copy render target for technique
 	resourceview_trace render_target_view[MAXVIEWSPERDRAW];
-
+	// flag for drawing or not
 	bool track_for_render_target = false;
 	bool render_effect = false;
 	uint32_t count_draw = 0;
-
 
 	// for technique init
 	char technique_init = -1;
 
 	// for technique refresh
 	bool button_technique = false;
+	bool VRonly_technique = false;
+	bool init_VRonly_technique = false;
 
 	// copy from one function to another
 	reshade::api::effect_runtime* runtime;
@@ -154,7 +161,7 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	// render target (all(0)/outer(1)/inner(2)) for effect
 	int effect_target_QV = 0;
 	// to flag PS shader is used for 2D mirror of VR and not VR rendering
-	short int mirror_VR = -1;
+	int mirror_VR = -1;
 
 	//NS430 texture
 	resource_trace NS430_res[MAXVIEWSPERDRAW];
