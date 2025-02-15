@@ -55,7 +55,7 @@
 using namespace reshade::api;
 
 extern "C" __declspec(dllexport) const char *NAME = "DCS VREM";
-extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v7.3";
+extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v7.3.1";
 
 // ***********************************************************************************************************************
 // definition of all shader of the mod (whatever feature selected in GUI)
