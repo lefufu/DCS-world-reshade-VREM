@@ -51,6 +51,9 @@
 #include <unordered_set>
 #include <string.h>
 
+#include <string>
+#include <iostream>
+
 #include "shader_definitions.h"
 
 using namespace reshade::api;
@@ -621,7 +624,7 @@ inline auto to_string(Feature feature) {
 }
 
 
-// Fonction de conversion wchar_t* vers std::string
+// convert wchar_t* to std::string
 inline std::string to_string(const wchar_t* wcharStr) {
 
 	char string[MAXNAMECHAR];
@@ -630,4 +633,22 @@ inline std::string to_string(const wchar_t* wcharStr) {
 
 	return string;
 
+}
+
+inline const char* to_char(uint32_t value)
+{
+	std::string str_width = std::to_string(value);
+	const char* cstr_width = str_width.c_str();
+	std::cout << cstr_width << std::endl;
+
+	return cstr_width;
+}
+
+inline const char* to_char(float value)
+{
+	std::string str_width = std::to_string(value);
+	const char* cstr_width = str_width.c_str();
+	std::cout << cstr_width << std::endl;
+
+	return cstr_width;
 }

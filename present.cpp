@@ -164,6 +164,20 @@ void handle_keypress(effect_runtime* runtime)
 
 	}
 
+	// default ALT+F5 toggle ON/OFF technique
+	if (runtime->is_key_pressed(shared_data.key_technique[0]) && runtime->is_key_down(VK_MENU)) // && shared_data.fps_feature)
+	{
+		if (shared_data.effects_feature)
+		{
+			shared_data.effects_feature = false;
+		}
+		else if (!shared_data.effects_feature)
+		{
+			shared_data.effects_feature = true;
+		}
+
+	}
+
 }
 
 // *******************************************************************************************************

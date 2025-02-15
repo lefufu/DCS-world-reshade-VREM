@@ -82,6 +82,7 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 				saveShaderTogglerIniFile();
 
 			}
+			ImGui::Text("Use ALT+%s in game to enable/disable technique in VR ", shared_data.key_technique);
 			/*
 			if (!shared_data.effects_feature || shared_data.count_draw <= 2)
 			{
@@ -445,6 +446,10 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 	// *******************************************************************************************************
 	if (ImGui::CollapsingHeader("Debug options"))
 	{
+		
+		// delay for compilation
+		ImGui::SliderInt("Delay for compilation", &shared_data.compil_delay, 0, 500, "%d ms");
+		
 		// Disable optimization
 		ImGui::Checkbox("Disable optimization", &shared_data.disable_optimisation);
 

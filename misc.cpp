@@ -71,14 +71,46 @@ uint32_t calculateShaderHash(void* shaderData)
 /// <summary>
 /// Load one setting with default value
 /// </summary>
-static float read_float_with_defaut(CDataFile iniFile, std::string var_to_read, std::string category, float default_value)
+static float read_float_with_defaut(CDataFile iniFile, bool fileExist, std::string var_to_read, std::string category, float default_value)
 {
 	float result;
 
-	result = iniFile.GetFloat(var_to_read, category);
-	if (shared_data.cb_inject_values.rotorFlag == FLT_MIN) result = default_value;
+	if (!fileExist)
+		result = default_value;
+	else
+	{
+		result = iniFile.GetFloat(var_to_read, category);
+		if (result == FLT_MIN) result = default_value;
+	}
+	return result;
 }
 
+static float read_int_with_defaut(CDataFile iniFile, bool fileExist, std::string var_to_read, std::string category, int default_value)
+{
+	int result;
+	if (!fileExist)
+		result = default_value;
+	else
+	{
+		result = iniFile.GetInt(var_to_read, category);
+		if (result == INT_MIN) result = default_value;
+	}
+	return result;
+}
+
+
+static std::string read_string_with_defaut(CDataFile iniFile, bool fileExist, std::string var_to_read, std::string category, std::string default_value)
+{
+	std::string result;
+	if (!fileExist)
+		result = default_value;
+	else
+	{
+		result = iniFile.GetString(var_to_read, category);
+		if (result == "") result = default_value;
+	}
+	return result;
+}
 
 // *******************************************************************************************************
 /// <summary>
@@ -88,8 +120,12 @@ void load_setting_IniFile()
 {
 	// Will assume it's started at the start of the application and therefore no entries are presents
 
+	bool fileExist = true;
+
 	CDataFile iniFile;
 	if (!iniFile.Load(settings_iniFileName))
+		fileExist = false;
+	/*
 	{
 		
 		// file not existing : set default values
@@ -145,111 +181,160 @@ void load_setting_IniFile()
 
 		return;
 	}
+	*/
 
 	// set default values if file is existing but do not have the variable
 	// load mod settings
 	debug_flag = iniFile.GetBool("debug_flag", "Debug");
-	shared_data.cb_inject_values.testFlag = iniFile.GetFloat("testFlag", "Debug");
-	shared_data.disable_optimisation = iniFile.GetBool("disable_optimisation", "Debug");
+
+	// shared_data.cb_inject_values.testFlag = iniFile.GetFloat("testFlag", "Debug");
+	shared_data.cb_inject_values.testFlag = read_float_with_defaut(iniFile, fileExist, "testFlag", "Debug", 0.0);
+	// shared_data.disable_optimisation = iniFile.GetBool("disable_optimisation", "Debug");
+	shared_data.cb_inject_values.testFlag = read_float_with_defaut(iniFile, fileExist, "disable_optimisation", "Debug", 0.0);
 	
 	// reshade effects
 	shared_data.effects_feature = iniFile.GetBool("effects_feature", "Effects");
-	shared_data.effect_target_QV = iniFile.GetInt("QV_render_target", "Effects");
-	if (shared_data.effect_target_QV == INT_MIN) shared_data.effect_target_QV = 0;
+	// shared_data.effect_target_QV = iniFile.GetInt("QV_render_target", "Effects");
+	// if (shared_data.effect_target_QV == INT_MIN) shared_data.effect_target_QV = 0;
+	shared_data.effect_target_QV = read_int_with_defaut(iniFile, fileExist, "QV_render_target", "Effects", 0);
 
 	//keybind
-	shared_data.key_TADS_video = iniFile.GetString("key_TADS_video", "KeyBind");
-	if (shared_data.key_TADS_video == "") shared_data.key_TADS_video = "I";
-	shared_data.key_NS430 = iniFile.GetString("key_NS430", "KeyBind");
-	if (shared_data.key_NS430 == "") shared_data.key_NS430 = "V";
-	shared_data.key_fps = iniFile.GetString("key_fps", "KeyBind");
-	if (shared_data.key_fps == "") shared_data.key_fps = "1";
+	// shared_data.key_TADS_video = iniFile.GetString("key_TADS_video", "KeyBind");
+	// if (shared_data.key_TADS_video == "") shared_data.key_TADS_video = "I";
+	shared_data.key_TADS_video = read_string_with_defaut(iniFile, fileExist, "key_TADS_video", "KeyBind", "I");
+	// shared_data.key_NS430 = iniFile.GetString("key_NS430", "KeyBind");
+	// if (shared_data.key_NS430 == "") shared_data.key_NS430 = "V";
+	shared_data.key_NS430 = read_string_with_defaut(iniFile, fileExist, "key_NS430", "KeyBind", "V");
+	// shared_data.key_fps = iniFile.GetString("key_fps", "KeyBind");
+	// if (shared_data.key_fps == "") shared_data.key_fps = "1";
+	shared_data.key_fps = read_string_with_defaut(iniFile, fileExist, "key_fps", "KeyBind", "1");
+	shared_data.key_technique = read_string_with_defaut(iniFile, fileExist, "key_technique", "KeyBind", "VK_F5");
 
 	// helicopter
 	shared_data.helo_feature = iniFile.GetBool("helo_feature", "Helo");
-	shared_data.cb_inject_values.rotorFlag = iniFile.GetFloat("rotorFlag", "Helo");
-	if (shared_data.cb_inject_values.rotorFlag == FLT_MIN) shared_data.cb_inject_values.rotorFlag = 0.0;
-	shared_data.cb_inject_values.disable_video_IHADSS = iniFile.GetFloat("disable_video_IHADSS", "Helo");
-	if (shared_data.cb_inject_values.disable_video_IHADSS == FLT_MIN) shared_data.cb_inject_values.disable_video_IHADSS = 0.0;
-	shared_data.cb_inject_values.IHADSSBoresight = iniFile.GetFloat("IHADSSBoresight", "Helo");
-	if (shared_data.cb_inject_values.IHADSSBoresight == FLT_MIN) shared_data.cb_inject_values.IHADSSBoresight = 0.0;
-	shared_data.cb_inject_values.IHADSSxOffset = iniFile.GetFloat("IHADSSxOffset", "Helo");
-	if (shared_data.cb_inject_values.IHADSSxOffset == FLT_MIN) shared_data.cb_inject_values.IHADSSxOffset = 0.0;
-	shared_data.cb_inject_values.TADSDay = iniFile.GetFloat("TADSDayValue", "Helo");
-	if (shared_data.cb_inject_values.TADSDay == FLT_MIN) shared_data.cb_inject_values.TADSDay = 0.28;
-	shared_data.cb_inject_values.TADSNight = iniFile.GetFloat("TADSnightValue", "Helo");
-	if (shared_data.cb_inject_values.TADSNight == FLT_MIN) shared_data.cb_inject_values.TADSNight = 0.02;
+	// shared_data.cb_inject_values.rotorFlag = iniFile.GetFloat("rotorFlag", "Helo");
+	// if (shared_data.cb_inject_values.rotorFlag == FLT_MIN) shared_data.cb_inject_values.rotorFlag = 0.0;
+	shared_data.cb_inject_values.rotorFlag = read_float_with_defaut(iniFile, fileExist, "rotorFlag", "Helo", 0.0);
+	// shared_data.cb_inject_values.disable_video_IHADSS = iniFile.GetFloat("disable_video_IHADSS", "Helo");
+	// if (shared_data.cb_inject_values.disable_video_IHADSS == FLT_MIN) shared_data.cb_inject_values.disable_video_IHADSS = 0.0;
+	shared_data.cb_inject_values.disable_video_IHADSS = read_float_with_defaut(iniFile, fileExist, "disable_video_IHADSS", "Helo", 0.0);
+	// shared_data.cb_inject_values.IHADSSBoresight = iniFile.GetFloat("IHADSSBoresight", "Helo");
+	// if (shared_data.cb_inject_values.IHADSSBoresight == FLT_MIN) shared_data.cb_inject_values.IHADSSBoresight = 0.0;
+	shared_data.cb_inject_values.IHADSSBoresight = read_float_with_defaut(iniFile, fileExist, "IHADSSBoresight", "Helo", 0.0);
+	// shared_data.cb_inject_values.IHADSSxOffset = iniFile.GetFloat("IHADSSxOffset", "Helo");
+	// if (shared_data.cb_inject_values.IHADSSxOffset == FLT_MIN) shared_data.cb_inject_values.IHADSSxOffset = 0.0;
+	shared_data.cb_inject_values.IHADSSxOffset = read_float_with_defaut(iniFile, fileExist, "IHADSSxOffset", "Helo", 0.0);
+	// shared_data.cb_inject_values.TADSDay = iniFile.GetFloat("TADSDayValue", "Helo");
+	// if (shared_data.cb_inject_values.TADSDay == FLT_MIN) shared_data.cb_inject_values.TADSDay = 0.28;
+	shared_data.cb_inject_values.TADSDay = read_float_with_defaut(iniFile, fileExist, "TADSDayValue", "Helo", 0.28);
+	// shared_data.cb_inject_values.TADSNight = iniFile.GetFloat("TADSnightValue", "Helo");
+	// if (shared_data.cb_inject_values.TADSNight == FLT_MIN) shared_data.cb_inject_values.TADSNight = 0.02;
+	shared_data.cb_inject_values.TADSNight = read_float_with_defaut(iniFile, fileExist, "TADSnightValue", "Helo", 0.02);
+
 	//misc
 	shared_data.misc_feature = iniFile.GetBool("misc_feature", "Misc");
-	shared_data.cb_inject_values.maskLabels = iniFile.GetFloat("maskLabels", "Misc");
-	if (shared_data.cb_inject_values.maskLabels == FLT_MIN) shared_data.cb_inject_values.maskLabels = 0.0;
-	shared_data.cb_inject_values.hazeReduction = iniFile.GetFloat("hazeReduction", "Misc");
-	if (shared_data.cb_inject_values.hazeReduction == FLT_MIN) shared_data.cb_inject_values.hazeReduction = 1.0;
-	shared_data.cb_inject_values.noReflect = iniFile.GetFloat("noReflect", "Misc");
-	if (shared_data.cb_inject_values.noReflect == FLT_MIN) shared_data.cb_inject_values.noReflect = 0.0;
-	shared_data.cb_inject_values.NVGSize = iniFile.GetFloat("NVGSize", "Misc");
-	if (shared_data.cb_inject_values.NVGSize == FLT_MIN) shared_data.cb_inject_values.NVGSize = 1.0;
-	shared_data.cb_inject_values.NVGYPos = iniFile.GetFloat("NVGYPos", "Misc");
-	if (shared_data.cb_inject_values.NVGYPos == FLT_MIN) shared_data.cb_inject_values.NVGYPos = 0.0;
+	// shared_data.cb_inject_values.maskLabels = iniFile.GetFloat("maskLabels", "Misc");
+	// if (shared_data.cb_inject_values.maskLabels == FLT_MIN) shared_data.cb_inject_values.maskLabels = 0.0;
+	shared_data.cb_inject_values.maskLabels = read_float_with_defaut(iniFile, fileExist, "maskLabels", "Misc", 0.0);
+	// shared_data.cb_inject_values.hazeReduction = iniFile.GetFloat("hazeReduction", "Misc");
+	// if (shared_data.cb_inject_values.hazeReduction == FLT_MIN) shared_data.cb_inject_values.hazeReduction = 1.0;
+	shared_data.cb_inject_values.hazeReduction = read_float_with_defaut(iniFile, fileExist, "hazeReduction", "Misc", 0.0);
+	// shared_data.cb_inject_values.noReflect = iniFile.GetFloat("noReflect", "Misc");
+	// if (shared_data.cb_inject_values.noReflect == FLT_MIN) shared_data.cb_inject_values.noReflect = 0.0;
+	shared_data.cb_inject_values.noReflect = read_float_with_defaut(iniFile, fileExist, "noReflect", "Misc", 0.0);
+	// shared_data.cb_inject_values.NVGSize = iniFile.GetFloat("NVGSize", "Misc");
+	// if (shared_data.cb_inject_values.NVGSize == FLT_MIN) shared_data.cb_inject_values.NVGSize = 1.0;
+	shared_data.cb_inject_values.NVGSize = read_float_with_defaut(iniFile, fileExist, "NVGSize", "Misc", 1.0);
+	// shared_data.cb_inject_values.NVGYPos = iniFile.GetFloat("NVGYPos", "Misc");
+	// if (shared_data.cb_inject_values.NVGYPos == FLT_MIN) shared_data.cb_inject_values.NVGYPos = 0.0;
+	shared_data.cb_inject_values.NVGYPos = read_float_with_defaut(iniFile, fileExist, "NVGYPos", "Misc", 0.0);
+
 	// color
 	shared_data.color_feature = iniFile.GetBool("color_feature", "Color");
-	shared_data.cb_inject_values.colorFlag = iniFile.GetFloat("colorFlag", "Color");
-	if (shared_data.cb_inject_values.colorFlag == FLT_MIN) shared_data.cb_inject_values.colorFlag = 0.0;
-	shared_data.cb_inject_values.cockpitAdd = iniFile.GetFloat("cockpitAdd", "Color");
-	if (shared_data.cb_inject_values.cockpitAdd == FLT_MIN) shared_data.cb_inject_values.cockpitAdd = 0.0;
-	shared_data.cb_inject_values.cockpitMul = iniFile.GetFloat("cockpitMul", "Color");
-	if (shared_data.cb_inject_values.cockpitMul == FLT_MIN) shared_data.cb_inject_values.cockpitMul = 1.0;
-	shared_data.cb_inject_values.cockpitSat = iniFile.GetFloat("cockpitSat", "Color");
-	if (shared_data.cb_inject_values.cockpitSat == FLT_MIN) shared_data.cb_inject_values.cockpitSat = 0.0;
-	shared_data.cb_inject_values.extAdd = iniFile.GetFloat("extAdd", "Color");
-	if (shared_data.cb_inject_values.extAdd == FLT_MIN) shared_data.cb_inject_values.extAdd = 0.0;
-	shared_data.cb_inject_values.extMul = iniFile.GetFloat("extMul", "Color");
-	if (shared_data.cb_inject_values.extMul == FLT_MIN) shared_data.cb_inject_values.extMul = 1.0;
-	shared_data.cb_inject_values.extSat = iniFile.GetFloat("extSat", "Color");
-	if (shared_data.cb_inject_values.extSat == FLT_MIN) shared_data.cb_inject_values.extSat = 0.0;
+	//shared_data.cb_inject_values.colorFlag = iniFile.GetFloat("colorFlag", "Color");
+	// if (shared_data.cb_inject_values.colorFlag == FLT_MIN) shared_data.cb_inject_values.colorFlag = 0.0;
+	shared_data.cb_inject_values.colorFlag = read_float_with_defaut(iniFile, fileExist, "colorFlag", "Color", 0.0);
+	// shared_data.cb_inject_values.cockpitAdd = iniFile.GetFloat("cockpitAdd", "Color");
+	// if (shared_data.cb_inject_values.cockpitAdd == FLT_MIN) shared_data.cb_inject_values.cockpitAdd = 0.0;
+	shared_data.cb_inject_values.cockpitAdd = read_float_with_defaut(iniFile, fileExist, "cockpitAdd", "Color", 0.0);
+	// shared_data.cb_inject_values.cockpitMul = iniFile.GetFloat("cockpitMul", "Color");
+	// if (shared_data.cb_inject_values.cockpitMul == FLT_MIN) shared_data.cb_inject_values.cockpitMul = 1.0;
+	shared_data.cb_inject_values.cockpitMul = read_float_with_defaut(iniFile, fileExist, "cockpitMul", "Color", 1.0);
+	// shared_data.cb_inject_values.cockpitSat = iniFile.GetFloat("cockpitSat", "Color");
+	// if (shared_data.cb_inject_values.cockpitSat == FLT_MIN) shared_data.cb_inject_values.cockpitSat = 0.0;
+	shared_data.cb_inject_values.cockpitSat = read_float_with_defaut(iniFile, fileExist, "cockpitSat", "Color", 0.0);
+	//shared_data.cb_inject_values.extAdd = iniFile.GetFloat("extAdd", "Color");
+	// if (shared_data.cb_inject_values.extAdd == FLT_MIN) shared_data.cb_inject_values.extAdd = 0.0;
+	shared_data.cb_inject_values.extAdd = read_float_with_defaut(iniFile, fileExist, "extAdd", "Color", 0.0);
+	// shared_data.cb_inject_values.extMul = iniFile.GetFloat("extMul", "Color");
+	// if (shared_data.cb_inject_values.extMul == FLT_MIN) shared_data.cb_inject_values.extMul = 1.0;
+	shared_data.cb_inject_values.extMul = read_float_with_defaut(iniFile, fileExist, "extMul", "Color", 1.0);
+	//shared_data.cb_inject_values.extSat = iniFile.GetFloat("extSat", "Color");
+	// if (shared_data.cb_inject_values.extSat == FLT_MIN) shared_data.cb_inject_values.extSat = 0.0;
+	shared_data.cb_inject_values.extSat = read_float_with_defaut(iniFile, fileExist, "extSat", "Color", 0.0);
+
 	//sharpen
 	shared_data.sharpenDeband_feature = iniFile.GetBool("sharpenDeband_feature", "Sharpen");
-	shared_data.cb_inject_values.sharpenFlag = iniFile.GetFloat("sharpenFlag", "Sharpen");
-	if (shared_data.cb_inject_values.sharpenFlag == FLT_MIN) shared_data.cb_inject_values.sharpenFlag = 0.0;
-	shared_data.cb_inject_values.fSharpenIntensity = iniFile.GetFloat("sharpenIntensity", "Sharpen");
-	if (shared_data.cb_inject_values.fSharpenIntensity == FLT_MIN) shared_data.cb_inject_values.fSharpenIntensity = 1.0;
-	shared_data.cb_inject_values.lumaFactor = iniFile.GetFloat("lumaFactor", "Sharpen");
-	if (shared_data.cb_inject_values.lumaFactor == FLT_MIN) shared_data.cb_inject_values.lumaFactor = 1.0;
+	// shared_data.cb_inject_values.sharpenFlag = iniFile.GetFloat("sharpenFlag", "Sharpen");
+	// if (shared_data.cb_inject_values.sharpenFlag == FLT_MIN) shared_data.cb_inject_values.sharpenFlag = 0.0;
+	shared_data.cb_inject_values.sharpenFlag = read_float_with_defaut(iniFile, fileExist, "sharpenFlag", "Sharpen", 0.0);
+	// shared_data.cb_inject_values.fSharpenIntensity = iniFile.GetFloat("sharpenIntensity", "Sharpen");
+	// if (shared_data.cb_inject_values.fSharpenIntensity == FLT_MIN) shared_data.cb_inject_values.fSharpenIntensity = 1.0;
+	shared_data.cb_inject_values.fSharpenIntensity = read_float_with_defaut(iniFile, fileExist, "sharpenIntensity", "Sharpen", 1.0);
+	// shared_data.cb_inject_values.lumaFactor = iniFile.GetFloat("lumaFactor", "Sharpen");
+	// if (shared_data.cb_inject_values.lumaFactor == FLT_MIN) shared_data.cb_inject_values.lumaFactor = 1.0;
+	shared_data.cb_inject_values.lumaFactor = read_float_with_defaut(iniFile, fileExist, "lumaFactor", "Sharpen", 1.0);
+
 	//deband
-	shared_data.cb_inject_values.debandFlag = iniFile.GetFloat("debandFlag", "Sharpen");
-	if (shared_data.cb_inject_values.debandFlag == FLT_MIN) shared_data.cb_inject_values.debandFlag = 0.0;
-	shared_data.cb_inject_values.Threshold = iniFile.GetFloat("Threshold", "Deband");
-	if (shared_data.cb_inject_values.Threshold == FLT_MIN) shared_data.cb_inject_values.Threshold = 128.0;
-	shared_data.cb_inject_values.Range = iniFile.GetFloat("Range", "Deband");
-	if (shared_data.cb_inject_values.Range == FLT_MIN) shared_data.cb_inject_values.Range = 32.0;
-	shared_data.cb_inject_values.Iterations = iniFile.GetFloat("Iterations", "Deband");
-	if (shared_data.cb_inject_values.Iterations == FLT_MIN) shared_data.cb_inject_values.Iterations = 2.0;
-	shared_data.cb_inject_values.Grain = iniFile.GetFloat("Grain", "Deband");
-	if (shared_data.cb_inject_values.Grain == FLT_MIN) shared_data.cb_inject_values.Grain = 48.0;
+	// shared_data.cb_inject_values.debandFlag = iniFile.GetFloat("debandFlag", "Sharpen");
+	// if (shared_data.cb_inject_values.debandFlag == FLT_MIN) shared_data.cb_inject_values.debandFlag = 0.0;
+	shared_data.cb_inject_values.debandFlag = read_float_with_defaut(iniFile, fileExist, "debandFlag", "Sharpen", 0.0);
+	// shared_data.cb_inject_values.Threshold = iniFile.GetFloat("Threshold", "Deband");
+	// if (shared_data.cb_inject_values.Threshold == FLT_MIN) shared_data.cb_inject_values.Threshold = 128.0;
+	shared_data.cb_inject_values.Threshold = read_float_with_defaut(iniFile, fileExist, "Threshold", "Deband", 128.0);
+	// shared_data.cb_inject_values.Range = iniFile.GetFloat("", "Deband");
+	// if (shared_data.cb_inject_values.Range == FLT_MIN) shared_data.cb_inject_values.Range = 32.0;
+	shared_data.cb_inject_values.Range = read_float_with_defaut(iniFile, fileExist, "Range", "Deband", 32.0);
+	// shared_data.cb_inject_values.Iterations = iniFile.GetFloat("Iterations", "Deband");
+	// if (shared_data.cb_inject_values.Iterations == FLT_MIN) shared_data.cb_inject_values.Iterations = 2.0;
+	shared_data.cb_inject_values.Iterations = read_float_with_defaut(iniFile, fileExist, "Iterations", "Deband", 2.0);
+	// shared_data.cb_inject_values.Grain = iniFile.GetFloat("Grain", "Deband");
+	// if (shared_data.cb_inject_values.Grain == FLT_MIN) shared_data.cb_inject_values.Grain = 48.0;
+	shared_data.cb_inject_values.Grain = read_float_with_defaut(iniFile, fileExist, "Grain", "Deband", 48.0);
+
 	//NS430
 	shared_data.NS430_feature = iniFile.GetBool("NS430_feature", "NS430");
-	shared_data.cb_inject_values.NS430Scale = iniFile.GetFloat("Scale", "NS430");
-	if (shared_data.cb_inject_values.NS430Scale == FLT_MIN) shared_data.cb_inject_values.NS430Scale = 4.0;
-	shared_data.cb_inject_values.NS430Xpos = iniFile.GetFloat("Xpos", "NS430");
-	if (shared_data.cb_inject_values.NS430Xpos == FLT_MIN) shared_data.cb_inject_values.NS430Xpos = 0.7;
-	shared_data.cb_inject_values.NS430Ypos = iniFile.GetFloat("Ypos", "NS430");
-	if (shared_data.cb_inject_values.NS430Ypos == FLT_MIN) shared_data.cb_inject_values.NS430Ypos = 0.7;
-	shared_data.cb_inject_values.NS430Convergence = iniFile.GetFloat("Convergence", "NS430");
-	if (shared_data.cb_inject_values.NS430Convergence == FLT_MIN) shared_data.cb_inject_values.NS430Convergence = 1.0;
-	shared_data.cb_inject_values.GUIYScale = iniFile.GetFloat("GUIYScale", "NS430");
-	if (shared_data.cb_inject_values.GUIYScale == FLT_MIN) shared_data.cb_inject_values.GUIYScale = 1.0;
+	// shared_data.cb_inject_values.NS430Scale = iniFile.GetFloat("Scale", "NS430");
+	// if (shared_data.cb_inject_values.NS430Scale == FLT_MIN) shared_data.cb_inject_values.NS430Scale = 4.0;
+	shared_data.cb_inject_values.NS430Scale = read_float_with_defaut(iniFile, fileExist, "Scale", "NS430", 1.0);
+	// shared_data.cb_inject_values.NS430Xpos = iniFile.GetFloat("Xpos", "NS430");
+	// if (shared_data.cb_inject_values.NS430Xpos == FLT_MIN) shared_data.cb_inject_values.NS430Xpos = 0.7;
+	shared_data.cb_inject_values.NS430Xpos = read_float_with_defaut(iniFile, fileExist, "Xpos", "NS430", 0.7);
+	// shared_data.cb_inject_values.NS430Ypos = iniFile.GetFloat("Ypos", "NS430");
+	// if (shared_data.cb_inject_values.NS430Ypos == FLT_MIN) shared_data.cb_inject_values.NS430Ypos = 0.7;
+	shared_data.cb_inject_values.NS430Ypos = read_float_with_defaut(iniFile, fileExist, "Ypos", "NS430", 0.7);
+	// shared_data.cb_inject_values.NS430Convergence = iniFile.GetFloat("Convergence", "NS430");
+	// if (shared_data.cb_inject_values.NS430Convergence == FLT_MIN) shared_data.cb_inject_values.NS430Convergence = 1.0;
+	shared_data.cb_inject_values.NS430Convergence = read_float_with_defaut(iniFile, fileExist, "Convergence", "NS430", 1.0);
+	// shared_data.cb_inject_values.GUIYScale = iniFile.GetFloat("GUIYScale", "NS430");
+	// if (shared_data.cb_inject_values.GUIYScale == FLT_MIN) shared_data.cb_inject_values.GUIYScale = 1.0;
+	shared_data.cb_inject_values.GUIYScale = read_float_with_defaut(iniFile, fileExist, "GUIYScale", "NS430", 1.0);
 
 	// reshade effects
 	shared_data.effects_feature = iniFile.GetBool("effects_feature", "Effects");
-	shared_data.effect_target_QV = iniFile.GetInt("QV_render_target", "Effects");
-	if (shared_data.effect_target_QV == INT_MIN) shared_data.effect_target_QV = 0;
+	// shared_data.effect_target_QV = iniFile.GetInt("QV_render_target", "Effects");
+	// if (shared_data.effect_target_QV == INT_MIN) shared_data.effect_target_QV = 0;
+	shared_data.effect_target_QV = read_int_with_defaut(iniFile, fileExist, "QV_render_target", "Effects", 0);
 	shared_data.VRonly_technique = iniFile.GetBool("VRonly_technique", "Effects");
 
 	// fps limiter
-	shared_data.fps_limit = iniFile.GetInt("fps_limit", "fps");
-	if (shared_data.fps_limit == INT_MIN) shared_data.fps_limit = 120;
+	// shared_data.fps_limit = iniFile.GetInt("fps_limit", "fps");
+	// if (shared_data.fps_limit == INT_MIN) shared_data.fps_limit = 120;
+	shared_data.fps_limit = read_int_with_defaut(iniFile, fileExist, "fps_limit", "fps", 120);
 	shared_data.fps_feature = iniFile.GetBool("fps_feature", "fps");
 
+	//delay for compilation
+	shared_data.compil_delay = read_int_with_defaut(iniFile, fileExist, "compil_delay", "debug", 100);
 
 	// init global variables not saved in file
 	shared_data.cb_inject_values.disable_video_IHADSS = 0.0;
@@ -304,6 +389,7 @@ void saveShaderTogglerIniFile()
 	iniFile.SetFloat("testFlag", shared_data.cb_inject_values.testFlag, "for debugging purpose", "Debug");
 	iniFile.SetBool("disable_optimisation", shared_data.disable_optimisation, "Disable Optimisation ", "Debug");
 	iniFile.SetBool("debug_flag", debug_flag, "Disable Optimisation ", "Debug");
+	iniFile.SetFloat("compil_delay", shared_data.compil_delay, "compilation delay", "Debug");
 
 	//misc
 	iniFile.SetBool("misc_feature", shared_data.misc_feature, "Enable Misc features", "Misc");

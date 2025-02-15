@@ -823,3 +823,59 @@ void log_mirror_view()
 
 }
 
+// *******************************************************************************************************
+/// <summary>
+/// Log export of render target resolution
+/// </summary>
+/// 
+/// 
+void log_export_render_targer_res(short int display_to_use)
+{
+	if ((debug_flag) || FORCE_LOG)
+	{
+		std::stringstream s;
+		s << " => on_push_descriptors : export pre processor variables, BUFFER_WIDTH = " 
+			<< to_char(shared_data.render_target_view[display_to_use].width)
+			<< ", BUFFER_HEIGHT = " << to_char(shared_data.render_target_view[display_to_use].height)
+			<< ", BUFFER_RCP_WIDTH = " << to_char(1/shared_data.render_target_view[display_to_use].width)
+			<< ", BUFFER_RCP_HEIGHT = " << to_char(1/shared_data.render_target_view[display_to_use].height)
+			<< ";";
+		reshade::log::message(reshade::log::level::warning, s.str().c_str());
+	}
+}
+
+// *******************************************************************************************************
+/// <summary>
+/// Log wait for compilation
+/// </summary>
+/// 
+/// 
+void log_wait()
+{
+	if ((debug_flag) || FORCE_LOG)
+	{
+		std::stringstream s;
+		s << " => on_push_descriptors : wait " << shared_data.compil_delay << " ms ;";
+		reshade::log::message(reshade::log::level::warning, s.str().c_str());
+	}
+}
+
+
+// *******************************************************************************************************
+/// <summary>
+/// Log export texture for technique
+/// </summary>
+/// 
+/// 
+void log_export_texture(short int display_to_use)
+{
+	if ((debug_flag && flag_capture) || FORCE_LOG)
+	{
+		std::stringstream s;
+		s << " => on_push_descriptors : export pre processor DEPTH and STENCIL texture for display_to_use = " << display_to_use << ";";
+
+		reshade::log::message(reshade::log::level::warning, s.str().c_str());
+	}
+}
+
+;

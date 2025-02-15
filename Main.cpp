@@ -55,7 +55,7 @@
 using namespace reshade::api;
 
 extern "C" __declspec(dllexport) const char *NAME = "DCS VREM";
-extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v7.1";
+extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v7.3";
 
 // ***********************************************************************************************************************
 // definition of all shader of the mod (whatever feature selected in GUI)
@@ -160,6 +160,13 @@ static bool on_create_pipeline(device* device, pipeline_layout, uint32_t subobje
 
 	// Return whether any shader code was replaced
 	return replaced_stages;
+
+	// re initialize flag (new game session)
+	if (shared_data.render_target_view[0].compiled)
+	{
+		for (short int i = 0; i < MAXVIEWSPERDRAW; i++)
+			shared_data.render_target_view[i].compiled = false;
+	}
 }
 
 // *******************************************************************************************************
@@ -615,37 +622,46 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 	// display_to_use = 0 => outer left, 1 = outer right, 2 = Inner left, 3 = inner right.
 	short int display_to_use = shared_data.count_display - 1;
 	
-
-	if (shared_data.render_effect && shared_data.effects_feature)
+	//do not engage effect if option not selected and not in cockpit
+	if (shared_data.render_effect && shared_data.effects_feature && !shared_data.cb_inject_values.mapMode)
 	{
 		// engage effect for each call of global pixel shader
 		// ensure to wait next good context after rendering
 		shared_data.render_effect = false;
 
+		/*
 		if ((debug_flag && flag_capture))
 		{
 			std::stringstream s;
 			s << " => on_push_descriptors : engage effect :shared_data.render_target_view[shared_data.count_display - 1].created" << shared_data.render_target_view[shared_data.count_display - 1].created << " ;";
 			reshade::log::message(reshade::log::level::warning, s.str().c_str());
 		}
+		*/
 
 		// do not engage effect if render target view is not identified 
-		if (shared_data.render_target_view[shared_data.count_display - 1].created)
+		if (shared_data.render_target_view[display_to_use].created)
 		{			
+			//texture needed defined if at least 1 shader is using DEPTH or STENCIL, computed when reading technique list
+			// if (shared_data.texture_needed && !shared_data.render_target_view[display_to_use].depth_exported_for_technique)
 			if (shared_data.texture_needed)
 			{
 				// export DEPTH and STENCIL once for all effects (must be done in 2D too !!)
 				// update DEPTH texture
+				// shared_data.render_target_view[display_to_use].depth_exported_for_technique = true;
 				shared_data.runtime->update_texture_bindings("DEPTH", shared_data.depth_view[display_to_use].texresource_view, shared_data.depth_view[display_to_use].texresource_view);
 				// update STENCIL texture
 				shared_data.runtime->update_texture_bindings("STENCIL", shared_data.stencil_view[display_to_use].texresource_view, shared_data.stencil_view[display_to_use].texresource_view);
+				log_export_texture(display_to_use);
 			}
 		
 			// render all activated techniques if not 2D mirror or in 2D (reshade is already rendering the effect) 
 			if (shared_data.cb_inject_values.VRMode)
 			{
+				
 				for (int i = 0; i < shared_data.technique_vector.size(); ++i)
 				{
+					
+					bool buffer_exported = false;
 					
 					// render if QV target are relevant for the technique 
 					if ((display_to_use <= 1 && shared_data.technique_vector[i].quad_view_target == QVOUTER) ||
@@ -653,6 +669,28 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 						(shared_data.technique_vector[i].quad_view_target == QVALL)
 						)
 					{
+						
+						if (!shared_data.render_target_view[display_to_use].compiled)
+						{
+							
+							if (!buffer_exported)
+							{
+								buffer_exported = true;
+								// push render target resol for shader re compilation 
+								shared_data.runtime->set_preprocessor_definition("BUFFER_WIDTH", to_char(shared_data.render_target_view[display_to_use].width));
+								shared_data.runtime->set_preprocessor_definition("BUFFER_HEIGHT", to_char(shared_data.render_target_view[display_to_use].height));
+								shared_data.runtime->set_preprocessor_definition("BUFFER_RCP_WIDTH", to_char(1 / shared_data.render_target_view[display_to_use].width));
+								shared_data.runtime->set_preprocessor_definition("BUFFER_RCP_HEIGHT", to_char(1 / shared_data.render_target_view[display_to_use].height));
+								log_export_render_targer_res(display_to_use);
+
+							}
+
+							// setup a timeout in order to wait first usage compilation
+							std::this_thread::sleep_for(std::chrono::high_resolution_clock::duration(std::chrono::milliseconds(shared_data.compil_delay)));
+							shared_data.render_target_view[display_to_use].compiled = true;
+							log_wait();
+						}
+						// engage effect (will be compiled at the first launch)
 						shared_data.runtime->render_technique(shared_data.technique_vector[i].technique, cmd_list, shared_data.render_target_view[display_to_use].texresource_view, shared_data.render_target_view[display_to_use].texresource_view);
 						log_effect(shared_data.technique_vector[i], cmd_list, shared_data.render_target_view[display_to_use].texresource_view);
 					}
@@ -666,6 +704,8 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 				shared_data.runtime->update_texture_bindings("DEPTH", shared_data.depth_view[shared_data.mirror_VR].texresource_view, shared_data.depth_view[shared_data.mirror_VR].texresource_view);
 				// update STENCIL texture
 				shared_data.runtime->update_texture_bindings("STENCIL", shared_data.stencil_view[shared_data.mirror_VR].texresource_view, shared_data.stencil_view[shared_data.mirror_VR].texresource_view);
+				log_export_texture(-1);
+
 			}
 		}
 	}
@@ -722,6 +762,14 @@ static void on_bind_render_targets_and_depth_stencil(command_list *cmd_list, uin
 		// only first render target view to get
 		shared_data.render_target_view[shared_data.count_display].texresource_view = rtvs[0];
 		shared_data.render_target_view[shared_data.count_display].created = true;
+
+		// get resolution of render target
+		device* dev = cmd_list->get_device();
+		resource scr_resource = dev->get_resource_from_view(rtvs[0]);
+		resource_desc src_resource_desc = dev->get_resource_desc(scr_resource);
+
+		shared_data.render_target_view[shared_data.count_display].width = src_resource_desc.texture.width;
+		shared_data.render_target_view[shared_data.count_display].height = src_resource_desc.texture.height;
 		
 		log_renderTarget_depth(count, rtvs, dsv, cmd_list);
 	}

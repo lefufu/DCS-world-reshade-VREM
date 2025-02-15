@@ -110,3 +110,9 @@ extern void log_texture_view(reshade::api::device* dev, std::string name, reshad
 extern void log_technique_info(effect_runtime* runtime, effect_technique technique, std::string& name, std::string& eff_name, bool technique_status, int QV_target, bool has_texture);
 
 extern void log_mirror_view();
+
+extern void log_export_render_targer_res(short int display_to_use);
+
+extern void log_wait();
+
+extern void log_export_texture(short int display_to_use);

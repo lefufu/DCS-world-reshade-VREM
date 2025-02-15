@@ -75,7 +75,11 @@ struct resource_trace {
 
 struct resourceview_trace {
 	bool created = false;
+	bool compiled = false;
 	reshade::api::resource_view texresource_view;
+	uint32_t width;
+	uint32_t height;
+	// bool depth_exported_for_technique;
 };
 
 // for technique settings
@@ -185,6 +189,9 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	// for logging render targets  
 	bool track_for_rt = false;
 
+	//delay for compilation
+	int compil_delay = 100;
+
 	//disable optimisation
 	bool disable_optimisation = false;
 
@@ -217,6 +224,7 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	std::string key_TADS_video;
 	std::string key_NS430;
 	std::string key_fps;
+	std::string key_technique;
 };
 
 extern struct global_shared shared_data;
