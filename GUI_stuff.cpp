@@ -82,13 +82,12 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 				saveShaderTogglerIniFile();
 
 			}
-			ImGui::Text("Use ALT+%s in game to enable/disable technique in VR ", shared_data.key_technique);
-			/*
-			if (!shared_data.effects_feature || shared_data.count_draw <= 2)
+			ImGui::Text("Use %s+%s in game to enable/disable technique in VR ", shared_data.key_technique_mod, shared_data.key_technique);
+			// if (!shared_data.effects_feature || shared_data.count_draw <= 2)
+			if (!shared_data.effects_feature )
 			{
 				ImGui::BeginDisabled();
 			}
-			*/
 
 			// define technique QV render targets
 			ImGui::Text("Target area for standard reshade Techniques if Quad View (no VREM Techniques):");
@@ -125,16 +124,18 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 				}
 
 			}
-			/*
-			if (!shared_data.effects_feature || shared_data.count_draw <= 2)
-			{
-				ImGui::EndDisabled();
-			}
-			*/
+
+			// if (!shared_data.effects_feature || shared_data.count_draw <= 2)
+
 			// refresh techniques 
 			if (ImGui::Button("Refresh Techniques"))
 			{
 				shared_data.button_technique = true;
+			}
+
+			if (!shared_data.effects_feature)
+			{
+				ImGui::EndDisabled();
 			}
 		/*
 		if (!shared_data.cb_inject_values.VRMode)
@@ -280,13 +281,14 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		// set NVG YPOS
 		ImGui::SliderFloat("NVG vert. Pos", &shared_data.cb_inject_values.NVGYPos, -0.5f, 1.0f, "YPos: %.2f");
 
+		// enable/disable label fix
+		ImGui::SliderFloat("Labels hidden by cockpit frame", &shared_data.cb_inject_values.maskLabels, 0.0f, 1.0f, "Active: %1.0f");
+
 		if (!shared_data.misc_feature)
 		{
 			ImGui::EndDisabled();
 		}
-		//-----------------------------------------------------------------------------------------------------------------
-		// enable/disable label fix
-		ImGui::SliderFloat("Labels hidden by cockpit frame", &shared_data.cb_inject_values.maskLabels, 0.0f, 1.0f, "Active: %1.0f");
+
 	}
 
 
@@ -315,7 +317,7 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		{
 			ImGui::BeginDisabled();
 		}
-		ImGui::Text("Use CTRL+%s in game to change", shared_data.key_TADS_video);
+		ImGui::Text("Use %s+%s in game to change", shared_data.key_TADS_video_mod, shared_data.key_TADS_video);
 		ImGui::SliderFloat("Trigger value for Day", &shared_data.cb_inject_values.TADSDay, 0.0f, 1.0f, "Active: %0.2f");
 		ImGui::SliderFloat("Trigger Value for Night", &shared_data.cb_inject_values.TADSNight, 0.0f, 1.0f, "Active: %0.2f");
 		if (!shared_data.cb_inject_values.disable_video_IHADSS)
@@ -329,7 +331,7 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 			ImGui::BeginDisabled();
 		}
 		ImGui::SliderFloat("Boresight convergence offset", &shared_data.cb_inject_values.IHADSSxOffset, -0.25f, 0.25f, "Offset: %.3f");
-		ImGui::Text("Use SHIFT+%s in game to enable/disable boresight convergence for IHADSS : ", shared_data.key_TADS_video);
+		ImGui::Text("Use %s+%s in game to enable/disable boresight convergence for IHADSS : ", shared_data.key_IHADSS_boresight_mod, shared_data.key_IHADSS_boresight);
 		if (!shared_data.cb_inject_values.IHADSSBoresight)
 		{
 			ImGui::EndDisabled();
@@ -340,7 +342,7 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		{
 			ImGui::BeginDisabled();
 		}
-		ImGui::Text("Use ALT+%s in game to change", shared_data.key_TADS_video);
+		ImGui::Text("Use %s+%s in game to change", shared_data.key_IHADSSNoLeft_mod, shared_data.key_IHADSSNoLeft);
 		if (!shared_data.cb_inject_values.IHADSSNoLeft)
 		{
 			ImGui::EndDisabled();
@@ -376,7 +378,7 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		{
 			ImGui::BeginDisabled();
 		}
-		ImGui::Text("Use ALT+%s in game to change", shared_data.key_NS430);
+		ImGui::Text("Use %s+%s in game to change", shared_data.key_NS430_mod, shared_data.key_NS430);
 		ImGui::SliderFloat("NS430 Scale", &shared_data.cb_inject_values.NS430Scale, 3.0f, 10.0f, "Scale: %.2f");
 		ImGui::SliderFloat("NS430 Xposition ", &shared_data.cb_inject_values.NS430Xpos, 0.0f, 1.0f, "Xpos: %.2f");
 		ImGui::SliderFloat("NS430 Yposition ", &shared_data.cb_inject_values.NS430Ypos, 0.0f, 1.0f, "YPos: %.2f");
@@ -406,7 +408,7 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 			if (ImGui::Checkbox("Enabled", &shared_data.fps_enabled))
 				shared_data.fps_started = false;
 
-			ImGui::Text("Use SHIFT+%s in game to enable, CTRL+%s to disable", shared_data.key_fps, shared_data.key_fps);
+			ImGui::Text("Use %s+%s in game to enable, %S+%s to disable", shared_data.key_fps_on_mod, shared_data.key_fps, shared_data.key_fps_off_mod, shared_data.key_fps);
 
 			if (ImGui::SliderInt("Target FPS", reinterpret_cast<int*>(&shared_data.fps_limit), 30, 120))
 			{

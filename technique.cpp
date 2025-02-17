@@ -88,6 +88,8 @@ void enumerateTechniques(effect_runtime* runtime)
     shared_data.uniform_needed = false;
     shared_data.texture_needed = false;
 
+    reshade::log::message(reshade::log::level::info, "**** Enumerate technique called ****");
+
     extern CDataFile technique_iniFile;
 
     //save technique ini file name
@@ -110,6 +112,11 @@ void enumerateTechniques(effect_runtime* runtime)
         rt->get_technique_effect_name(technique, g_charBuffer, &g_charBufferSize);
         std::string eff_name(g_charBuffer);
 
+        std::stringstream s;
+        s << "**** Enumerate technique : name = " << &name << ";";
+        reshade::log::message(reshade::log::level::info, s.str().c_str());
+
+        // not working as if no technique selected nothing is called !
         // if shared_data.VRonly_technique is set, the technique state will not be used, instead the status will be read from the technique .ini file
         // 
         if (shared_data.VRonly_technique)

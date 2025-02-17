@@ -44,25 +44,6 @@
 #include "to_string.hpp"
 #include "shader_definitions.h"
 
-// *******************************************************************************************************
-// to handle VK_F* keys
-//
-
-std::unordered_map<std::string, int> vk_map = {
-	{"VK_F1",  0x70}, {"VK_F2",  0x71}, {"VK_F3",  0x72}, {"VK_F4",  0x73},
-	{"VK_F5",  0x74}, {"VK_F6",  0x75}, {"VK_F7",  0x76}, {"VK_F8",  0x77},
-	{"VK_F9",  0x78}, {"VK_F10", 0x79}, {"VK_F11", 0x7A}, {"VK_F12", 0x7B},
-	{"VK_ESCAPE", 0x1B}, {"VK_RETURN", 0x0D}, {"VK_SPACE", 0x20},
-	{"VK_LEFT", 0x25}, {"VK_UP", 0x26}, {"VK_RIGHT", 0x27}, {"VK_DOWN", 0x28}
-	// Add more keys as needed
-};
-
-uint32_t VK_to_key(std::string key_name)
-{
-	auto it = vk_map.find(key_name);
-	return (it != vk_map.end()) ? it->second : 0; // Return 0 if not found
-}
-
 
 // *******************************************************************************************************
 // Initialize counters
@@ -112,8 +93,9 @@ void handle_keypress(effect_runtime* runtime)
 	}
 	*/
 
-	// default CTRL+I toggle on/off video in IHADSS
-	if (runtime->is_key_pressed(shared_data.key_TADS_video[0]) && runtime->is_key_down(VK_CONTROL))
+	// obsolete : default CTRL+I toggle on/off video in IHADSS
+	// default ALT+F6 toggle on/off video in IHADSS
+	if (runtime->is_key_pressed(shared_data.vk_TADS_video) && runtime->is_key_down(shared_data.vk_TADS_video_mod))
 	{
 		// Toggle the value of disable_video_IHADSS between 0.0 and 1.0
 		if (shared_data.cb_inject_values.disable_video_IHADSS == 1.0)
@@ -126,8 +108,9 @@ void handle_keypress(effect_runtime* runtime)
 		}
 	}
 
-	// default SHIFT+I toggle on/off boresight convergence of IHADSS
-	if (runtime->is_key_pressed(shared_data.key_TADS_video[0]) && runtime->is_key_down(VK_SHIFT))
+	// obsolete :  default SHIFT+I toggle on/off boresight convergence of IHADSS
+	// default  ALT+F8 toggle on/off boresight convergence of IHADSS
+	if (runtime->is_key_pressed(shared_data.vk_IHADSS_boresight) && runtime->is_key_down(shared_data.vk_IHADSS_boresight_mod))
 	{
 		// Toggle the value of disable_video_IHADSS between 0.0 and 1.0
 		if (shared_data.cb_inject_values.IHADSSBoresight == 1.0)
@@ -140,8 +123,9 @@ void handle_keypress(effect_runtime* runtime)
 		}
 	}
 
-	// default ALT+I toggle on/off lest eye of IHADSS
-	if (runtime->is_key_pressed(shared_data.key_TADS_video[0]) && runtime->is_key_down(VK_MENU))
+	// obsolete :  default ALT+I toggle on/off lest eye of IHADSS
+	// default ALT+F10 toggle on/off lest eye of IHADSS
+	if (runtime->is_key_pressed(shared_data.vk_IHADSSNoLeft) && runtime->is_key_down(shared_data.vk_IHADSSNoLeft_mod))
 	{
 		// Toggle the value of disable_video_IHADSS between 0.0 and 1.0
 		if (shared_data.cb_inject_values.IHADSSNoLeft == 1.0)
@@ -154,8 +138,9 @@ void handle_keypress(effect_runtime* runtime)
 		}
 	}
 
-	// default ALT+V toggle NS430 hiding and screen texture display in GUI
-	if (runtime->is_key_pressed(shared_data.key_NS430[0]) && runtime->is_key_down(VK_MENU))
+	// obsolete :  default ALT+V toggle NS430 hiding and screen texture display in GUI
+	// default ALT+F7 toggle NS430 hiding and screen texture display in GUI
+	if (runtime->is_key_pressed(shared_data.vk_NS430) && runtime->is_key_down(shared_data.vk_NS430_mod))
 	{
 		// Toggle the value of disable_video_IHADSS between 0.0 and 1.0
 		if (shared_data.cb_inject_values.NS430Flag == 1.0)
@@ -168,16 +153,18 @@ void handle_keypress(effect_runtime* runtime)
 		}
 	}
 
-	// default SHIFT+1 toggle ON limiter
-	if (runtime->is_key_pressed(shared_data.key_fps[0]) && runtime->is_key_down(VK_SHIFT) ) // && shared_data.fps_feature)
+	// obsolete : default SHIFT+1 toggle ON limiter
+	// default SHIFT+F5 toggle ON limiter
+	if (runtime->is_key_pressed(shared_data.vk_fps) && runtime->is_key_down(shared_data.vk_fps_on_mod) )
 	{
 		shared_data.fps_enabled = true;
 		shared_data.fps_started = false;
 
 	}
 
-	// default CTRL+1 toggle OFF limiter
-	if (runtime->is_key_pressed(shared_data.key_fps[0]) && runtime->is_key_down(VK_CONTROL) ) // && shared_data.fps_feature)
+	// obsolete : default CTRL+1 toggle OFF limiter
+	// default CTRL+F5 toggle OFF limiter
+	if (runtime->is_key_pressed(shared_data.vk_fps) && runtime->is_key_down(shared_data.vk_fps_off_mod))
 	{
 		// Toggle the value of disable_video_IHADSS between 0.0 and 1.0
 		shared_data.fps_enabled = false;
@@ -185,7 +172,7 @@ void handle_keypress(effect_runtime* runtime)
 	}
 
 	// default ALT+F5 toggle ON/OFF technique
-	if (runtime->is_key_pressed(VK_to_key(shared_data.key_technique)) && runtime->is_key_down(VK_MENU)) // && shared_data.fps_feature)
+	if (runtime->is_key_pressed((shared_data.vk_technique)) && runtime->is_key_down(shared_data.vk_technique_mod))
 	{
 		if (shared_data.effects_feature)
 		{

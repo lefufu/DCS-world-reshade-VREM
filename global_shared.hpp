@@ -221,10 +221,42 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	bool init_debug_feature = false;
 
 	// key binding
+	// strings
+	// key
 	std::string key_TADS_video;
+	// modifier
+	std::string key_TADS_video_mod;
+	// associated VK_ ids
+	uint32_t vk_TADS_video;
+	uint32_t vk_TADS_video_mod;
+
+	std::string key_IHADSS_boresight;
+	std::string key_IHADSS_boresight_mod;
+	uint32_t vk_IHADSS_boresight;
+	uint32_t vk_IHADSS_boresight_mod;
+
+	std::string key_IHADSSNoLeft;
+	std::string key_IHADSSNoLeft_mod;
+	uint32_t vk_IHADSSNoLeft;
+	uint32_t vk_IHADSSNoLeft_mod;
+	
+
 	std::string key_NS430;
+	std::string key_NS430_mod;
+	uint32_t vk_NS430;
+	uint32_t vk_NS430_mod;
+
 	std::string key_fps;
+	std::string key_fps_on_mod;
+	std::string key_fps_off_mod;
+	uint32_t vk_fps;
+	uint32_t vk_fps_on_mod;
+	uint32_t vk_fps_off_mod;
+
 	std::string key_technique;
+	std::string key_technique_mod;
+	uint32_t vk_technique;
+	uint32_t vk_technique_mod;
 };
 
 extern struct global_shared shared_data;
