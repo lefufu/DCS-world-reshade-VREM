@@ -116,3 +116,5 @@ extern void log_export_render_targer_res(short int display_to_use);
 extern void log_wait();
 
 extern void log_export_texture(short int display_to_use);
+
+extern void log_technique_loaded(uint32_t index);

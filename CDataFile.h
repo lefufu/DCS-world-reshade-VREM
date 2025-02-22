@@ -168,7 +168,6 @@ public:
 
 				// Data handling methods
 				/////////////////////////////////////////////////////////////////
-
 				// GetValue: Our default access method. Returns the raw t_Str value
 				// Note that this returns keys specific to the given section only.
 	t_Str		GetValue(t_Str szKey, t_Str szSection = t_Str("")); 
@@ -271,9 +270,10 @@ protected:
 // Data
 public:
 	long		m_Flags;		// Our settings flags.
+	SectionList	m_Sections;		// Our list of sections
 
 protected:
-	SectionList	m_Sections;		// Our list of sections
+	//SectionList	m_Sections;		// Our list of sections
 	t_Str		m_szFileName;	// The filename to write to
 	bool		m_bDirty;		// Tracks whether or not data has changed.
 };

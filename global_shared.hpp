@@ -50,6 +50,8 @@
 #define DEPTH_NAME "DepthBufferTex"
 #define STENCIL_NAME "StencilBufferTex"
 #define QV_TARGET_NAME "VREMQuadViewTarget"
+#define VR_ONLY_NAME "VREM_technique_in_VR_only"
+#define VR_ONLY_EFFECT "VRONLY_VREM.fx"
 #define QVALL 0
 #define QVOUTER 1
 #define QVINNER 2
@@ -152,6 +154,7 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	bool VRonly_technique = false;
 	bool init_VRonly_technique = false;
 
+
 	// copy from one function to another
 	reshade::api::effect_runtime* runtime;
 	reshade::api::command_list* commandList;
@@ -161,6 +164,7 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	// to share uniform / texture only if needed
 	bool uniform_needed = false;
 	bool texture_needed = false;
+	effect_technique VR_only_technique_handle;
 
 	// render target (all(0)/outer(1)/inner(2)) for effect
 	int effect_target_QV = 0;

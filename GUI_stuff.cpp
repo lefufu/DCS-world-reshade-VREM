@@ -82,6 +82,7 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 				saveShaderTogglerIniFile();
 
 			}
+			
 			ImGui::Text("Use %s+%s in game to enable/disable technique in VR ", shared_data.key_technique_mod, shared_data.key_technique);
 			// if (!shared_data.effects_feature || shared_data.count_draw <= 2)
 			if (!shared_data.effects_feature )
@@ -95,7 +96,14 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 			ImGui::RadioButton("Outer only", &shared_data.effect_target_QV, 1); ImGui::SameLine();
 			ImGui::RadioButton("Inner only", &shared_data.effect_target_QV, 2);
 
-			// enable/disable technique displayed only in VR
+			/*
+			// enable/disable technique displayed only in VR (only if the VREM "fake" VR only technique is found)
+			if (shared_data.VR_only_technique_handle == 0)
+			{
+				ImGui::BeginDisabled();
+			}
+
+			
 			if (ImGui::Checkbox("Techniques only for VR views", &shared_data.VRonly_technique))
 			{
 				if (!shared_data.VRonly_technique)
@@ -124,6 +132,12 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 				}
 
 			}
+
+			if (shared_data.VR_only_technique_handle == 0)
+			{
+				ImGui::EndDisabled();
+			}
+			*/
 
 			// if (!shared_data.effects_feature || shared_data.count_draw <= 2)
 

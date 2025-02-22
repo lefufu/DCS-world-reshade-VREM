@@ -878,4 +878,28 @@ void log_export_texture(short int display_to_use)
 	}
 }
 
-;
+// *******************************************************************************************************
+/// <summary>
+/// Log technique loaded from file
+/// </summary>
+/// 
+/// 
+/// 
+void log_technique_loaded(uint32_t index)
+{
+	if ((debug_flag) || FORCE_LOG)
+	{
+		std::stringstream s;
+		s << "Enumerate technique loaded into vector, technique handle ";
+		if (shared_data.technique_vector[index].technique == 0)
+			s << "null, ";
+		else
+			s << " not null, ";
+		s << "effect name = " << shared_data.technique_vector[index].eff_name
+		<< ", technique name = " << shared_data.technique_vector[index].name;
+		s << ", technique_status = " << shared_data.technique_vector[index].technique_status 
+			<< ", QV_target = " << shared_data.technique_vector[index].quad_view_target << ";";
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
+	}
+}
+

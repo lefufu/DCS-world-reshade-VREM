@@ -55,7 +55,7 @@
 using namespace reshade::api;
 
 extern "C" __declspec(dllexport) const char *NAME = "DCS VREM";
-extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v7.4";
+extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v8.0";
 
 // ***********************************************************************************************************************
 // definition of all shader of the mod (whatever feature selected in GUI)
@@ -67,7 +67,8 @@ std::unordered_map<uint32_t, Shader_Definition> shader_by_hash =
 	{ 0xD3E172D4, Shader_Definition(action_replace, Feature::Rotor, L"UH1_rotorPS.cso", 0) },
 	// ** fix for IHADSS **
 	{ 0x2D713734, Shader_Definition(action_replace, Feature::IHADSS, L"IHADSS_PNVS_PS.cso", 0) },
-	{ 0x6AA19B8F, Shader_Definition(action_replace, Feature::IHADSS, L"IHADSS_PS.cso", 0) },
+	// { 0x6AA19B8F, Shader_Definition(action_replace, Feature::IHADSS, L"IHADSS_PS.cso", 0) },
+	{ 0xDF141A84, Shader_Definition(action_replace, Feature::IHADSS, L"IHADSS_PS.cso", 0) },
 	{ 0x45E221A9, Shader_Definition(action_replace, Feature::IHADSS, L"IHADSS_VS.cso", 0) },
 	// ** label masking and color/sharpen/deband **
 	// to start spying texture for depthStencil (Vs associated with global illumination PS)
@@ -103,7 +104,11 @@ std::unordered_map<uint32_t, Shader_Definition> shader_by_hash =
 	//  ** NVG **
 	{ 0xE65FAB66, Shader_Definition(action_replace , Feature::NVG , L"NVG_extPS.cso", 0) },
 	//  ** identify render target ** (first global PS)
-	{ 0x6656F8A6, Shader_Definition(action_log , Feature::Effects , L"", 0) }
+	//no AA
+	{ 0x6656F8A6, Shader_Definition(action_log , Feature::Effects , L"", 0) },
+	//MSAA2x
+	{ 0x4D866699, Shader_Definition(action_log , Feature::Effects , L"", 0) }
+	
 };
 
 // ***********************************************************************************************************************
@@ -136,7 +141,7 @@ static thread_local std::vector<std::vector<uint8_t>> s_data_to_delete;
 
 
 // *******************************************************************************************************
-// on_create_pipeline() : called once per pipeline, used to replace shader code if option setup for shader
+// on_create_pipeline() : called once per pipeline when 3D screen load, used to replace shader code if option setup for shader
 //
 static bool on_create_pipeline(device* device, pipeline_layout, uint32_t subobject_count, const pipeline_subobject* subobjects)
 {
@@ -158,15 +163,15 @@ static bool on_create_pipeline(device* device, pipeline_layout, uint32_t subobje
 		}
 	}
 
-	// Return whether any shader code was replaced
-	return replaced_stages;
-
 	// re initialize flag (new game session)
 	if (shared_data.render_target_view[0].compiled)
 	{
 		for (short int i = 0; i < MAXVIEWSPERDRAW; i++)
 			shared_data.render_target_view[i].compiled = false;
 	}
+
+	// Return whether any shader code was replaced
+	return replaced_stages;
 }
 
 // *******************************************************************************************************
@@ -623,6 +628,7 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 	short int display_to_use = shared_data.count_display - 1;
 	
 	//do not engage effect if option not selected and not in cockpit
+
 	if (shared_data.render_effect && shared_data.effects_feature && !shared_data.cb_inject_values.mapMode)
 	{
 		// engage effect for each call of global pixel shader
@@ -633,10 +639,10 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 		if ((debug_flag && flag_capture))
 		{
 			std::stringstream s;
-			s << " => on_push_descriptors : engage effect :shared_data.render_target_view[shared_data.count_display - 1].created" << shared_data.render_target_view[shared_data.count_display - 1].created << " ;";
+			s << " => on_push_descriptors : engage effect :shared_data.render_target_view[display_to_use].created = " << shared_data.render_target_view[display_to_use].created << ";";
 			reshade::log::message(reshade::log::level::warning, s.str().c_str());
-		}
-		*/
+		}*/
+		
 
 		// do not engage effect if render target view is not identified 
 		if (shared_data.render_target_view[display_to_use].created)
@@ -755,6 +761,7 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 // on_bind_render_targets_and_depth_stencil() : track render target
 static void on_bind_render_targets_and_depth_stencil(command_list *cmd_list, uint32_t count, const resource_view* rtvs, resource_view dsv)
 {
+	
 	// copy render target if tracking
 	if (shared_data.track_for_render_target && shared_data.count_display > -1 && !shared_data.cb_inject_values.mapMode && count > 0 && shared_data.effects_feature)
 	{
