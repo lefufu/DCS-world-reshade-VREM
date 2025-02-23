@@ -903,3 +903,48 @@ void log_technique_loaded(uint32_t index)
 	}
 }
 
+// *******************************************************************************************************
+/// <summary>
+/// Log enumerateTechniques() called
+/// </summary>
+/// 
+/// 
+void log_enumerate()
+{
+	if ((debug_flag) || FORCE_LOG) 
+		reshade::log::message(reshade::log::level::info, "enumerate_techniques called");
+}
+
+// *******************************************************************************************************
+/// <summary>
+/// Log VRONLY technique identified
+/// </summary>
+/// 
+void log_VRonly_technique()
+{
+	if ((debug_flag) || FORCE_LOG) 
+		reshade::log::message(reshade::log::level::info, "runtime->enumerate_techniques: VRONLY technique identified");
+}
+
+// *******************************************************************************************************
+/// <summary>
+/// Log technique readed by runtime->enumerate_techniques
+/// </summary>
+/// 
+void log_technique_readed(effect_technique technique, std::string name, std::string eff_name, bool technique_status)
+{
+	if (debug_flag || FORCE_LOG)
+	{
+		std::stringstream s;
+		std::string status = "not null";
+		if (technique == 0)
+			status = "null";
+
+		s << "runtime->enumerate_techniques : technique enumerated"
+			<< ", technique handle = " << status
+			<< ", name = " << name
+			<< ", effect = " << eff_name
+			<< ", technique status =" << technique_status;
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
+	}
+}

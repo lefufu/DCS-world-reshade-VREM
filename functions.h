@@ -118,3 +118,9 @@ extern void log_wait();
 extern void log_export_texture(short int display_to_use);
 
 extern void log_technique_loaded(uint32_t index);
+
+extern void log_enumerate();
+
+extern void log_VRonly_technique();
+
+extern void log_technique_readed(effect_technique technique, std::string name, std::string eff_name, bool technique_status);

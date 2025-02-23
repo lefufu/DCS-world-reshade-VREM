@@ -283,8 +283,7 @@ void load_setting_IniFile()
 	// reshade effects
 	shared_data.effects_feature = iniFile.GetBool("effects_feature", "Effects");
 	shared_data.effect_target_QV = read_int_with_defaut(iniFile, fileExist, "QV_render_target", "Effects", 0);
-	// shared_data.VRonly_technique = iniFile.GetBool("VRonly_technique", "Effects");
-	shared_data.VRonly_technique = false;
+	shared_data.VRonly_technique = iniFile.GetBool("VRonly_technique", "Effects");
 
 	// fps limiter
 	shared_data.fps_limit = read_int_with_defaut(iniFile, fileExist, "fps_limit", "fps", 120);
@@ -354,7 +353,7 @@ void saveShaderTogglerIniFile()
 	// reshade effects
 	iniFile.SetBool("effects_feature", shared_data.effects_feature, "Enable Reshade effects", "Effects");
 	iniFile.SetInt("QV_render_target", shared_data.effect_target_QV, "QV render target", "Effects");
-	// iniFile.SetBool("VRonly_technique", shared_data.VRonly_technique, "Reshade technique applied only on VR views", "Effects");
+	iniFile.SetBool("VRonly_technique", shared_data.VRonly_technique, "Reshade technique applied only on VR views", "Effects");
 
 	// debug
 	iniFile.SetBool("debug_feature", debug_flag, "Enable debug features", "Debug");
