@@ -965,7 +965,12 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD fdwReason, LPVOID)
 		
 		reshade::unregister_event<reshade::addon_event::reshade_present>(on_present);
 
-		
+		// test 
+		if (shared_data.VRonly_technique)
+		{
+			reshade::log::message(reshade::log::level::warning, "********* re enable techniques *************");
+			reEnableAllTechnique(true);
+		}
 
 		clean_up();
 		reshade::unregister_overlay(nullptr, &displaySettings);

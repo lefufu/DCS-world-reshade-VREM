@@ -61,9 +61,11 @@ void save_technique_status(std::string technique_name, std::string effect_name, 
 {
     extern CDataFile technique_iniFile;
 
-    technique_iniFile.SetValue("technique_name", technique_name, "name of technique for effect", effect_name);
+    /* technique_iniFile.SetValue("technique_name", technique_name, "name of technique for effect", effect_name);
     technique_iniFile.SetBool("technique_status", technique_status, "status of technique", effect_name);
     technique_iniFile.SetInt("quad_view_target", quad_view_target, "Quad view target", effect_name);  
+    */
+    technique_iniFile.SetBool(technique_name, technique_status, "", "technique");
 }
 
 
@@ -145,11 +147,11 @@ void enumerateTechniques(effect_runtime* runtime)
     shared_data.uniform_needed = false;
     shared_data.texture_needed = false;
       
-    if (shared_data.VRonly_technique)
-    {      
+    // if (shared_data.VRonly_technique)
+    // {      
         // load the technique file, as status of technique are not relevant
         technique_iniFile.Load(technique_iniFileName);       
-    }
+    // }
     
     if ((debug_flag))
     {
@@ -194,12 +196,23 @@ void enumerateTechniques(effect_runtime* runtime)
         if (shared_data.VRonly_technique)
         {
             technique_status = read_technique_status_from_file(name);
+
             if ((debug_flag))
             {
                 std::stringstream s;
                 s << " ******** read status from file for technique " << name;
                 reshade::log::message(reshade::log::level::warning, s.str().c_str());
             }
+
+            if (technique_status && shared_data.count_draw == 0)
+            {
+                std::stringstream s;
+                s << " ******** set technique true " << name;
+                reshade::log::message(reshade::log::level::warning, s.str().c_str());
+
+                rt->set_technique_state(technique, true);
+            }
+
         }
         else
             technique_status = rt->get_technique_state(technique);
@@ -248,6 +261,14 @@ void enumerateTechniques(effect_runtime* runtime)
     //save technique list
     if (!shared_data.VRonly_technique)
     {
+        
+        if ((debug_flag))
+        {
+            std::stringstream s;
+            s << " ******** saving techniques = " << shared_data.technique_vector.size() << ";";
+            reshade::log::message(reshade::log::level::warning, s.str().c_str());
+        }
+        technique_iniFile.SetFileName(technique_iniFileName);
         technique_iniFile.Save();
     }
     /* else
