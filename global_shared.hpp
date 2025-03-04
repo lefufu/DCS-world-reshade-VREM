@@ -166,6 +166,8 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	bool texture_needed = false;
 	effect_technique VR_only_technique_handle;
 
+	bool flag_re_enabled = false;
+
 	// render target (all(0)/outer(1)/inner(2)) for effect
 	int effect_target_QV = 0;
 	// to flag PS shader is used for 2D mirror of VR and not VR rendering

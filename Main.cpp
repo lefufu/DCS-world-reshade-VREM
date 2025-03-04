@@ -162,13 +162,13 @@ static bool on_create_pipeline(device* device, pipeline_layout, uint32_t subobje
 			break;
 		}
 	}
-
+	/*
 	// re initialize flag (new game session)
 	if (shared_data.render_target_view[0].compiled)
 	{
 		for (short int i = 0; i < MAXVIEWSPERDRAW; i++)
 			shared_data.render_target_view[i].compiled = false;
-	}
+	}*/
 
 	// Return whether any shader code was replaced
 	return replaced_stages;
@@ -604,12 +604,6 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 					log_mirror_view();
 				}
 
-				// identify if cockpit VS is used
-				if (it->second.feature == Feature::mapMode)
-				{
-					shared_data.cb_inject_values.mapMode = 0.0;
-				}
-
 			}
 			shared_data.last_feature = it->second.feature;
 
@@ -713,6 +707,7 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 				log_export_texture(-1);
 
 			}
+
 		}
 	}
 

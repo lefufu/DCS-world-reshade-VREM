@@ -109,12 +109,13 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 				if (!shared_data.VRonly_technique)
 				{
 					// select techniques saved in techniqe.ini file
-					reEnableAllTechnique();
+					reEnableAllTechnique(true);
 				}
 				if (shared_data.VRonly_technique)
 				{
 					// deselect techniques
-					disableAllTechnique();
+					// disableAllTechnique(true);
+					disableAllTechnique(false);
 				}
 			}
 		
@@ -132,6 +133,7 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 				}
 
 			}
+
 			/*
 			if (shared_data.VR_only_technique_handle == 0)
 			{

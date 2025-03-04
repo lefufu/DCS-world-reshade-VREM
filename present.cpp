@@ -266,6 +266,26 @@ void on_present(effect_runtime* runtime)
 		shared_data.fps_last_point = next_point;
 	}
 
+	
+	// disable technique if VR only
+	// shared_data.count_draw set to number of viewports only after 1st rendering of 3D 
+	if (shared_data.count_draw > 0)
+	{
+		if (!shared_data.flag_re_enabled && shared_data.technique_vector.size() > 0 && shared_data.VRonly_technique && shared_data.render_target_view[shared_data.count_draw - 1].compiled == true)
+		{
+			shared_data.flag_re_enabled = true;
+			//std::this_thread::sleep_for(std::chrono::high_resolution_clock::duration(std::chrono::milliseconds(1000)));
+			if ((debug_flag))
+			{
+				std::stringstream s;
+				s << " ******** re disable techniques *******";
+				reshade::log::message(reshade::log::level::warning, s.str().c_str());
+			}
+			disableAllTechnique(false);
+		}
+	}
+	
+
 
 	// to debug crash at launch
 	// flag_capture = true;

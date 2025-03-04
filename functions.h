@@ -35,9 +35,9 @@ extern void enumerateTechniques(effect_runtime* runtime);
 
 extern bool onReshadeSetTechniqueState(effect_runtime* runtime, effect_technique technique, bool enabled);
 
-extern void disableAllTechnique();
+extern void disableAllTechnique(bool save_flag);
 
-extern void reEnableAllTechnique();
+extern void reEnableAllTechnique(bool save_flag);
 
 extern void log_push_descriptor(reshade::api::shader_stage stages, reshade::api::pipeline_layout layout, uint32_t param_index, const reshade::api::descriptor_table_update& update);
 
@@ -118,9 +118,3 @@ extern void log_wait();
 extern void log_export_texture(short int display_to_use);
 
 extern void log_technique_loaded(uint32_t index);
-
-extern void log_enumerate();
-
-extern void log_VRonly_technique();
-
-extern void log_technique_readed(effect_technique technique, std::string name, std::string eff_name, bool technique_status);
