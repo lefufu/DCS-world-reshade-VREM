@@ -55,7 +55,7 @@
 using namespace reshade::api;
 
 extern "C" __declspec(dllexport) const char *NAME = "DCS VREM";
-extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v8.1";
+extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v8.2";
 
 // ***********************************************************************************************************************
 // definition of all shader of the mod (whatever feature selected in GUI)
@@ -750,6 +750,74 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 
 	}
 
+	//try to get cPerFrame (cb6)
+	if (update.type == descriptor_type::constant_buffer && update.binding == 6 && update.count == 1 && stages == shader_stage::pixel && flag_capture)
+	{
+		// test to handle cbuffer cPerFrame : register(b6)
+		// {
+			// try to get values
+			auto cbuffer = static_cast<const reshade::api::buffer_range*>(update.descriptors)[0];
+			std::stringstream s;
+			s << "--> cbuffer cPerFrame handle = " << reinterpret_cast<void*>(cbuffer.buffer.handle) << ", size =" << cbuffer.size << ";";
+			reshade::log::message(reshade::log::level::info, s.str().c_str());
+
+		//create a new buffer resource
+		device* dev = cmd_list->get_device();
+
+		// set elements for src and dest.
+		resource_desc src_buffer_desc = dev->get_resource_desc(cbuffer.buffer);
+		resource_usage src_usage = src_buffer_desc.usage;
+		memory_heap src_heap = src_buffer_desc.heap;
+
+		resource dest_buffer;
+		resource_desc dest_buffer_desc;
+		
+		dest_buffer_desc.type = resource_type::buffer;
+		// dest_buffer_desc.buffer.size = 608;
+		dest_buffer_desc.buffer.size = src_buffer_desc.buffer.size;
+		dest_buffer_desc.buffer.stride = src_buffer_desc.buffer.stride;
+		dest_buffer_desc.usage = resource_usage::copy_dest;
+		dest_buffer_desc.heap = memory_heap::gpu_to_cpu;
+
+		// create the new resource
+		dev->create_resource(dest_buffer_desc, nullptr, resource_usage::constant_buffer, &dest_buffer, nullptr);
+
+		// copy old to new 
+		cmd_list->barrier(cbuffer.buffer, src_usage, resource_usage::copy_source);
+		cmd_list->barrier(dest_buffer, resource_usage::constant_buffer, resource_usage::copy_dest);
+		// do copy
+		cmd_list->copy_resource(cbuffer.buffer, dest_buffer);
+		//restore usage
+		cmd_list->barrier(cbuffer.buffer, resource_usage::copy_source, src_usage);
+		reshade::log::message(reshade::log::level::info, "**** cb cPerFrame copyed ***");
+
+		//map new cb
+		void* data = nullptr;
+
+		// get gAtmIntensity that is cb6[2].w => float buffer [FOG_INDEX]
+		
+		if (cmd_list->get_device()->map_buffer_region(dest_buffer, 0, -1, map_access::read_only, &data))
+		{
+			std::stringstream s;
+			float dest_cb[FOG_INDEX+1];
+			reshade::log::message(reshade::log::level::info, "**** map_buffer_region OK  ***");
+			// cb = array of float => 4 byte per float 
+			memcpy(dest_cb, data, (FOG_INDEX+1)*4);
+			cmd_list->get_device()->unmap_buffer_region(dest_buffer);
+			for (int i = 0; i < FOG_INDEX+1; i++)
+			{
+				s << "--> cbuffer cPerFrame[" << i << "] = "<< dest_cb[i] <<";";
+				reshade::log::message(reshade::log::level::info, s.str().c_str());
+				s.str("");
+				s.clear();
+			}
+			//delete resource created for copy
+			dev->destroy_resource(dest_buffer);
+		}
+		else
+			reshade::log::message(reshade::log::level::info, "**** map_buffer_region KO !!! ***");
+		
+	}
 }
 
 //*******************************************************************************************************
@@ -883,7 +951,7 @@ static void on_destroy_pipeline(
 }
 
 //delete vectors and maps
-void clean_up()
+static void clean_up2()
 {
 
 	shader_code.clear(); 
@@ -965,14 +1033,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD fdwReason, LPVOID)
 		
 		reshade::unregister_event<reshade::addon_event::reshade_present>(on_present);
 
-		// test 
-		if (shared_data.VRonly_technique)
-		{
-			reshade::log::message(reshade::log::level::warning, "********* re enable techniques *************");
-			reEnableAllTechnique(true);
-		}
-
-		clean_up();
+		clean_up2();
 		reshade::unregister_overlay(nullptr, &displaySettings);
 
 		reshade::unregister_addon(hModule);

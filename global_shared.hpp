@@ -98,6 +98,9 @@ struct technique_trace {
 // should be 2x per eye x 2 for quad view + margin. No added view/resources for AA   
 #define MAXVIEWSPERDRAW 6
 
+// index of gAtmIntensity in the float array mapped for cPerFrame (cb6) 
+#define FOG_INDEX 11
+
 // a class to host all global variables shared between reshade on_* functions. 
 // 
 struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
