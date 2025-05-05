@@ -203,10 +203,10 @@ static void on_init_pipeline_layout(reshade::api::device* device, const uint32_t
 
 		if (param.push_descriptors.type == descriptor_type::constant_buffer)
 		{
-			//index should be 2 for CB in DX11, but let's get it dynamically. Not used.
+			//index should be 2 for CB in DX11, but let's get it dynamically. Finally Not used...
 			shared_data.CBIndex = paramIndex;
 
-			// create a new pipeline_layout for just 1 constant buffer to be updated by push_constant(), cb number defined in CBINDEX
+			// create a new pipeline_layout for VREM constant buffer to be updated by push_constant(), cb number defined in CBINDEX (in mod_injection.h)
 			// pipeline_layout_param
 			// uint32_t 	binding 			OpenGL uniform buffer binding index. 
 			// uint32_t 	dx_register_index	D3D10/D3D11/D3D12 constant buffer register index. 
@@ -222,11 +222,27 @@ static void on_init_pipeline_layout(reshade::api::device* device, const uint32_t
 			newParams.push_constants.dx_register_space = 0;
 			newParams.push_constants.visibility = reshade::api::shader_stage::all;
 
+			//put the VREM parameters in CB
 			bool  result = device->create_pipeline_layout(1, &newParams, &shared_data.saved_pipeline_layout_CB);
-
 			//logs
-			if (result) log_create_CBlayout();
-			else log_error_creating_CBlayout();
+			if (result) log_create_CBlayout("VREM Cbuffer");
+			else log_error_creating_CBlayout("VREM Cbuffer");
+
+			// create a new pipeline_layout for CPerFrame constant buffer to be modified by push_constant(), cb number defined in CPERFRAME_INDEX (in mod_injection.h)
+			// 
+			reshade::api::pipeline_layout_param newParams2;
+			newParams2.type = reshade::api::pipeline_layout_param_type::push_constants;
+			newParams2.push_constants.binding = 0;
+			newParams2.push_constants.count = 1;
+			newParams2.push_constants.dx_register_index = CPERFRAME_INDEX;
+			newParams2.push_constants.dx_register_space = 0;
+			newParams2.push_constants.visibility = reshade::api::shader_stage::all;
+
+			//put the CPerFrame parameters in CB
+			result = device->create_pipeline_layout(1, &newParams2, &shared_data.saved_pipeline_layout_CPerFrame);
+			//logs
+			if (result) log_create_CBlayout("CperFrame");
+			else log_error_creating_CBlayout("CperFrame");
 		}
 
 		else if (param.push_descriptors.type == descriptor_type::shader_resource_view)
@@ -430,7 +446,24 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 						CBSIZE,
 						&shared_data.cb_inject_values
 					);
-					log_CB_injected();
+					log_CB_injected("VREM CB");
+					
+					// use push constant() to push the mod parameter in CB13,a sit is assumed a replaced shader will need mod parameters
+					// pipeline_layout for CB initialized in init_pipeline() once for all
+					// 
+					//shared_data.dest_CB_CPerFrame[FOG_INDEX] = 0;
+					
+					commandList->push_constants(
+						shader_stage::all,
+						shared_data.saved_pipeline_layout_CPerFrame,
+						0,
+						0, // injecting only the haze value to be updated (so first = FOG_INDEX) is making the game crash...
+						CPERFRAME_SIZE,
+						&shared_data.dest_CB_CPerFrame
+					);
+
+					log_CB_injected("CPerFrame");
+					
 
 					// last_replaced_shader = pipelineHandle.handle;
 					last_feature = it->second.feature;
@@ -751,15 +784,19 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 	}
 
 	//try to get cPerFrame (cb6)
-	if (update.type == descriptor_type::constant_buffer && update.binding == 6 && update.count == 1 && stages == shader_stage::pixel && flag_capture)
+	// if (update.type == descriptor_type::constant_buffer && update.binding == 6 && update.count == 1 && stages == shader_stage::pixel && flag_capture)
+	if (update.type == descriptor_type::constant_buffer && update.binding == 6 && update.count == 1 && stages == shader_stage::pixel)
 	{
 		// test to handle cbuffer cPerFrame : register(b6)
 		// {
 			// try to get values
 			auto cbuffer = static_cast<const reshade::api::buffer_range*>(update.descriptors)[0];
-			std::stringstream s;
-			s << "--> cbuffer cPerFrame handle = " << reinterpret_cast<void*>(cbuffer.buffer.handle) << ", size =" << cbuffer.size << ";";
-			reshade::log::message(reshade::log::level::info, s.str().c_str());
+			if (debug_flag && flag_capture)
+			{
+				std::stringstream s;
+				s << "--> cbuffer cPerFrame handle = " << reinterpret_cast<void*>(cbuffer.buffer.handle) << ", size =" << cbuffer.size << ";";
+				reshade::log::message(reshade::log::level::info, s.str().c_str());
+			}
 
 		//create a new buffer resource
 		device* dev = cmd_list->get_device();
@@ -789,33 +826,54 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 		cmd_list->copy_resource(cbuffer.buffer, dest_buffer);
 		//restore usage
 		cmd_list->barrier(cbuffer.buffer, resource_usage::copy_source, src_usage);
-		reshade::log::message(reshade::log::level::info, "**** cb cPerFrame copyed ***");
+		if (debug_flag && flag_capture)
+		{
+			reshade::log::message(reshade::log::level::info, "**** cb cPerFrame copyed ***");
+		}
 
 		//map new cb
 		void* data = nullptr;
 
 		// get gAtmIntensity that is cb6[2].w => float buffer [FOG_INDEX]
 		
+		// if (cmd_list->get_device()->map_buffer_region(dest_buffer, 0, (FOG_INDEX+1)*4, map_access::read_only, &data))
 		if (cmd_list->get_device()->map_buffer_region(dest_buffer, 0, -1, map_access::read_only, &data))
 		{
-			std::stringstream s;
-			float dest_cb[FOG_INDEX+1];
-			reshade::log::message(reshade::log::level::info, "**** map_buffer_region OK  ***");
-			// cb = array of float => 4 byte per float 
-			memcpy(dest_cb, data, (FOG_INDEX+1)*4);
-			cmd_list->get_device()->unmap_buffer_region(dest_buffer);
-			for (int i = 0; i < FOG_INDEX+1; i++)
+			if (debug_flag && flag_capture)
 			{
-				s << "--> cbuffer cPerFrame[" << i << "] = "<< dest_cb[i] <<";";
-				reshade::log::message(reshade::log::level::info, s.str().c_str());
-				s.str("");
-				s.clear();
+				std::stringstream s;
+				reshade::log::message(reshade::log::level::info, "**** map_buffer_region OK  ***");
 			}
+			// float dest_cb[FOG_INDEX+1];
+			// cb = array of float => 4 byte per float 
+			// memcpy(dest_cb, data, (FOG_INDEX+1)*4);
+			memcpy(shared_data.dest_CB_CPerFrame, data, CPERFRAME_SIZE*4);
+			cmd_list->get_device()->unmap_buffer_region(dest_buffer);
+			//shared_data.fog_value = dest_cb[FOG_INDEX];
+			
+			//debug
+			if ((debug_flag && flag_capture))
+			{
+				// for (int i = 0; i < FOG_INDEX+1; i++)
+				std::stringstream s;
+				for (int i = 0; i < CPERFRAME_SIZE; i++)
+				{
+					// s << "--> cbuffer cPerFrame[" << i << "] = "<< dest_cb[i] <<";";
+					s << "--> cbuffer cPerFrame[" << i << "] = " << shared_data.dest_CB_CPerFrame[i] << ";";
+					reshade::log::message(reshade::log::level::info, s.str().c_str());
+					s.str("");
+					s.clear();
+				}
+			}
+
 			//delete resource created for copy
 			dev->destroy_resource(dest_buffer);
 		}
 		else
-			reshade::log::message(reshade::log::level::info, "**** map_buffer_region KO !!! ***");
+			if ((debug_flag && flag_capture))
+			{
+				reshade::log::message(reshade::log::level::error, "**** map_buffer_region KO !!! ***");
+			}
 		
 	}
 }

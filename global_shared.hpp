@@ -100,6 +100,7 @@ struct technique_trace {
 
 // index of gAtmIntensity in the float array mapped for cPerFrame (cb6) 
 #define FOG_INDEX 11
+#define CPERFRAME_SIZE 152 //in float
 
 // a class to host all global variables shared between reshade on_* functions. 
 // 
@@ -114,8 +115,12 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	struct ShaderInjectData cb_inject_values;
 	uint64_t cb_inject_size = CBSIZE;
 
-	// DX11 pipeline_layout for CB
+	// DX11 pipeline_layout for VREM CB containing parameters
 	reshade::api::pipeline_layout saved_pipeline_layout_CB;
+
+	// DX11 pipeline_layout for DCS CB cPerFrame that need to be modified
+	reshade::api::pipeline_layout saved_pipeline_layout_CPerFrame;
+	float dest_CB_CPerFrame[CPERFRAME_SIZE+16];
 
 	// DX11 pipeline_layout for ressource view
 	reshade::api::pipeline_layout saved_pipeline_layout_RV;
@@ -228,6 +233,9 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	bool init_helo_feature = false;
 	bool init_NS430_feature = false;
 	bool init_debug_feature = false;
+
+	//fog value in cb
+	float fog_value;
 
 	// key binding
 	// strings

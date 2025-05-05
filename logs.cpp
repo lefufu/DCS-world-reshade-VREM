@@ -478,14 +478,14 @@ void log_init_pipeline_params(const uint32_t paramCount, const reshade::api::pip
 /// </summary>
 /// 
 /// 
-void log_create_CBlayout()
+void log_create_CBlayout(std::string CBName)
 {
 	if (debug_flag || FORCE_LOG)
 	{
 		std::stringstream s;
-		s << "on_init_pipeline_layout: new pipeline created, hash =" << reinterpret_cast<void*>(&shared_data.saved_pipeline_layout_CB.handle) << " ).  DX11 layout created for CB;";
+		s << "on_init_pipeline_layout: new pipeline created, hash =" << reinterpret_cast<void*>(&shared_data.saved_pipeline_layout_CB.handle) << " ).  DX11 layout created for CB " << CBName <<";";
 		s << "dx_register_index=" << CBINDEX << ", CBIndex =" << shared_data.CBIndex << "; ";
-		reshade::log::message(reshade::log::level::warning, s.str().c_str());
+		reshade::log::message(reshade::log::level::error, s.str().c_str());
 		s.str("");
 		s.clear();
 	}
@@ -498,12 +498,12 @@ void log_create_CBlayout()
 /// 
 /// 
 
-void log_error_creating_CBlayout()
+void log_error_creating_CBlayout(std::string CBName)
 {
 	std::stringstream s; 
 	
-	s << "on_init_pipeline_layout(" << reinterpret_cast<void*>(&shared_data.saved_pipeline_layout_CB.handle) << " ). !!! Error in creating DX11 layout for CB!!!;";
-	reshade::log::message(reshade::log::level::warning, s.str().c_str());
+	s << "on_init_pipeline_layout(" << reinterpret_cast<void*>(&shared_data.saved_pipeline_layout_CB.handle) << " ). !!! Error in creating DX11 layout for CB " << CBName << "!!!;";
+	reshade::log::message(reshade::log::level::error, s.str().c_str());
 	s.str("");
 	s.clear();
 }
@@ -539,7 +539,7 @@ void log_error_creating_RVlayout()
 {
 	std::stringstream s;
 	s << "on_init_pipeline_layout(" << reinterpret_cast<void*>(&shared_data.saved_pipeline_layout_CB.handle) << " ). !!! Error in creating DX11 layout for RV !!!;";
-	reshade::log::message(reshade::log::level::warning, s.str().c_str());
+	reshade::log::message(reshade::log::level::error, s.str().c_str());
 	s.str("");
 	s.clear();
 }
@@ -571,7 +571,7 @@ void log_clear_action_log(std::string varname)
 	{
 		std::stringstream s;
 		s << " => on_bind_pipeline : reset variable :" << varname << " ;";
-		reshade::log::message(reshade::log::level::warning, s.str().c_str());
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 	}
 }
 
@@ -581,11 +581,13 @@ void log_clear_action_log(std::string varname)
 /// </summary>
 /// 
 /// 
-void log_CB_injected()
+void log_CB_injected(std::string CBName)
 {
 	if ((debug_flag && flag_capture) || FORCE_LOG)
 	{
-		reshade::log::message(reshade::log::level::info, " -> on_bind_pipeline: CB injected");
+		std::stringstream s;
+		s << " -> on_bind_pipeline: CB injected :" << CBName << " ;";
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
 	}
 }
 
@@ -599,7 +601,7 @@ void log_invalid_subobjectCount(pipeline pipelineHandle)
 	std::stringstream s;
 
 	s << "on_init_pipeline_layout(" << reinterpret_cast<void*>(&pipelineHandle) << " ). !!! Error more than 1 object in pipeline !!!;";
-	reshade::log::message(reshade::log::level::warning, s.str().c_str());
+	reshade::log::message(reshade::log::level::error, s.str().c_str());
 }
 
 // *******************************************************************************************************

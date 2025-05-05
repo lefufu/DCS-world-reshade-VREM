@@ -75,9 +75,9 @@ extern void log_init_pipeline(pipeline pipelineHandle, pipeline_layout layout, u
 
 extern void log_init_pipeline_params(const uint32_t paramCount, const reshade::api::pipeline_layout_param* params, reshade::api::pipeline_layout layout, uint32_t paramIndex, reshade::api::pipeline_layout_param param);
 
-extern void log_create_CBlayout();
+extern void log_create_CBlayout(std::string CBName);
 
-extern void log_error_creating_CBlayout();
+extern void log_error_creating_CBlayout(std::string CBName);
 
 extern void log_reset_tracking();
 
@@ -87,7 +87,7 @@ extern void log_error_creating_RVlayout();
 
 extern void log_clear_action_log(std::string varname);
 
-extern void log_CB_injected();
+extern void log_CB_injected(std::string CBName);
 
 extern void log_invalid_subobjectCount(pipeline pipelineHandle);
 

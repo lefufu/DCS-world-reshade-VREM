@@ -41,6 +41,7 @@
 
 // CB number to be injected in the shaders
 static const int CBINDEX = 13;
+static const int CPERFRAME_INDEX = 6;
 
 // RV number to be injected in the shaders
 static const int RVINDEX = 3;
