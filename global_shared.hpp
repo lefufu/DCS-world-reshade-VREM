@@ -120,7 +120,8 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 
 	// DX11 pipeline_layout for DCS CB cPerFrame that need to be modified
 	reshade::api::pipeline_layout saved_pipeline_layout_CPerFrame;
-	float dest_CB_CPerFrame[CPERFRAME_SIZE+16];
+	float dest_CB_CPerFrame[CPERFRAME_SIZE+16]; // margin in case of...
+	bool CPerFrame_copied = false;
 
 	// DX11 pipeline_layout for ressource view
 	reshade::api::pipeline_layout saved_pipeline_layout_RV;

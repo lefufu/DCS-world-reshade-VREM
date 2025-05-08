@@ -118,3 +118,13 @@ extern void log_wait();
 extern void log_export_texture(short int display_to_use);
 
 extern void log_technique_loaded(uint32_t index);
+
+extern void log_cbuffer_info(std::string CB_name, reshade::api::buffer_range cbuffer);
+
+extern void log_constant_buffer_copy(std::string CB_name, float* dest_array, int buffer_size);
+
+extern void log_constant_buffer_mapping_error(std::string CB_name);
+
+extern bool read_constant_buffer(command_list* cmd_list, const descriptor_table_update& update, std::string CB_name, int descriptors_index, float* dest_array, int buffer_size);
+
+extern void log_filter_shader(std::pair<const uint32_t, Shader_Definition>& entry, bool status);

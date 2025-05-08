@@ -64,6 +64,8 @@ static const uint32_t action_injectText = 0b00010000;
 static const uint32_t action_count = 0b00100000;
 //replace_bind = the shader will be replaced by a modded one during bind
 static const uint32_t action_replace_bind = 0b01000000;
+//inject constant buffer
+static const uint32_t action_injectCB = 0b10000000;
 
 
 // mod features

@@ -588,7 +588,7 @@ inline auto to_string(reshade::api::pipeline_subobject_type value) {
 	case reshade::api::pipeline_subobject_type::unknown:                 return "unknown";
 	}
 }
-
+/*
 inline auto to_string(const uint32_t action) {
 	switch (action) {
 	default: return "NDef";
@@ -598,7 +598,44 @@ inline auto to_string(const uint32_t action) {
 	case action_identify: return "identify";
 	case action_injectText: return "injectText";
 	case action_count: return "count";
+	case action_injectCB: return "injectCB";
 	};
+}
+*/
+
+struct ActionFlag {
+	uint32_t value;
+	const char* name;
+};
+
+static const ActionFlag action_flags[] = {
+	{ 0b00000001, "replace" },
+	{ 0b00000010, "skip" },
+	{ 0b00000100, "log" },
+	{ 0b00001000, "identify" },
+	{ 0b00010000, "injectText" },
+	{ 0b00100000, "count" },
+	{ 0b01000000, "replace_bind" },
+	{ 0b10000000, "injectCB" }
+};
+
+inline auto to_string(const uint32_t action)
+{
+	std::stringstream ss;
+	bool first = true;
+
+	for (const auto& flag : action_flags) {
+		if (action & flag.value) {
+			if (!first) ss << "|";
+			ss << flag.name;
+			first = false;
+		}
+	}
+
+	if (first) // no flags matched
+		ss << "none";
+
+	return ss.str();
 }
 
 inline auto to_string(Feature feature) {

@@ -415,7 +415,8 @@ void init_mod_features()
 {
 	
 	// build the pipeline to use regarding options set
-	for (auto& entry : shader_by_hash)
+	//for (auto& entry : shader_by_hash)
+	for (std::pair<const uint32_t, Shader_Definition> &entry : shader_by_hash)
 	{
 		
 		bool add_line = false;
@@ -463,9 +464,15 @@ void init_mod_features()
 			add_line = true;
 		}
 
-		// std::stringstream s;
-		// s << "add shader : " << std::hex << entry.second.hash << ", " << entry.second.action << ", " << to_string(entry.second.feature) << ", " << entry.second.draw_count << ";";
-	
+		log_filter_shader(entry, add_line);
+
+		/*
+		std::stringstream s;
+		s << "add shader : " << std::hex << entry.first << ", " << entry.second.action << ", " << to_string(entry.second.feature) << ", " << entry.second.draw_count << " add_line =" << add_line  <<  ";";
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
+		*/
+		
+
 		if (add_line)
 		{
 			pipeline_by_hash.emplace(
@@ -480,7 +487,6 @@ void init_mod_features()
 		}
 
 	}
-	reshade::log::message(reshade::log::level::info, "End of shader table" );
 
 	shared_data.time_per_frame = std::chrono::high_resolution_clock::duration(std::chrono::seconds(1)) / shared_data.fps_limit;
 

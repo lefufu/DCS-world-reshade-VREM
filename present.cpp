@@ -63,6 +63,7 @@ void intialize_counters()
 	shared_data.track_for_render_target = false;
 
 	// shared_data.render_target_res->copied = false;
+	shared_data.CPerFrame_copied = false;
 
 	shared_data.last_feature = Feature::Null;
 
@@ -275,12 +276,7 @@ void on_present(effect_runtime* runtime)
 		{
 			shared_data.flag_re_enabled = true;
 			//std::this_thread::sleep_for(std::chrono::high_resolution_clock::duration(std::chrono::milliseconds(1000)));
-			if ((debug_flag))
-			{
-				std::stringstream s;
-				s << " ******** re disable techniques *******";
-				reshade::log::message(reshade::log::level::warning, s.str().c_str());
-			}
+
 			disableAllTechnique(false);
 		}
 	}

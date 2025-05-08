@@ -55,7 +55,7 @@
 using namespace reshade::api;
 
 extern "C" __declspec(dllexport) const char *NAME = "DCS VREM";
-extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v8.2";
+extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v9.0";
 
 // ***********************************************************************************************************************
 // definition of all shader of the mod (whatever feature selected in GUI)
@@ -72,7 +72,8 @@ std::unordered_map<uint32_t, Shader_Definition> shader_by_hash =
 	{ 0x45E221A9, Shader_Definition(action_replace, Feature::IHADSS, L"IHADSS_VS.cso", 0) },
 	// ** label masking and color/sharpen/deband **
 	// to start spying texture for depthStencil (Vs associated with global illumination PS)
-	{ 0x4DDC4917, Shader_Definition(action_log, Feature::GetStencil, L"", 0) },
+	// and inject modified CB CperFrame
+	{ 0x4DDC4917, Shader_Definition(action_log | action_injectCB, Feature::GetStencil, L"", 0) },
 	// global PS for all changes
 	{ 0xBAF1E52F, Shader_Definition(action_replace | action_injectText | action_log, Feature::Global, L"global_PS_2.cso", 0) },
 	// Label PS 
@@ -96,9 +97,13 @@ std::unordered_map<uint32_t, Shader_Definition> shader_by_hash =
 	// VS drawing cockpit parts to define if view is in welcome screen or map
 	{ 0xA337E177, Shader_Definition(action_identify, Feature::mapMode, L"", 0) },
 	//  ** haze control : illum PS: used for Haze control, to define which draw (eye + quad view) is current.  **
-	{ 0x82349ABF, Shader_Definition(action_replace | action_identify, Feature::Haze, L"illumNoAA_PS.cso", 0) },
-	{ 0xCC6C6596, Shader_Definition(action_replace | action_identify, Feature::HazeMSAA2x, L"illumMSAA2x_PS.cso", 0) },
-	{ 0xA2433BF5, Shader_Definition(action_replace, Feature::Haze, L"illumMSAA2xB_PS.cso", 0) },
+	// { 0x82349ABF, Shader_Definition(action_replace | action_identify, Feature::Haze, L"illumNoAA_PS.cso", 0) },
+	// { 0xCC6C6596, Shader_Definition(action_replace | action_identify, Feature::HazeMSAA2x, L"illumMSAA2x_PS.cso", 0) },
+	// { 0xA2433BF5, Shader_Definition(action_replace, Feature::Haze, L"illumMSAA2xB_PS.cso", 0) },
+	
+	// { 0x82349ABF, Shader_Definition(action_identify| action_injectCB, Feature::Haze, L"", 0) },
+	// { 0xCC6C6596, Shader_Definition(action_identify| action_injectCB, Feature::Haze, L"", 0) },
+	
 	//  ** A10C cockpit instrument **
 	{ 0xC9F547A7, Shader_Definition(action_replace , Feature::NoReflect , L"A10C_instrument.cso", 0) },
 	//  ** NVG **
@@ -425,6 +430,31 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 				}
 
 			}	
+
+			if (it->second.action & action_injectCB)
+			{
+				// inject constant buffer other than the one containing VREM setting
+				
+				if (it->second.feature == Feature::GetStencil && shared_data.CPerFrame_copied)
+				{
+					// use push constant() to push CPerFrame 
+					// pipeline_layout for CB initialized in init_pipeline() once for all
+					commandList->push_constants(
+						shader_stage::all,
+						shared_data.saved_pipeline_layout_CPerFrame,
+						0,
+						0, // injecting only the haze value to be updated (so first = FOG_INDEX) is making the game crash...
+						CPERFRAME_SIZE,
+						&shared_data.dest_CB_CPerFrame
+					);
+
+					log_CB_injected("CPerFrame");
+
+					// last_replaced_shader = pipelineHandle.handle;
+					last_feature = it->second.feature;
+
+				}
+			}
 			
 			// shader is to be handled
 			// if (it->second.action & action_replace)
@@ -448,25 +478,6 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 					);
 					log_CB_injected("VREM CB");
 					
-					// use push constant() to push the mod parameter in CB13,a sit is assumed a replaced shader will need mod parameters
-					// pipeline_layout for CB initialized in init_pipeline() once for all
-					// 
-					//shared_data.dest_CB_CPerFrame[FOG_INDEX] = 0;
-					
-					commandList->push_constants(
-						shader_stage::all,
-						shared_data.saved_pipeline_layout_CPerFrame,
-						0,
-						0, // injecting only the haze value to be updated (so first = FOG_INDEX) is making the game crash...
-						CPERFRAME_SIZE,
-						&shared_data.dest_CB_CPerFrame
-					);
-
-					log_CB_injected("CPerFrame");
-					
-
-					// last_replaced_shader = pipelineHandle.handle;
-					last_feature = it->second.feature;
 				}
 				if (it->second.action & action_replace_bind)
 				{
@@ -783,10 +794,22 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 
 	}
 
-	//try to get cPerFrame (cb6)
-	// if (update.type == descriptor_type::constant_buffer && update.binding == 6 && update.count == 1 && stages == shader_stage::pixel && flag_capture)
-	if (update.type == descriptor_type::constant_buffer && update.binding == 6 && update.count == 1 && stages == shader_stage::pixel)
+	// copy the CB cPerFrame into the variable into shared_data.dest_CB_CPerFrame and modify it
+	//only if needed
+	if (shared_data.cb_inject_values.hazeReduction != 1.0 && shared_data.misc_feature)
 	{
+		if (update.type == descriptor_type::constant_buffer && update.binding == 6 && update.count == 1 && stages == shader_stage::pixel)
+		{
+			bool error = read_constant_buffer(cmd_list, update, "CPerFrame", 0, shared_data.dest_CB_CPerFrame, CPERFRAME_SIZE);
+			if (!error)
+			{
+				//update gAtmIntensity
+				shared_data.dest_CB_CPerFrame[FOG_INDEX] = shared_data.dest_CB_CPerFrame[FOG_INDEX] * shared_data.cb_inject_values.hazeReduction;
+				shared_data.CPerFrame_copied = true;
+			}
+		}
+	}
+		/*
 		// test to handle cbuffer cPerFrame : register(b6)
 		// {
 			// try to get values
@@ -875,7 +898,7 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 				reshade::log::message(reshade::log::level::error, "**** map_buffer_region KO !!! ***");
 			}
 		
-	}
+	} */
 }
 
 //*******************************************************************************************************

@@ -48,7 +48,7 @@
 #include "global_shared.hpp"
 #include "mod_injection.h"
 #include "to_string.hpp"
-
+#include <bitset>
 
 
 using namespace reshade::api;
@@ -947,6 +947,74 @@ void log_technique_readed(effect_technique technique, std::string name, std::str
 			<< ", name = " << name
 			<< ", effect = " << eff_name
 			<< ", technique status =" << technique_status;
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
+	}
+}
+
+// *******************************************************************************************************
+/// <summary>
+/// Log info for a constant buffer
+/// </summary>
+/// 
+void log_cbuffer_info(std::string CB_name, reshade::api::buffer_range cbuffer)
+{
+
+	if (debug_flag && flag_capture || FORCE_LOG)
+	{
+		std::stringstream s;
+		s << "--> cbuffer " << CB_name << " handle = " << reinterpret_cast<void*>(cbuffer.buffer.handle) << ", size = " << cbuffer.size << "; ";
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
+	}
+
+}
+
+// *******************************************************************************************************
+/// <summary>
+/// Log copy of a constant buffer and display its values
+/// </summary>
+/// 
+void log_constant_buffer_copy(std::string CB_name, float* dest_array, int buffer_size)
+{
+	if (debug_flag && flag_capture || FORCE_LOG)
+	{
+		std::stringstream s;
+		for (int i = 0; i < buffer_size+1; i++)
+		{
+			s << "--> cbuffer "<< CB_name <<"[" << i << "] = " << dest_array[i] << ";";
+			reshade::log::message(reshade::log::level::info, s.str().c_str());
+			s.str("");
+			s.clear();
+		}
+	}
+}
+
+// *******************************************************************************************************
+/// <summary>
+/// Log error during mapping a CB
+/// </summary>
+/// 
+void log_constant_buffer_mapping_error(std::string CB_name)
+{
+	if (debug_flag && flag_capture || FORCE_LOG)
+	{
+		std::stringstream s;
+		s << "**** map_buffer_region KO for " << CB_name << " !!! ***";
+		reshade::log::message(reshade::log::level::error, s.str().c_str());
+	}
+}
+
+// *******************************************************************************************************
+/// <summary>
+/// Log shader that will be retained regarding selected options
+/// </summary>
+
+void log_filter_shader(std::pair<const uint32_t, Shader_Definition>& entry, bool status)
+{
+	if (debug_flag || FORCE_LOG)
+	{
+		std::stringstream s;
+		// s << "Shader hash: " << std::hex << entry.first << ", action :" << "0b" << std::bitset<8>(entry.second.action)  << ", feature: " << to_string(entry.second.feature) << ", draw count: " << entry.second.draw_count << ", retained :" << status << ";";
+		s << "Shader hash: " << std::hex << entry.first << ", action :" << to_string(entry.second.action) << ", feature: " << to_string(entry.second.feature) << ", draw count: " << entry.second.draw_count << ", retained :" << status << ";";
 		reshade::log::message(reshade::log::level::info, s.str().c_str());
 	}
 }
