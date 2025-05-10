@@ -836,11 +836,13 @@ void log_export_render_targer_res(short int display_to_use)
 	if ((debug_flag) || FORCE_LOG)
 	{
 		std::stringstream s;
-		s << " => on_push_descriptors : export pre processor variables, BUFFER_WIDTH = " 
-			<< to_char(shared_data.render_target_view[display_to_use].width)
-			<< ", BUFFER_HEIGHT = " << to_char(shared_data.render_target_view[display_to_use].height)
-			<< ", BUFFER_RCP_WIDTH = " << to_char(1/shared_data.render_target_view[display_to_use].width)
-			<< ", BUFFER_RCP_HEIGHT = " << to_char(1/shared_data.render_target_view[display_to_use].height)
+		s << " => on_push_descriptors : export pre processor variables, display_to_use = " << display_to_use
+			<< ", BUFFER_WIDTH = " << shared_data.render_target_view[display_to_use].width
+			<< ", BUFFER_HEIGHT = " << shared_data.render_target_view[display_to_use].height
+			<< ", BUFFER_RCP_WIDTH = " << 1.0/shared_data.render_target_view[display_to_use].width
+			<< ", BUFFER_RCP_HEIGHT = " << 1.0/shared_data.render_target_view[display_to_use].height
+			<< ", MSAAX, value = " << shared_data.cb_inject_values.AAxFactor
+			<< ", MSAAY value = " << shared_data.cb_inject_values.AAyFactor
 			<< ";";
 		reshade::log::message(reshade::log::level::warning, s.str().c_str());
 	}

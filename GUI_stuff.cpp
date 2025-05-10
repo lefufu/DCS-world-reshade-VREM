@@ -63,6 +63,19 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 	ImGui::Separator();
 
 	// *******************************************************************************************************
+	if (ImGui::CollapsingHeader("MSAA Factor"))
+	{
+		ImGui::PushTextWrapPos();
+		ImGui::TextUnformatted("VREM is no more detecting MSAA factor to maximize compatibility and mimize work to write mod");
+		ImGui::TextUnformatted("Select the MSAA option if you use it, it is used in Misc/label masking,  color change, sharpen, ...");
+		ImGui::PopTextWrapPos();
+		ImGui::RadioButton("No MSAA", &shared_data.MSAA_factor, 0); ImGui::SameLine();
+		ImGui::RadioButton("MSAA2x", &shared_data.MSAA_factor, 1); ImGui::SameLine();
+		ImGui::RadioButton("MSAA4x", &shared_data.MSAA_factor, 2);
+	}
+	ImGui::Separator();
+
+	// *******************************************************************************************************
 	if (ImGui::CollapsingHeader("Reshade Techniques in VR displays"))
 	{
 		//disable option if 2D

@@ -248,6 +248,7 @@ void load_setting_IniFile()
 	shared_data.cb_inject_values.noReflect = read_float_with_defaut(iniFile, fileExist, "noReflect", "Misc", 0.0);
 	shared_data.cb_inject_values.NVGSize = read_float_with_defaut(iniFile, fileExist, "NVGSize", "Misc", 1.0);
 	shared_data.cb_inject_values.NVGYPos = read_float_with_defaut(iniFile, fileExist, "NVGYPos", "Misc", 0.0);
+	shared_data.MSAA_factor = read_int_with_defaut(iniFile, fileExist, "MSAA_factor", "Misc", 0);
 
 	// color
 	shared_data.color_feature = iniFile.GetBool("color_feature", "Color");
@@ -369,6 +370,8 @@ void saveShaderTogglerIniFile()
 	iniFile.SetFloat("noReflect", shared_data.cb_inject_values.noReflect, "remove A10C instrument reflexion", "Misc");
 	iniFile.SetFloat("NVGSize", shared_data.cb_inject_values.NVGSize, "Scale NVG", "Misc");
 	iniFile.SetFloat("NVGYPos", shared_data.cb_inject_values.NVGYPos, "height of NVG", "Misc");
+	iniFile.SetInt("MSAA_factor", shared_data.MSAA_factor, "MSAA to define supersampling fix", "Misc");
+
 	// color
 	iniFile.SetBool("color_feature", shared_data.color_feature, "Enable Color features", "Color");
 	iniFile.SetFloat("colorFlag", shared_data.cb_inject_values.colorFlag, "Activate color change ", "Color");

@@ -67,7 +67,6 @@ std::unordered_map<uint32_t, Shader_Definition> shader_by_hash =
 	{ 0xD3E172D4, Shader_Definition(action_replace, Feature::Rotor, L"UH1_rotorPS.cso", 0) },
 	// ** fix for IHADSS **
 	{ 0x2D713734, Shader_Definition(action_replace, Feature::IHADSS, L"IHADSS_PNVS_PS.cso", 0) },
-	// { 0x6AA19B8F, Shader_Definition(action_replace, Feature::IHADSS, L"IHADSS_PS.cso", 0) },
 	{ 0xDF141A84, Shader_Definition(action_replace, Feature::IHADSS, L"IHADSS_PS.cso", 0) },
 	{ 0x45E221A9, Shader_Definition(action_replace, Feature::IHADSS, L"IHADSS_VS.cso", 0) },
 	// ** label masking and color/sharpen/deband **
@@ -96,23 +95,22 @@ std::unordered_map<uint32_t, Shader_Definition> shader_by_hash =
 	{ 0x886E31F2, Shader_Definition(action_identify | action_log, Feature::VRMode, L"", 0) },
 	// VS drawing cockpit parts to define if view is in welcome screen or map
 	{ 0xA337E177, Shader_Definition(action_identify, Feature::mapMode, L"", 0) },
-	//  ** haze control : illum PS: used for Haze control, to define which draw (eye + quad view) is current.  **
-	// { 0x82349ABF, Shader_Definition(action_replace | action_identify, Feature::Haze, L"illumNoAA_PS.cso", 0) },
-	// { 0xCC6C6596, Shader_Definition(action_replace | action_identify, Feature::HazeMSAA2x, L"illumMSAA2x_PS.cso", 0) },
-	// { 0xA2433BF5, Shader_Definition(action_replace, Feature::Haze, L"illumMSAA2xB_PS.cso", 0) },
-	
-	// { 0x82349ABF, Shader_Definition(action_identify| action_injectCB, Feature::Haze, L"", 0) },
-	// { 0xCC6C6596, Shader_Definition(action_identify| action_injectCB, Feature::Haze, L"", 0) },
+
+	//
+	// use VS of global PS to count draw instead of the PS
 	
 	//  ** A10C cockpit instrument **
 	{ 0xC9F547A7, Shader_Definition(action_replace , Feature::NoReflect , L"A10C_instrument.cso", 0) },
 	//  ** NVG **
 	{ 0xE65FAB66, Shader_Definition(action_replace , Feature::NVG , L"NVG_extPS.cso", 0) },
-	//  ** identify render target ** (first global PS)
+	//  ** identify render target ** (first global PS) => move to VS 936B2B6A
+	{ 0x936B2B6A, Shader_Definition(action_log , Feature::Effects , L"", 0) },
+	/*
 	//no AA
 	{ 0x6656F8A6, Shader_Definition(action_log , Feature::Effects , L"", 0) },
 	//MSAA2x
 	{ 0x4D866699, Shader_Definition(action_log , Feature::Effects , L"", 0) }
+	*/
 	
 };
 
@@ -613,28 +611,6 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 					shared_data.cb_inject_values.mapMode = 0.0;
 				}
 
-				// PS for no MSAA : setup the ratio for masking
-				if (it->second.feature == Feature::Haze)
-				{
-
-					shared_data.cb_inject_values.AAxFactor = 1.0;
-					shared_data.cb_inject_values.AAyFactor = 1.0;
-
-					// log infos
-					log_MSAA();
-				}
-
-				// PS for no MSAA : setup the ratio for masking
-				if (it->second.feature == Feature::HazeMSAA2x)
-				{
-
-					shared_data.cb_inject_values.AAxFactor = 2.0;
-					shared_data.cb_inject_values.AAyFactor = 1.0;
-
-					//log
-					log_MSAA();
-				}
-
 				// PS for mirror view : setup VR mode
 				if (it->second.feature == Feature::VRMode)
 				{
@@ -665,22 +641,13 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 	// display_to_use = 0 => outer left, 1 = outer right, 2 = Inner left, 3 = inner right.
 	short int display_to_use = shared_data.count_display - 1;
 	
-	//do not engage effect if option not selected and not in cockpit
-
+	// render effect part
+	// do not engage effect if option not selected and not in cockpit
 	if (shared_data.render_effect && shared_data.effects_feature && !shared_data.cb_inject_values.mapMode)
 	{
 		// engage effect for each call of global pixel shader
 		// ensure to wait next good context after rendering
 		shared_data.render_effect = false;
-
-		/*
-		if ((debug_flag && flag_capture))
-		{
-			std::stringstream s;
-			s << " => on_push_descriptors : engage effect :shared_data.render_target_view[display_to_use].created = " << shared_data.render_target_view[display_to_use].created << ";";
-			reshade::log::message(reshade::log::level::warning, s.str().c_str());
-		}*/
-		
 
 		// do not engage effect if render target view is not identified 
 		if (shared_data.render_target_view[display_to_use].created)
@@ -699,7 +666,7 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 			}
 		
 			// render all activated techniques if not 2D mirror or in 2D (reshade is already rendering the effect) 
-			if (shared_data.cb_inject_values.VRMode)
+			// if (shared_data.cb_inject_values.VRMode)
 			{
 				
 				for (int i = 0; i < shared_data.technique_vector.size(); ++i)
@@ -713,18 +680,36 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 						(shared_data.technique_vector[i].quad_view_target == QVALL)
 						)
 					{
-						
+						// send mask and global preprocessor definition
 						if (!shared_data.render_target_view[display_to_use].compiled)
 						{
 							
 							if (!buffer_exported)
 							{
-								buffer_exported = true;
+								
+								std::stringstream s;
+								reshade::log::message(reshade::log::level::info, s.str().c_str());
+
 								// push render target resol for shader re compilation 
-								shared_data.runtime->set_preprocessor_definition("BUFFER_WIDTH", to_char(shared_data.render_target_view[display_to_use].width));
-								shared_data.runtime->set_preprocessor_definition("BUFFER_HEIGHT", to_char(shared_data.render_target_view[display_to_use].height));
-								shared_data.runtime->set_preprocessor_definition("BUFFER_RCP_WIDTH", to_char(1 / shared_data.render_target_view[display_to_use].width));
-								shared_data.runtime->set_preprocessor_definition("BUFFER_RCP_HEIGHT", to_char(1 / shared_data.render_target_view[display_to_use].height));
+								shared_data.runtime->set_preprocessor_definition("MSAAX", std::to_string(shared_data.cb_inject_values.AAxFactor).c_str());
+								shared_data.runtime->set_preprocessor_definition("MSAAY", std::to_string(shared_data.cb_inject_values.AAyFactor).c_str());
+								if (display_to_use <= 1)
+								{
+									shared_data.runtime->set_preprocessor_definition("BUFFER_WIDTH", std::to_string(shared_data.render_target_view[display_to_use].width).c_str());
+									shared_data.runtime->set_preprocessor_definition("BUFFER_HEIGHT", std::to_string(shared_data.render_target_view[display_to_use].height).c_str());
+									shared_data.runtime->set_preprocessor_definition("BUFFER_RCP_WIDTH", std::to_string(1.0/ shared_data.render_target_view[display_to_use].width).c_str());
+									shared_data.runtime->set_preprocessor_definition("BUFFER_RCP_HEIGHT", std::to_string(1.0/ shared_data.render_target_view[display_to_use].height).c_str());
+									if (shared_data.count_draw <= 2) buffer_exported = true;
+								}
+								else
+								{
+									shared_data.runtime->set_preprocessor_definition("BUFFER_WIDTH_QVIN", std::to_string(shared_data.render_target_view[display_to_use].width).c_str());
+									shared_data.runtime->set_preprocessor_definition("BUFFER_HEIGHT_QVIN", std::to_string(shared_data.render_target_view[display_to_use].height).c_str());
+									shared_data.runtime->set_preprocessor_definition("BUFFER_RCP_WIDTH_QVIN", std::to_string(1.0/shared_data.render_target_view[display_to_use].width).c_str());
+									shared_data.runtime->set_preprocessor_definition("BUFFER_RCP_HEIGHT_QVIN", std::to_string(1.0/shared_data.render_target_view[display_to_use].height).c_str());
+									buffer_exported = true;
+								}
+
 								log_export_render_targer_res(display_to_use);
 
 							}
@@ -734,9 +719,14 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 							shared_data.render_target_view[display_to_use].compiled = true;
 							log_wait();
 						}
-						// engage effect (will be compiled at the first launch)
-						shared_data.runtime->render_technique(shared_data.technique_vector[i].technique, cmd_list, shared_data.render_target_view[display_to_use].texresource_view, shared_data.render_target_view[display_to_use].texresource_view);
-						log_effect(shared_data.technique_vector[i], cmd_list, shared_data.render_target_view[display_to_use].texresource_view);
+
+						// render all activated techniques if not 2D mirror or in 2D (reshade is already rendering the effect) 
+						if (shared_data.cb_inject_values.VRMode)
+						{
+							// engage effect (will be compiled at the first launch)
+							shared_data.runtime->render_technique(shared_data.technique_vector[i].technique, cmd_list, shared_data.render_target_view[display_to_use].texresource_view, shared_data.render_target_view[display_to_use].texresource_view);
+							log_effect(shared_data.technique_vector[i], cmd_list, shared_data.render_target_view[display_to_use].texresource_view);
+						}
 					}
 				}
 			}
@@ -809,96 +799,6 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 			}
 		}
 	}
-		/*
-		// test to handle cbuffer cPerFrame : register(b6)
-		// {
-			// try to get values
-			auto cbuffer = static_cast<const reshade::api::buffer_range*>(update.descriptors)[0];
-			if (debug_flag && flag_capture)
-			{
-				std::stringstream s;
-				s << "--> cbuffer cPerFrame handle = " << reinterpret_cast<void*>(cbuffer.buffer.handle) << ", size =" << cbuffer.size << ";";
-				reshade::log::message(reshade::log::level::info, s.str().c_str());
-			}
-
-		//create a new buffer resource
-		device* dev = cmd_list->get_device();
-
-		// set elements for src and dest.
-		resource_desc src_buffer_desc = dev->get_resource_desc(cbuffer.buffer);
-		resource_usage src_usage = src_buffer_desc.usage;
-		memory_heap src_heap = src_buffer_desc.heap;
-
-		resource dest_buffer;
-		resource_desc dest_buffer_desc;
-		
-		dest_buffer_desc.type = resource_type::buffer;
-		// dest_buffer_desc.buffer.size = 608;
-		dest_buffer_desc.buffer.size = src_buffer_desc.buffer.size;
-		dest_buffer_desc.buffer.stride = src_buffer_desc.buffer.stride;
-		dest_buffer_desc.usage = resource_usage::copy_dest;
-		dest_buffer_desc.heap = memory_heap::gpu_to_cpu;
-
-		// create the new resource
-		dev->create_resource(dest_buffer_desc, nullptr, resource_usage::constant_buffer, &dest_buffer, nullptr);
-
-		// copy old to new 
-		cmd_list->barrier(cbuffer.buffer, src_usage, resource_usage::copy_source);
-		cmd_list->barrier(dest_buffer, resource_usage::constant_buffer, resource_usage::copy_dest);
-		// do copy
-		cmd_list->copy_resource(cbuffer.buffer, dest_buffer);
-		//restore usage
-		cmd_list->barrier(cbuffer.buffer, resource_usage::copy_source, src_usage);
-		if (debug_flag && flag_capture)
-		{
-			reshade::log::message(reshade::log::level::info, "**** cb cPerFrame copyed ***");
-		}
-
-		//map new cb
-		void* data = nullptr;
-
-		// get gAtmIntensity that is cb6[2].w => float buffer [FOG_INDEX]
-		
-		// if (cmd_list->get_device()->map_buffer_region(dest_buffer, 0, (FOG_INDEX+1)*4, map_access::read_only, &data))
-		if (cmd_list->get_device()->map_buffer_region(dest_buffer, 0, -1, map_access::read_only, &data))
-		{
-			if (debug_flag && flag_capture)
-			{
-				std::stringstream s;
-				reshade::log::message(reshade::log::level::info, "**** map_buffer_region OK  ***");
-			}
-			// float dest_cb[FOG_INDEX+1];
-			// cb = array of float => 4 byte per float 
-			// memcpy(dest_cb, data, (FOG_INDEX+1)*4);
-			memcpy(shared_data.dest_CB_CPerFrame, data, CPERFRAME_SIZE*4);
-			cmd_list->get_device()->unmap_buffer_region(dest_buffer);
-			//shared_data.fog_value = dest_cb[FOG_INDEX];
-			
-			//debug
-			if ((debug_flag && flag_capture))
-			{
-				// for (int i = 0; i < FOG_INDEX+1; i++)
-				std::stringstream s;
-				for (int i = 0; i < CPERFRAME_SIZE; i++)
-				{
-					// s << "--> cbuffer cPerFrame[" << i << "] = "<< dest_cb[i] <<";";
-					s << "--> cbuffer cPerFrame[" << i << "] = " << shared_data.dest_CB_CPerFrame[i] << ";";
-					reshade::log::message(reshade::log::level::info, s.str().c_str());
-					s.str("");
-					s.clear();
-				}
-			}
-
-			//delete resource created for copy
-			dev->destroy_resource(dest_buffer);
-		}
-		else
-			if ((debug_flag && flag_capture))
-			{
-				reshade::log::message(reshade::log::level::error, "**** map_buffer_region KO !!! ***");
-			}
-		
-	} */
 }
 
 //*******************************************************************************************************
@@ -996,6 +896,26 @@ static bool on_drawOrDispatch_indirect(command_list* commandList, indirect_comma
 
 static void on_reshade_reloaded_effects(effect_runtime* runtime)
 {
+	
+	//TODO: initialize preprocess variable to avoid compil error when DCS launched for first time after mod install
+	if (shared_data.init_preprocessor)
+	{
+
+		shared_data.init_preprocessor = false;
+		runtime->set_preprocessor_definition("MSAAX", "1.0");
+		runtime->set_preprocessor_definition("MSAAY", "1.0");
+		runtime->set_preprocessor_definition("BUFFER_WIDTH", "1920");
+		runtime->set_preprocessor_definition("BUFFER_HEIGHT", "1080");
+		runtime->set_preprocessor_definition("BUFFER_RCP_WIDTH", "0.1");
+		runtime->set_preprocessor_definition("BUFFER_RCP_HEIGHT", "0.1");
+		runtime->set_preprocessor_definition("BUFFER_WIDTH_QVIN", "1920");
+		runtime->set_preprocessor_definition("BUFFER_HEIGHT_QVIN", "1080");
+		runtime->set_preprocessor_definition("BUFFER_RCP_WIDTH_QVIN", "0.1");
+		runtime->set_preprocessor_definition("BUFFER_RCP_HEIGHT_QVIN", "0.1");
+		runtime->save_current_preset();
+
+	}
+	
 	enumerateTechniques(runtime);
 
 }

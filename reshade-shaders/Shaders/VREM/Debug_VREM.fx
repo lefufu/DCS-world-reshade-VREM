@@ -38,6 +38,8 @@ uniform int QVHeight < ui_type = "drag"; ui_label = "QV Height"; ui_min = 1076; 
 // pixel shader
 float3 Ps_VREM_Test(float4 position : SV_Position, float2 texcoord : TEXCOORD) : SV_Target
 {
+	float2 textcoord2;
+	
 	float3 ori = tex2Dlod(ReShade::BackBuffer, float4(texcoord, 0.0, 0.0)).rgb;
 	
 	float3 output ;
@@ -68,7 +70,10 @@ float3 Ps_VREM_Test(float4 position : SV_Position, float2 texcoord : TEXCOORD) :
 		if (display_mode == 2)
 		{
 		
-			uint sampledData = tex2Dlod(StencilBuffer, float4(texcoord, 0, 0)).g;
+			float2 coord2;
+			coord2.x = MSAAX * texcoord.x;
+			coord2.y = MSAAY * texcoord.y;
+			uint sampledData = tex2Dlod(StencilBuffer, float4(coord2, 0, 0)).g;
 			
 			output = float3(0, 1, 0);
 			

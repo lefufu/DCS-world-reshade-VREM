@@ -155,8 +155,11 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	bool render_effect = false;
 	uint32_t count_draw = 0;
 
-	// for technique init
+	// for technique init (not used ?)
 	char technique_init = -1;
+
+	// for ensuring creating preprocessor variable at lauch
+	bool init_preprocessor = true;
 
 	// for technique refresh
 	bool button_technique = false;
@@ -237,6 +240,9 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 
 	//fog value in cb
 	float fog_value;
+
+	// MSAA value choosen in GUI
+	int MSAA_factor;
 
 	// key binding
 	// strings

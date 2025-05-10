@@ -74,6 +74,23 @@ void intialize_counters()
 		shared_data.NS430_res[i].copied = false;
 		shared_data.render_target_view[i].created = false;
 	}
+
+	//handle MSAA for resolution
+	shared_data.cb_inject_values.AAxFactor = 1.0;
+	shared_data.cb_inject_values.AAyFactor = 1.0;
+
+	if (shared_data.MSAA_factor == 1)
+	{
+		shared_data.cb_inject_values.AAxFactor = 2.0;
+		shared_data.cb_inject_values.AAyFactor = 1.0;
+	}
+	else
+		if (shared_data.MSAA_factor == 2)
+		{
+			shared_data.cb_inject_values.AAxFactor = 2.0;
+			shared_data.cb_inject_values.AAyFactor = 2.0;
+		}
+
 }
 
 // *******************************************************************************************************
