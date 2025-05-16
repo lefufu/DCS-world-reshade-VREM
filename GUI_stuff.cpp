@@ -498,8 +498,9 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		// ImGui::SliderFloat("# of draws to differentiate", &shared_data.cb_inject_values.testFlag, 0.0f, 5.0f, "ratio = %.0f");
 		// to test global shader
 		ImGui::SliderFloat("Display stencil mask", &shared_data.cb_inject_values.testGlobal, 0.0f, 1.0f, "active: %1.0f");
+
 		//capture a fame 
-		static int clicked = 0;
+		
 		if (ImGui::Button("Capture frame"))
 		{
 			shared_data.button_capture = true;
@@ -507,6 +508,19 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		else
 		{
 			shared_data.button_capture = false;
+		}
+
+		//reset preprocessor variable reading
+		if (ImGui::Button("Initialize preprocessor variable"))
+		{
+			shared_data.button_preprocess = true;
+			shared_data.init_preprocessor = false;
+			saveShaderTogglerIniFile();
+		}
+		if (shared_data.button_preprocess)
+		{
+			ImGui::SameLine();
+			ImGui::Text("Game restart needed");
 		}
 
 	}

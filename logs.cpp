@@ -290,13 +290,13 @@ void log_pipeline_replaced(pipeline pipelineHandle, std::unordered_map<uint64_t,
 /// Log texture is injected
 /// </summary>
 /// 
-void log_texture_injected(std::string texture_name)
+void log_texture_injected(std::string texture_name, int count_displayVS)
 {
 	if ((debug_flag && flag_capture) || FORCE_LOG)
 	{
 		std::stringstream s;
 		s << " => on_bind_pipeline : "<< texture_name << " textures injected for draw index : ";
-		s << shared_data.count_display << ";";
+		s << count_displayVS << ";";
 		reshade::log::message(reshade::log::level::info, s.str().c_str());
 	}
 }
@@ -1019,4 +1019,40 @@ void log_filter_shader(std::pair<const uint32_t, Shader_Definition>& entry, bool
 		s << "Shader hash: " << std::hex << entry.first << ", action :" << to_string(entry.second.action) << ", feature: " << to_string(entry.second.feature) << ", draw count: " << entry.second.draw_count << ", retained :" << status << ";";
 		reshade::log::message(reshade::log::level::info, s.str().c_str());
 	}
+}
+
+// *******************************************************************************************************
+/// <summary>
+/// Log preprocessor action
+/// </summary>
+
+void log_preprocessor(std::string name, float targetValue, bool update, bool status, float readedValue, bool inFrame, uint16_t step, short int display_to_use)
+{
+	
+	std::string stepName;
+
+	switch(step)
+	{
+		case 1: 
+			stepName = "CREATE";
+			break;
+		case 2: 
+			stepName = "UPDATE";
+			break;
+		case 3: 
+			stepName = "SKIP";
+			break;
+		default:
+			stepName = "UNKNOWN";
+			break;
+	}
+	
+
+	if ( (debug_flag && ( (inFrame && flag_capture) || !inFrame)) || FORCE_LOG)
+	{
+		std::stringstream s;
+		s << stepName << " default_preprocessor, name = '" << name << "', target value = " << targetValue << ", exists = " << status << ", readed value = " << readedValue << " display = " << display_to_use << ";";
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
+	}
+
 }

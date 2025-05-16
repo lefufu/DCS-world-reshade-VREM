@@ -74,7 +74,10 @@ std::unordered_map<uint32_t, Shader_Definition> shader_by_hash =
 	// and inject modified CB CperFrame
 	{ 0x4DDC4917, Shader_Definition(action_log | action_injectCB, Feature::GetStencil, L"", 0) },
 	// global PS for all changes
-	{ 0xBAF1E52F, Shader_Definition(action_replace | action_injectText | action_log, Feature::Global, L"global_PS_2.cso", 0) },
+	//{ 0xBAF1E52F, Shader_Definition(action_replace | action_injectText | action_log, Feature::Global, L"global_PS_2.cso", 0) },
+	{ 0xBAF1E52F, Shader_Definition(action_replace | action_injectText, Feature::Global, L"global_PS_2.cso", 0) },
+	//TODO VS associated with global PS 2 for draw increase : 8DB626CD
+	{ 0x8DB626CD, Shader_Definition(action_log , Feature::VS_global2, L"", 0) },
 	// Label PS 
 	{ 0x6CEA1C47, Shader_Definition(action_replace | action_injectText, Feature::Label , L"labels_PS.cso", 0) },
 	// ** NS430 **
@@ -103,14 +106,8 @@ std::unordered_map<uint32_t, Shader_Definition> shader_by_hash =
 	{ 0xC9F547A7, Shader_Definition(action_replace , Feature::NoReflect , L"A10C_instrument.cso", 0) },
 	//  ** NVG **
 	{ 0xE65FAB66, Shader_Definition(action_replace , Feature::NVG , L"NVG_extPS.cso", 0) },
-	//  ** identify render target ** (first global PS) => move to VS 936B2B6A
+	//  ** identify render target ** (VS associated with first global PS)
 	{ 0x936B2B6A, Shader_Definition(action_log , Feature::Effects , L"", 0) },
-	/*
-	//no AA
-	{ 0x6656F8A6, Shader_Definition(action_log , Feature::Effects , L"", 0) },
-	//MSAA2x
-	{ 0x4D866699, Shader_Definition(action_log , Feature::Effects , L"", 0) }
-	*/
 	
 };
 
@@ -380,33 +377,38 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 			
 			if (it->second.action & action_count)
 			{
-				// increment the associated counter
+				// increment the associated counter (not working ? not used)
 				
 			}
-			
+
+			int count_displayVS = shared_data.count_display - 1;
+
 			if (it->second.action & action_injectText)
 			{
 				// inject texture using push_descriptor() if things has been initialized => draw index is > -1
 
-				if (( it->second.feature == Feature::Global || it->second.feature == Feature::Label) && shared_data.count_display > -1 && shared_data.depthStencil_copy_started)
+				if (( it->second.feature == Feature::Global || it->second.feature == Feature::Label) && count_displayVS > -1 && shared_data.depthStencil_copy_started)
 				{
+
+					if (it->second.feature == Feature::Label) count_displayVS++;
+					
 					// stencil depth textures in shaders for color change and label masking 
-					if (shared_data.depth_view[shared_data.count_display].created && shared_data.stencil_view[shared_data.count_display].created)
+					if (shared_data.depth_view[count_displayVS].created && shared_data.stencil_view[count_displayVS].created)
 					{
 
 						// push the texture for depth and stencil, descriptor initialized in copy_texture()
 						//depth
 						shared_data.update.binding = 0;
-						shared_data.update.descriptors = &shared_data.depth_view[shared_data.count_display].texresource_view;
+						shared_data.update.descriptors = &shared_data.depth_view[count_displayVS].texresource_view;
 						commandList->push_descriptors(reshade::api::shader_stage::pixel, shared_data.saved_pipeline_layout_RV, 0, shared_data.update);
 
 						//stencil
 						shared_data.update.binding = 1; // t4 as 3 is defined in pipeline_layout
-						shared_data.update.descriptors = &shared_data.stencil_view[shared_data.count_display].texresource_view;;
+						shared_data.update.descriptors = &shared_data.stencil_view[count_displayVS].texresource_view;;
 						commandList->push_descriptors(reshade::api::shader_stage::pixel, shared_data.saved_pipeline_layout_RV, 0, shared_data.update);
 
 						// log infos
-						log_texture_injected("depthStencil");
+						log_texture_injected("depthStencil", count_displayVS);
 					}
 				}
 
@@ -423,7 +425,7 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 						commandList->push_descriptors(reshade::api::shader_stage::pixel, shared_data.saved_pipeline_layout_RV, 0, shared_data.update);
 
 						// log infos
-						log_texture_injected("NS430");
+						log_texture_injected("NS430", count_displayVS);
 					}
 				}
 
@@ -560,7 +562,8 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 				// PS global color : increase draw count & GUI flag (to avoid MFD)
 				// setup flag to launch render effect and stop tracking render target
 				
-				if (it->second.feature == Feature::Global)
+				// if (it->second.feature == Feature::Global)
+				if (it->second.feature == Feature::VS_global2)
 				{
 					// handle the case where the Ps is called 2 time consecutivelly because of mirror view
 					if (shared_data.last_feature != Feature::Global)
@@ -599,6 +602,9 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 							log_not_increase_draw_count();
 						}
 					}
+
+					// set up draw flag to avoid push_constant() doing effect before draw (it will be overwritten by the PS)
+					shared_data.draw_passed = false;
 				}
 			}
 
@@ -643,7 +649,7 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 	
 	// render effect part
 	// do not engage effect if option not selected and not in cockpit
-	if (shared_data.render_effect && shared_data.effects_feature && !shared_data.cb_inject_values.mapMode)
+	if (shared_data.render_effect && shared_data.effects_feature && !shared_data.cb_inject_values.mapMode && shared_data.draw_passed)
 	{
 		// engage effect for each call of global pixel shader
 		// ensure to wait next good context after rendering
@@ -686,31 +692,26 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 							
 							if (!buffer_exported)
 							{
-								
-								std::stringstream s;
-								reshade::log::message(reshade::log::level::info, s.str().c_str());
-
 								// push render target resol for shader re compilation 
-								shared_data.runtime->set_preprocessor_definition("MSAAX", std::to_string(shared_data.cb_inject_values.AAxFactor).c_str());
-								shared_data.runtime->set_preprocessor_definition("MSAAY", std::to_string(shared_data.cb_inject_values.AAyFactor).c_str());
-								if (display_to_use <= 1)
+								int check = 0;
+								check += default_preprocessor(shared_data.runtime, "MSAAX", shared_data.cb_inject_values.AAxFactor, true, display_to_use);
+								check += default_preprocessor(shared_data.runtime, "MSAAY", shared_data.cb_inject_values.AAyFactor, true, display_to_use);
+
+								// if (display_to_use <= 1)
 								{
-									shared_data.runtime->set_preprocessor_definition("BUFFER_WIDTH", std::to_string(shared_data.render_target_view[display_to_use].width).c_str());
-									shared_data.runtime->set_preprocessor_definition("BUFFER_HEIGHT", std::to_string(shared_data.render_target_view[display_to_use].height).c_str());
-									shared_data.runtime->set_preprocessor_definition("BUFFER_RCP_WIDTH", std::to_string(1.0/ shared_data.render_target_view[display_to_use].width).c_str());
-									shared_data.runtime->set_preprocessor_definition("BUFFER_RCP_HEIGHT", std::to_string(1.0/ shared_data.render_target_view[display_to_use].height).c_str());
-									if (shared_data.count_draw <= 2) buffer_exported = true;
+									check += default_preprocessor(shared_data.runtime, "BUFFER_WIDTH", shared_data.render_target_view[display_to_use].width, true, display_to_use);
+									check += default_preprocessor(shared_data.runtime, "BUFFER_HEIGHT", shared_data.render_target_view[display_to_use].height, true, display_to_use);
+									check += default_preprocessor(shared_data.runtime, "BUFFER_RCP_WIDTH", 1.0/shared_data.render_target_view[display_to_use].width, true, display_to_use);
+									check += default_preprocessor(shared_data.runtime, "BUFFER_RCP_HEIGHT", 1.0 / shared_data.render_target_view[display_to_use].height, true, display_to_use);
 								}
+								/*
 								else
 								{
-									shared_data.runtime->set_preprocessor_definition("BUFFER_WIDTH_QVIN", std::to_string(shared_data.render_target_view[display_to_use].width).c_str());
-									shared_data.runtime->set_preprocessor_definition("BUFFER_HEIGHT_QVIN", std::to_string(shared_data.render_target_view[display_to_use].height).c_str());
-									shared_data.runtime->set_preprocessor_definition("BUFFER_RCP_WIDTH_QVIN", std::to_string(1.0/shared_data.render_target_view[display_to_use].width).c_str());
-									shared_data.runtime->set_preprocessor_definition("BUFFER_RCP_HEIGHT_QVIN", std::to_string(1.0/shared_data.render_target_view[display_to_use].height).c_str());
-									buffer_exported = true;
-								}
-
-								log_export_render_targer_res(display_to_use);
+									check += default_preprocessor(shared_data.runtime, "BUFFER_WIDTH_QVIN", shared_data.render_target_view[display_to_use].width, false, display_to_use);
+									check += default_preprocessor(shared_data.runtime, "BUFFER_HEIGHT_QVIN", shared_data.render_target_view[display_to_use].height, false, display_to_use);
+									check += default_preprocessor(shared_data.runtime, "BUFFER_RCP_WIDTH_QVIN", 1.0 / shared_data.render_target_view[display_to_use].width, false, display_to_use);
+									check += default_preprocessor(shared_data.runtime, "BUFFER_RCP_HEIGHT_QVIN", 1.0 / shared_data.render_target_view[display_to_use].height, false, display_to_use);
+								}*/
 
 							}
 
@@ -757,7 +758,7 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 		bool status = copy_depthStencil(cmd_list, stages, layout, param_index, update);
 
 		// stop tracking
-		shared_data.track_for_depthStencil = false;
+		// shared_data.track_for_depthStencil = false;
 	}
 
 	// handle NS430
@@ -838,6 +839,7 @@ static void clear_tracking_flags()
 		shared_data.track_for_NS430 = false;
 		do_not_draw = false;
 	}
+	shared_data.draw_passed = true;
 }
 
 // *******************************************************************************************************
@@ -891,32 +893,17 @@ static bool on_drawOrDispatch_indirect(command_list* commandList, indirect_comma
 
 }
 
+
 //*******************************************************************************************************
 // onReshadeReloadedEffects() : initialize technique list
 
 static void on_reshade_reloaded_effects(effect_runtime* runtime)
 {
 	
-	//TODO: initialize preprocess variable to avoid compil error when DCS launched for first time after mod install
-	if (shared_data.init_preprocessor)
-	{
-
-		shared_data.init_preprocessor = false;
-		runtime->set_preprocessor_definition("MSAAX", "1.0");
-		runtime->set_preprocessor_definition("MSAAY", "1.0");
-		runtime->set_preprocessor_definition("BUFFER_WIDTH", "1920");
-		runtime->set_preprocessor_definition("BUFFER_HEIGHT", "1080");
-		runtime->set_preprocessor_definition("BUFFER_RCP_WIDTH", "0.1");
-		runtime->set_preprocessor_definition("BUFFER_RCP_HEIGHT", "0.1");
-		runtime->set_preprocessor_definition("BUFFER_WIDTH_QVIN", "1920");
-		runtime->set_preprocessor_definition("BUFFER_HEIGHT_QVIN", "1080");
-		runtime->set_preprocessor_definition("BUFFER_RCP_WIDTH_QVIN", "0.1");
-		runtime->set_preprocessor_definition("BUFFER_RCP_HEIGHT_QVIN", "0.1");
-		runtime->save_current_preset();
-
-	}
-	
 	enumerateTechniques(runtime);
+
+	//initialize pre process variable (if needed)
+	init_preprocess(runtime);
 
 }
 

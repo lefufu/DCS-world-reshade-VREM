@@ -102,7 +102,9 @@ enum class Feature : uint32_t
 	// Reshade effects
 	Effects = 15,
 	// Testing : for testing purpose
-	Testing = 20
+	Testing = 20,
+	// VS of 2nd global color change PS
+	VS_global2 = 21
 };
 
 

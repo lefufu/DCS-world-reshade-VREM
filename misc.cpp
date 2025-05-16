@@ -285,6 +285,8 @@ void load_setting_IniFile()
 	shared_data.effects_feature = iniFile.GetBool("effects_feature", "Effects");
 	shared_data.effect_target_QV = read_int_with_defaut(iniFile, fileExist, "QV_render_target", "Effects", 0);
 	shared_data.VRonly_technique = iniFile.GetBool("VRonly_technique", "Effects");
+	shared_data.init_preprocessor = iniFile.GetBool("init_preprocessor", "Effects");
+	
 
 	// fps limiter
 	shared_data.fps_limit = read_int_with_defaut(iniFile, fileExist, "fps_limit", "fps", 120);
@@ -355,6 +357,7 @@ void saveShaderTogglerIniFile()
 	iniFile.SetBool("effects_feature", shared_data.effects_feature, "Enable Reshade effects", "Effects");
 	iniFile.SetInt("QV_render_target", shared_data.effect_target_QV, "QV render target", "Effects");
 	iniFile.SetBool("VRonly_technique", shared_data.VRonly_technique, "Reshade technique applied only on VR views", "Effects");
+	iniFile.SetBool("init_preprocessor", shared_data.init_preprocessor, "flag to create preprocessor", "Effects");
 
 	// debug
 	iniFile.SetBool("debug_feature", debug_flag, "Enable debug features", "Debug");
@@ -449,7 +452,8 @@ void init_mod_features()
 		}
 
 		// safety : to ensure effects whatever settings
-		if ((entry.second.feature == Feature::Global || entry.second.feature == Feature::Haze || entry.second.feature == Feature::HazeMSAA2x || entry.second.feature == Feature::mapMode
+		// if ((entry.second.feature == Feature::Global || entry.second.feature == Feature::Haze || entry.second.feature == Feature::HazeMSAA2x || entry.second.feature == Feature::mapMode
+		if ((entry.second.feature == Feature::Global || entry.second.feature == Feature::VS_global2 || entry.second.feature == Feature::mapMode
 				|| entry.second.feature == Feature::VRMode))
 		{
 			add_line = true;

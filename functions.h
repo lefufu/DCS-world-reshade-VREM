@@ -57,7 +57,7 @@ extern void log_start_monitor(std::string texture_name);
 
 extern void log_pipeline_replaced(pipeline pipelineHandle, std::unordered_map<uint64_t, Shader_Definition>::iterator it);
 
-extern void log_texture_injected(std::string texture_name);
+extern void log_texture_injected(std::string texture_name, int count_displayVS);
 
 extern void log_pipeline_to_process(pipeline pipelineHandle, std::unordered_map<uint64_t, Shader_Definition>::iterator it);
 
@@ -128,3 +128,9 @@ extern void log_constant_buffer_mapping_error(std::string CB_name);
 extern bool read_constant_buffer(command_list* cmd_list, const descriptor_table_update& update, std::string CB_name, int descriptors_index, float* dest_array, int buffer_size);
 
 extern void log_filter_shader(std::pair<const uint32_t, Shader_Definition>& entry, bool status);
+
+extern void init_preprocess(effect_runtime* runtime);
+
+extern void log_preprocessor(std::string name, float targetValue, bool update, bool status, float readedValue, bool inFrame, uint16_t step, short int display_to_use);
+
+extern int default_preprocessor(effect_runtime* runtime, std::string name, float defaultValue, bool update, short int display_to_use);

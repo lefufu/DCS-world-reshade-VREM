@@ -37,6 +37,7 @@
 // 
 /////////////////////////////////////////////////////////////////////////
 
+#include <cmath>
 #include <imgui.h>
 #include <reshade.hpp>
 #include "functions.h"
@@ -52,6 +53,100 @@ static bool technique_status;
 
 
 
+//*******************************************************************************************************
+/// <summary>
+// roundToDecimal() : to avoid re writing preprocessor variable because rouding of value as string in reshade
+/// </summary>
+
+float roundToDecimal(float value, int decimals) {
+    float factor = std::pow(10.0f, decimals);
+    return std::round(value * factor) / factor;
+}
+
+//*******************************************************************************************************
+/// <summary>
+// default_preprocessor() : create preprocessor definition if different of value
+/// </summary>
+int default_preprocessor(effect_runtime* runtime, std::string name, float defaultValue, bool update, short int display_to_use)
+{
+    bool exists;
+    char value[30];
+    size_t  size = sizeof(value);
+    float parsed = 0.0;
+
+    int result = 0;
+
+    exists = runtime->get_preprocessor_definition(name.c_str(), value, &size);
+
+
+
+    if (exists)
+    {
+        // update preprocessor definition value only if requested (not needed to check existence)
+        float parsed = std::strtof(value, nullptr);
+        float rounded = roundToDecimal(defaultValue, 6);
+
+        if ((parsed != rounded) && update)
+        {
+            runtime->set_preprocessor_definition(name.c_str(), std::to_string(rounded).c_str());
+            result = 1;
+
+            log_preprocessor(name, defaultValue, update, exists, parsed, false, 2, display_to_use);
+
+        }
+        else
+        {
+            log_preprocessor(name, defaultValue, update, exists, parsed, false, 3, display_to_use);
+
+        }
+
+    }
+    else
+    {
+        // create preprocessor definition
+        runtime->set_preprocessor_definition(name.c_str(), std::to_string(defaultValue).c_str());
+        result = 1;
+
+        log_preprocessor(name, defaultValue, update, exists, parsed, false, 1, display_to_use);
+
+    }
+
+    return result;
+
+}
+
+//*******************************************************************************************************
+/// <summary>
+// default_preprocessor() : initialize preprocess variable to avoid compil error when DCS launched for first time after mod install, not working as get_preprocessor_definition() does always return false...
+/// </summary>
+
+void init_preprocess(effect_runtime* runtime)
+{
+    if (!shared_data.init_preprocessor && shared_data.effects_feature)
+    {
+
+        shared_data.init_preprocessor = true;
+        int check = 0;
+
+        check += default_preprocessor(runtime, "MSAAX", 1.0, false, -1);
+        check += default_preprocessor(runtime, "MSAAY", 1.0, false, -1);
+        check += default_preprocessor(runtime, "BUFFER_WIDTH", 1920.0, false, -1);
+        check += default_preprocessor(runtime, "BUFFER_HEIGHT", 1080.0, false, -1);
+        check += default_preprocessor(runtime, "BUFFER_RCP_WIDTH", 1.0/1920, false, -1);
+        check += default_preprocessor(runtime, "BUFFER_RCP_HEIGHT", 1.0 / 1080, false, -1);
+        /*
+        check += default_preprocessor(runtime, "BUFFER_WIDTH_QVIN", 1920.0, false, -1);
+        check += default_preprocessor(runtime, "BUFFER_HEIGHT_QVIN", 1080.0, false, -1);
+        check += default_preprocessor(runtime, "BUFFER_RCP_WIDTH_QVIN", 1.0 / 1920, false, -1);
+        check += default_preprocessor(runtime, "BUFFER_RCP_HEIGHT_QVIN", 1.0 / 1080, false, -1);
+        */
+
+        //save check done
+        saveShaderTogglerIniFile();
+    }
+}
+
+
 // *******************************************************************************************************
 /// <summary>
 /// save technique status in the ini file
@@ -61,10 +156,6 @@ void save_technique_status(std::string technique_name, std::string effect_name, 
 {
     extern CDataFile technique_iniFile;
 
-    /* technique_iniFile.SetValue("technique_name", technique_name, "name of technique for effect", effect_name);
-    technique_iniFile.SetBool("technique_status", technique_status, "status of technique", effect_name);
-    technique_iniFile.SetInt("quad_view_target", quad_view_target, "Quad view target", effect_name);  
-    */
     technique_iniFile.SetBool(technique_name, technique_status, "", "technique");
 }
 
@@ -90,49 +181,6 @@ bool read_technique_status_from_file(std::string name)
 
 // *******************************************************************************************************
 /// <summary>
-/// rebuild the techique vector from technique file (needed if "technique only for VR" option setup)
-/// </summary>
-/*  no more used
-void load_technique_vector(CDataFile technique_iniFile, effect_runtime* runtime)
-{
-    // Get the list of section names
-    technique_iniFile.Load(technique_iniFileName);
-    
-
-    for (uint32_t i = 0; i < technique_iniFile.SectionCount(); i++)
-    {
-
-        effect_technique technique;
-        std::string technique_name, effect_name;
-        effect_name = technique_iniFile.m_Sections[i].szName;
-        technique_name = technique_iniFile.GetString("technique_name", technique_iniFile.m_Sections[i].szName);
-        bool technique_status = technique_iniFile.GetBool("technique_status", technique_iniFile.m_Sections[i].szName);
-        int QV_target  = technique_iniFile.GetInt("quad_view_target", technique_iniFile.m_Sections[i].szName);
-        uint32_t j = 0;
-        if (technique_name != "")
-        {
-            if (technique_status)
-            {
-                technique = runtime->find_technique(effect_name.c_str(), technique_name.c_str());
-                if (technique == 0)
-                {
-                    std::stringstream s;
-                    s << "!!!! Enumerate technique Error : effect name = " << effect_name << ", technique name = " << technique_name << " !!!";
-                    reshade::log::message(reshade::log::level::info, s.str().c_str());
-                }
-                shared_data.technique_vector.push_back({ technique, technique_name, effect_name , technique_status, QV_target });
-                log_technique_loaded(j);
-                j++;
-            }
-
-        }
-        
-    }
-}
-*/
-
-// *******************************************************************************************************
-/// <summary>
 /// enumerate technique : call a function for all techniques
 /// </summary>
 void enumerateTechniques(effect_runtime* runtime)
@@ -146,30 +194,14 @@ void enumerateTechniques(effect_runtime* runtime)
     // init flags for texture or uniform injection
     shared_data.uniform_needed = false;
     shared_data.texture_needed = false;
-      
-    // if (shared_data.VRonly_technique)
-    // {      
-        // load the technique file, as status of technique are not relevant
-        technique_iniFile.Load(technique_iniFileName);       
-    // }
+ 
+    // load the technique file, as status of technique are not relevant
+    technique_iniFile.Load(technique_iniFileName);       
     
-    if ((debug_flag))
-    {
-        std::stringstream s;
-        s << " ******** enumerate technique called ;";
-        reshade::log::message(reshade::log::level::warning, s.str().c_str());
-    }
 
     // Pass the logging function as the callback
     runtime->enumerate_techniques(nullptr, [](effect_runtime* rt, effect_technique technique) {
         
-        if ((debug_flag))
-        {
-            std::stringstream s;
-            s << " ******** runtime->enumerate_techniques technique called ;";
-            reshade::log::message(reshade::log::level::warning, s.str().c_str());
-        }
-        // reshade::log::message(reshade::log::level::info, "**** sub Enumerate technique called ****");
         // Buffer size definition
         g_charBufferSize = CHAR_BUFFER_SIZE;
 
@@ -192,37 +224,18 @@ void enumerateTechniques(effect_runtime* runtime)
         }
 
         // if shared_data.VRonly_technique is set, the technique state will not be used, instead the status will be read from the technique .ini file
-        // 
         if (shared_data.VRonly_technique)
         {
             technique_status = read_technique_status_from_file(name);
-
-            if ((debug_flag))
-            {
-                std::stringstream s;
-                s << " ******** read status from file for technique " << name;
-                reshade::log::message(reshade::log::level::warning, s.str().c_str());
-            }
-
+            // activate the technique, as it may be keep off from previous game session and it need to be activated before the 3D window at least once per session
             if (technique_status && shared_data.count_draw == 0)
             {
-                std::stringstream s;
-                s << " ******** set technique true " << name;
-                reshade::log::message(reshade::log::level::warning, s.str().c_str());
-
                 rt->set_technique_state(technique, true);
             }
 
         }
         else
             technique_status = rt->get_technique_state(technique);
-
-        if ((debug_flag))
-        {
-            std::stringstream s;
-            s << " ******** technique status = " << technique_status;
-            reshade::log::message(reshade::log::level::warning, s.str().c_str());
-        }
 
         // add technique in vector if active
         if (technique_status)
@@ -248,6 +261,7 @@ void enumerateTechniques(effect_runtime* runtime)
 
             //log 
             log_technique_info(rt, technique, name, eff_name, technique_status, QV_target, has_depth_or_stencil);
+
         }
         // log_technique_info(rt, technique, name, eff_name, technique_status, -1, false);
         // save changes only if VROnly is not set
@@ -256,26 +270,17 @@ void enumerateTechniques(effect_runtime* runtime)
             save_technique_status(name, eff_name, technique_status, shared_data.effect_target_QV);
         }
 
-
         });
     //save technique list
     if (!shared_data.VRonly_technique)
     {
         
-        if ((debug_flag))
-        {
-            std::stringstream s;
-            s << " ******** saving techniques = " << shared_data.technique_vector.size() << ";";
-            reshade::log::message(reshade::log::level::warning, s.str().c_str());
-        }
         technique_iniFile.SetFileName(technique_iniFileName);
         technique_iniFile.Save();
     }
-    /* else
-    {
 
-    }
-    */
+    //create post process if not existing
+    // init_preprocess(runtime);
 
 }
 
@@ -327,3 +332,5 @@ void reEnableAllTechnique(bool save_flag) {
         shared_data.runtime->set_technique_state(shared_data.VR_only_technique_handle, false);
 
 }
+
+

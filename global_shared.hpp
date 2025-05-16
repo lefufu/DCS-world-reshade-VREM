@@ -153,18 +153,20 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	// flag for drawing or not
 	bool track_for_render_target = false;
 	bool render_effect = false;
+	bool draw_passed = false;
 	uint32_t count_draw = 0;
 
 	// for technique init (not used ?)
 	char technique_init = -1;
 
 	// for ensuring creating preprocessor variable at lauch
-	bool init_preprocessor = true;
+	bool init_preprocessor = false;
 
 	// for technique refresh
 	bool button_technique = false;
 	bool VRonly_technique = false;
 	bool init_VRonly_technique = false;
+	bool button_preprocess = false;
 
 
 	// copy from one function to another
