@@ -193,7 +193,7 @@ void enumerateTechniques(effect_runtime* runtime)
 
     // init flags for texture or uniform injection
     shared_data.uniform_needed = false;
-    shared_data.texture_needed = false;
+    //shared_data.texture_needed = false;
  
     // load the technique file, as status of technique are not relevant
     technique_iniFile.Load(technique_iniFileName);       
@@ -241,9 +241,9 @@ void enumerateTechniques(effect_runtime* runtime)
         if (technique_status)
         {
 
-            //check if shader is containing a VREM texture (¨DEPTH' or 'STENCIL'
+            //check if shader is containing a VREM texture (¨DEPTH' or 'STENCIL') or other options in GUI that need stencil
             bool has_depth_or_stencil = false;
-            if (rt->find_texture_variable(g_charBuffer, DEPTH_NAME) != 0 || rt->find_texture_variable(g_charBuffer, STENCIL_NAME) != 0)
+            if (rt->find_texture_variable(g_charBuffer, DEPTH_NAME) != 0 || rt->find_texture_variable(g_charBuffer, STENCIL_NAME) != 0  )
             {
                 has_depth_or_stencil = true;
                 shared_data.texture_needed = true;

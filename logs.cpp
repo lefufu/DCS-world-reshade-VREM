@@ -1056,3 +1056,18 @@ void log_preprocessor(std::string name, float targetValue, bool update, bool sta
 	}
 
 }
+
+// *******************************************************************************************************
+/// <summary>
+/// Log preprocessor action
+/// 
+
+void log_susperSamping()
+{
+	if (debug_flag && flag_capture)
+	{
+		std::stringstream s;
+		s << "OnPresent : MSAAxfactor = " << shared_data.MSAAxfactor << ", MSAAxfactor = " << shared_data.MSAAyfactor << ", StencilBufferX =  " << shared_data.renderTargetX << ", render_target_vie width =  " << shared_data.render_target_view[0].width << ", SSfactor =" << shared_data.SSfactor << " ***";
+		reshade::log::message(reshade::log::level::info, s.str().c_str());
+	}
+}

@@ -75,22 +75,42 @@ void intialize_counters()
 		shared_data.render_target_view[i].created = false;
 	}
 
+
+	// part to take into account changes during game (!!! will not reload shader list !!!)
+	// set if needed to copy rendertarget, needed to compute super/undersampling beside MSAA (usage for technique handled by technique parsing later)
+	if (shared_data.cb_inject_values.debandFlag || shared_data.cb_inject_values.sharpenFlag || shared_data.color_feature || shared_data.cb_inject_values.maskLabels || shared_data.cb_inject_values.testGlobal)
+		shared_data.texture_needed = true;
+
 	//handle MSAA for resolution
-	shared_data.cb_inject_values.AAxFactor = 1.0;
-	shared_data.cb_inject_values.AAyFactor = 1.0;
+	// no MSAA : possible to have donwsmapling
+	//for usage in shaders
+	shared_data.SSfactor = shared_data.renderTargetX / shared_data.render_target_view[0].width;
+	shared_data.cb_inject_values.AAxFactor = shared_data.SSfactor;
+	shared_data.cb_inject_values.AAyFactor = shared_data.SSfactor;
+	//for usage in techniques
+	shared_data.MSAAxfactor = 1.0;
+	shared_data.MSAAyfactor = 1.0;
 
 	if (shared_data.MSAA_factor == 1)
 	{
+		//for usage in shaders
 		shared_data.cb_inject_values.AAxFactor = 2.0;
 		shared_data.cb_inject_values.AAyFactor = 1.0;
+		//for usage in techniques
+		shared_data.MSAAxfactor = shared_data.cb_inject_values.AAxFactor;
+		shared_data.MSAAyfactor = shared_data.cb_inject_values.AAyFactor;
 	}
 	else
 		if (shared_data.MSAA_factor == 2)
 		{
+			//for usage in shaders
 			shared_data.cb_inject_values.AAxFactor = 2.0;
 			shared_data.cb_inject_values.AAyFactor = 2.0;
+			//for usage in techniques
+			shared_data.MSAAxfactor = shared_data.cb_inject_values.AAxFactor;
+			shared_data.MSAAyfactor = shared_data.cb_inject_values.AAyFactor;
 		}
-
+	log_susperSamping();
 }
 
 // *******************************************************************************************************

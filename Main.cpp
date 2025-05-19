@@ -55,7 +55,7 @@
 using namespace reshade::api;
 
 extern "C" __declspec(dllexport) const char *NAME = "DCS VREM";
-extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v9.0";
+extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v9.1";
 
 // ***********************************************************************************************************************
 // definition of all shader of the mod (whatever feature selected in GUI)
@@ -382,6 +382,7 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 			}
 
 			int count_displayVS = shared_data.count_display - 1;
+			//if (it->second.feature == Feature::Label) count_displayVS++;
 
 			if (it->second.action & action_injectText)
 			{
@@ -389,9 +390,8 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 
 				if (( it->second.feature == Feature::Global || it->second.feature == Feature::Label) && count_displayVS > -1 && shared_data.depthStencil_copy_started)
 				{
-
+		
 					if (it->second.feature == Feature::Label) count_displayVS++;
-					
 					// stencil depth textures in shaders for color change and label masking 
 					if (shared_data.depth_view[count_displayVS].created && shared_data.stencil_view[count_displayVS].created)
 					{
@@ -521,7 +521,7 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 				// set flag for tracking render target if feature enabled and not in 2D
 				// if (it->second.feature == Feature::Effects && shared_data.effects_feature && shared_data.count_draw > 1)
 				// TODO test to make it work in 2D
-				if (it->second.feature == Feature::Effects && shared_data.effects_feature)
+				if ( (it->second.feature == Feature::Effects && shared_data.effects_feature) || shared_data.texture_needed)
 				{
 				
 					// if (shared_data.render_target_view[shared_data.count_display].created)
@@ -694,8 +694,10 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 							{
 								// push render target resol for shader re compilation 
 								int check = 0;
-								check += default_preprocessor(shared_data.runtime, "MSAAX", shared_data.cb_inject_values.AAxFactor, true, display_to_use);
-								check += default_preprocessor(shared_data.runtime, "MSAAY", shared_data.cb_inject_values.AAyFactor, true, display_to_use);
+								// check += default_preprocessor(shared_data.runtime, "MSAAX", shared_data.cb_inject_values.AAxFactor, true, display_to_use);
+								// check += default_preprocessor(shared_data.runtime, "MSAAY", shared_data.cb_inject_values.AAyFactor, true, display_to_use);
+								check += default_preprocessor(shared_data.runtime, "MSAAX", shared_data.MSAAxfactor, true, display_to_use);
+								check += default_preprocessor(shared_data.runtime, "MSAAY", shared_data.MSAAyfactor, true, display_to_use);
 
 								// if (display_to_use <= 1)
 								{
@@ -808,7 +810,7 @@ static void on_bind_render_targets_and_depth_stencil(command_list *cmd_list, uin
 {
 	
 	// copy render target if tracking
-	if (shared_data.track_for_render_target && shared_data.count_display > -1 && !shared_data.cb_inject_values.mapMode && count > 0 && shared_data.effects_feature)
+	if (shared_data.track_for_render_target && shared_data.count_display > -1 && !shared_data.cb_inject_values.mapMode && count > 0 && (shared_data.effects_feature || shared_data.texture_needed))
 	{
 		
 		// only first render target view to get

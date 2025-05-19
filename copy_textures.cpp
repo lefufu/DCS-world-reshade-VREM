@@ -114,7 +114,12 @@ bool copy_depthStencil(command_list* cmd_list, shader_stage stages, pipeline_lay
 		//log infos and check resource view created
 		resource_desc check_new_res = dev->get_resource_desc(shared_data.depthStencil_res[shared_data.count_display].texresource);
 		log_resource_created("depthStencil", dev, check_new_res);
-		
+
+		// store resolution of resource of first draw to compute protential undersampling/supersampling factor (not for MSAA)
+		if (shared_data.count_display == 0)
+		{
+			shared_data.renderTargetX = check_new_res.texture.width;
+		}
 	}
 	
 

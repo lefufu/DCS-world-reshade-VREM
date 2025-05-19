@@ -133,4 +133,6 @@ extern void init_preprocess(effect_runtime* runtime);
 
 extern void log_preprocessor(std::string name, float targetValue, bool update, bool status, float readedValue, bool inFrame, uint16_t step, short int display_to_use);
 
+extern void log_susperSamping();
+
 extern int default_preprocessor(effect_runtime* runtime, std::string name, float defaultValue, bool update, short int display_to_use);

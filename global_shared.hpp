@@ -173,12 +173,19 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	reshade::api::effect_runtime* runtime;
 	reshade::api::command_list* commandList;
 
+	//for techniques
 	//map of technique selected 
 	std::vector<technique_trace> technique_vector;
 	// to share uniform / texture only if needed
 	bool uniform_needed = false;
 	bool texture_needed = false;
 	effect_technique VR_only_technique_handle;
+	// for MSAA management (no way to detect it by resolution)
+	float MSAAxfactor = 1.0;
+	float MSAAyfactor = 1.0;
+	// to compute super/down sampling factor
+	float renderTargetX = -1.0;
+	float SSfactor = 1.0;
 
 	bool flag_re_enabled = false;
 

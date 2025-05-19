@@ -77,8 +77,8 @@ struct ShaderInjectData {
 	float Iterations; //5.w
 	float Grain; //6.x
 	float frame_counter; //6.y
-	float AAxFactor; //6.z
-	float AAyFactor; //6.w
+	float AAxFactor; //6.z => to be injected in shaders, contain all super and under sampling values, at the opposite of MSAAxfactor only for technique and only for MSAA
+	float AAyFactor; //6.w => to be injected in shaders, at the opposite of MSAAyfactor only for technique, at the opposite of MSAAxfactor only for technique and only for MSAA
 	float IHADSSxOffset; //7.x
 	float IHADSSBoresight; //7.y
 	float IHADSSNoLeft; //7.z
