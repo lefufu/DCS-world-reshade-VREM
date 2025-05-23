@@ -84,7 +84,9 @@ void intialize_counters()
 	//handle MSAA for resolution
 	// no MSAA : possible to have donwsmapling
 	//for usage in shaders
-	shared_data.SSfactor = shared_data.renderTargetX / shared_data.render_target_view[0].width;
+	// if (shared_data.render_target_view[0].width > 0) 
+	// 	shared_data.SSfactor = shared_data.renderTargetX / shared_data.render_target_view[0].width;
+
 	shared_data.cb_inject_values.AAxFactor = shared_data.SSfactor;
 	shared_data.cb_inject_values.AAyFactor = shared_data.SSfactor;
 	//for usage in techniques

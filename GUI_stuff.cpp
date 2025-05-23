@@ -63,15 +63,33 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 	ImGui::Separator();
 
 	// *******************************************************************************************************
-	if (ImGui::CollapsingHeader("MSAA Factor"))
+	if (ImGui::CollapsingHeader("MSAA Factor or super/undersampling"))
 	{
 		ImGui::PushTextWrapPos();
-		ImGui::TextUnformatted("VREM is no more detecting MSAA factor to maximize compatibility and mimize work to write mod");
-		ImGui::TextUnformatted("Select the MSAA option if you use it, it is used in Misc/label masking,  color change, sharpen, ...");
+		ImGui::TextUnformatted("VREM is no more detecting MSAA or under/supersampling factor to maximize compatibility and mimize work to write mod");
+		ImGui::TextUnformatted("Select the MSAA or under/supersampling option only if you use Misc/label masking,  color change, sharpen, ...");
+		ImGui::TextUnformatted("Use 'Display stencil mask' (visible only in VR) in section 'debug options' to define under/supersampling factor");
 		ImGui::PopTextWrapPos();
 		ImGui::RadioButton("No MSAA", &shared_data.MSAA_factor, 0); ImGui::SameLine();
 		ImGui::RadioButton("MSAA2x", &shared_data.MSAA_factor, 1); ImGui::SameLine();
 		ImGui::RadioButton("MSAA4x", &shared_data.MSAA_factor, 2);
+		//enter super or undersampling
+		if (shared_data.MSAA_factor)
+		{
+			ImGui::BeginDisabled();
+		}
+
+		//ImGui::InputFloat("Super/under sampling factor", &shared_data.SSfactor, 0.01f, 1.0f, "%.2f");
+		ImGui::DragFloat("Super/under sampling factor", &shared_data.SSfactor, 0.01f);
+		//ImGui::SliderFloat("Super/under sampling factor", &shared_data.SSfactor, 0.0f, 5.0f, "factor: %0.2f");
+
+		
+
+		if (shared_data.MSAA_factor)
+		{
+			ImGui::EndDisabled();
+		}
+
 	}
 	ImGui::Separator();
 

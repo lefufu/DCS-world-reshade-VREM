@@ -249,6 +249,8 @@ void load_setting_IniFile()
 	shared_data.cb_inject_values.NVGSize = read_float_with_defaut(iniFile, fileExist, "NVGSize", "Misc", 1.0);
 	shared_data.cb_inject_values.NVGYPos = read_float_with_defaut(iniFile, fileExist, "NVGYPos", "Misc", 0.0);
 	shared_data.MSAA_factor = read_int_with_defaut(iniFile, fileExist, "MSAA_factor", "Misc", 0);
+	shared_data.SSfactor = read_float_with_defaut(iniFile, fileExist, "SSfactor", "Misc", 1.0);
+	
 
 	// color
 	shared_data.color_feature = iniFile.GetBool("color_feature", "Color");
@@ -374,6 +376,7 @@ void saveShaderTogglerIniFile()
 	iniFile.SetFloat("NVGSize", shared_data.cb_inject_values.NVGSize, "Scale NVG", "Misc");
 	iniFile.SetFloat("NVGYPos", shared_data.cb_inject_values.NVGYPos, "height of NVG", "Misc");
 	iniFile.SetInt("MSAA_factor", shared_data.MSAA_factor, "MSAA to define supersampling fix", "Misc");
+	iniFile.SetFloat("SSfactor", shared_data.SSfactor, "SSfactor to define under/supersampling fix", "Misc");
 
 	// color
 	iniFile.SetBool("color_feature", shared_data.color_feature, "Enable Color features", "Color");

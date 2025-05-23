@@ -55,7 +55,7 @@
 using namespace reshade::api;
 
 extern "C" __declspec(dllexport) const char *NAME = "DCS VREM";
-extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v9.1";
+extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v9.2";
 
 // ***********************************************************************************************************************
 // definition of all shader of the mod (whatever feature selected in GUI)
@@ -431,6 +431,7 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 
 			}	
 
+
 			if (it->second.action & action_injectCB)
 			{
 				// inject constant buffer other than the one containing VREM setting
@@ -455,7 +456,7 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 
 				}
 			}
-			
+		
 			// shader is to be handled
 			// if (it->second.action & action_replace)
 			if (it->second.action & action_replace || it->second.action & action_replace_bind)
@@ -521,7 +522,7 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 				// set flag for tracking render target if feature enabled and not in 2D
 				// if (it->second.feature == Feature::Effects && shared_data.effects_feature && shared_data.count_draw > 1)
 				// TODO test to make it work in 2D
-				if ( (it->second.feature == Feature::Effects && shared_data.effects_feature) || shared_data.texture_needed)
+				if (it->second.feature == Feature::Effects && (shared_data.effects_feature || shared_data.texture_needed))
 				{
 				
 					// if (shared_data.render_target_view[shared_data.count_display].created)
@@ -787,6 +788,7 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 
 	}
 
+
 	// copy the CB cPerFrame into the variable into shared_data.dest_CB_CPerFrame and modify it
 	//only if needed
 	if (shared_data.cb_inject_values.hazeReduction != 1.0 && shared_data.misc_feature)
@@ -810,7 +812,10 @@ static void on_bind_render_targets_and_depth_stencil(command_list *cmd_list, uin
 {
 	
 	// copy render target if tracking
-	if (shared_data.track_for_render_target && shared_data.count_display > -1 && !shared_data.cb_inject_values.mapMode && count > 0 && (shared_data.effects_feature || shared_data.texture_needed))
+// BUG: using this line with openknweeboard is blocking game !!!!
+// 	if (shared_data.track_for_render_target && shared_data.count_display > -1 && !shared_data.cb_inject_values.mapMode && count > 0 && (shared_data.effects_feature || shared_data.texture_needed))
+
+	if (shared_data.track_for_render_target && shared_data.count_display > -1 && !shared_data.cb_inject_values.mapMode && count > 0 && (shared_data.effects_feature ))
 	{
 		
 		// only first render target view to get
