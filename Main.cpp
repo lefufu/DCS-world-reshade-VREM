@@ -55,7 +55,7 @@
 using namespace reshade::api;
 
 extern "C" __declspec(dllexport) const char *NAME = "DCS VREM";
-extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v9.2";
+extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v9.3";
 
 // ***********************************************************************************************************************
 // definition of all shader of the mod (whatever feature selected in GUI)
@@ -98,10 +98,6 @@ std::unordered_map<uint32_t, Shader_Definition> shader_by_hash =
 	{ 0x886E31F2, Shader_Definition(action_identify | action_log, Feature::VRMode, L"", 0) },
 	// VS drawing cockpit parts to define if view is in welcome screen or map
 	{ 0xA337E177, Shader_Definition(action_identify, Feature::mapMode, L"", 0) },
-
-	//
-	// use VS of global PS to count draw instead of the PS
-	
 	//  ** A10C cockpit instrument **
 	{ 0xC9F547A7, Shader_Definition(action_replace , Feature::NoReflect , L"A10C_instrument.cso", 0) },
 	//  ** NVG **
@@ -162,13 +158,6 @@ static bool on_create_pipeline(device* device, pipeline_layout, uint32_t subobje
 			break;
 		}
 	}
-	/*
-	// re initialize flag (new game session)
-	if (shared_data.render_target_view[0].compiled)
-	{
-		for (short int i = 0; i < MAXVIEWSPERDRAW; i++)
-			shared_data.render_target_view[i].compiled = false;
-	}*/
 
 	// Return whether any shader code was replaced
 	return replaced_stages;
@@ -270,7 +259,7 @@ static void on_init_pipeline_layout(reshade::api::device* device, const uint32_t
 }
 
 // ***********************************************************************************************************************
-// on_init_pipeline() : called once per pipeline, used to load new shader code, initialize the shader handling process and set some flags 
+// on_init_pipeline() : called once per pipeline, used to load new shader code in cloned pipelines, initialize the shader handling process and set some flags 
 // create a new pipeline for shaders which need to be replaced 
 static void on_init_pipeline(device* device, pipeline_layout layout, uint32_t subobjectCount, const pipeline_subobject* subobjects, pipeline pipelineHandle)
 {
@@ -788,10 +777,10 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 
 	}
 
-
+	// CB cPerFrame is generated once at the beginning of the frame, it is not needed to use a dedicated shader to track the push_descriptor command
 	// copy the CB cPerFrame into the variable into shared_data.dest_CB_CPerFrame and modify it
 	//only if needed
-	if (shared_data.cb_inject_values.hazeReduction != 1.0 && shared_data.misc_feature)
+	if (shared_data.cb_inject_values.hazeReduction != 1.0 && shared_data.misc_feature && !shared_data.CPerFrame_copied)
 	{
 		if (update.type == descriptor_type::constant_buffer && update.binding == 6 && update.count == 1 && stages == shader_stage::pixel)
 		{

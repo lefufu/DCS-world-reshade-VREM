@@ -454,6 +454,12 @@ void init_mod_features()
 			add_line = true;
 		}
 
+		// add entrie for CB update in case of Haze activated
+		if (entry.second.feature == Feature::GetStencil && entry.second.action & action_injectCB && shared_data.cb_inject_values.hazeReduction !=1.0 && shared_data.misc_feature)
+		{
+			add_line = true;
+		}
+
 		// safety : to ensure effects whatever settings
 		// if ((entry.second.feature == Feature::Global || entry.second.feature == Feature::Haze || entry.second.feature == Feature::HazeMSAA2x || entry.second.feature == Feature::mapMode
 		if ((entry.second.feature == Feature::Global || entry.second.feature == Feature::VS_global2 || entry.second.feature == Feature::mapMode
