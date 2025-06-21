@@ -657,6 +657,7 @@ inline auto to_string(Feature feature) {
 	case Feature::GUI: return "GUI";
 	case Feature::Effects: return "Effects";
 	case Feature::VS_global2: return "VS_global2";
+	case Feature::Sky: return "Sky";
 		
 	}
 }

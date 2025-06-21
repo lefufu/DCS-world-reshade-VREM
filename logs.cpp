@@ -478,12 +478,13 @@ void log_init_pipeline_params(const uint32_t paramCount, const reshade::api::pip
 /// </summary>
 /// 
 /// 
-void log_create_CBlayout(std::string CBName)
+void log_create_CBlayout(std::string CBName, int CB_number)
 {
 	if (debug_flag || FORCE_LOG)
 	{
 		std::stringstream s;
-		s << "on_init_pipeline_layout: new pipeline created, hash =" << reinterpret_cast<void*>(&shared_data.saved_pipeline_layout_CB.handle) << " ).  DX11 layout created for CB " << CBName <<";";
+		// s << "on_init_pipeline_layout: new pipeline created, hash =" << reinterpret_cast<void*>(&shared_data.saved_pipeline_layout_CB.handle) << " ).  DX11 layout created for CB " << CBName <<";";
+		s << "on_init_pipeline_layout: new pipeline created, hash =" << reinterpret_cast<void*>(&shared_data.saved_pipeline_layout_CB[CB_number].handle) << " ).  DX11 layout created for CB " << CBName << ";";
 		s << "dx_register_index=" << CBINDEX << ", CBIndex =" << shared_data.CBIndex << "; ";
 		reshade::log::message(reshade::log::level::error, s.str().c_str());
 		s.str("");
@@ -498,11 +499,11 @@ void log_create_CBlayout(std::string CBName)
 /// 
 /// 
 
-void log_error_creating_CBlayout(std::string CBName)
+void log_error_creating_CBlayout(std::string CBName, int CB_number)
 {
 	std::stringstream s; 
 	
-	s << "on_init_pipeline_layout(" << reinterpret_cast<void*>(&shared_data.saved_pipeline_layout_CB.handle) << " ). !!! Error in creating DX11 layout for CB " << CBName << "!!!;";
+	s << "on_init_pipeline_layout(" << reinterpret_cast<void*>(&shared_data.saved_pipeline_layout_CB[CB_number].handle) << " ). !!! Error in creating DX11 layout for CB " << CBName << "!!!;";
 	reshade::log::message(reshade::log::level::error, s.str().c_str());
 	s.str("");
 	s.clear();
@@ -538,7 +539,7 @@ void log_create_RVlayout()
 void log_error_creating_RVlayout()
 {
 	std::stringstream s;
-	s << "on_init_pipeline_layout(" << reinterpret_cast<void*>(&shared_data.saved_pipeline_layout_CB.handle) << " ). !!! Error in creating DX11 layout for RV !!!;";
+	s << "on_init_pipeline_layout(" << reinterpret_cast<void*>(&shared_data.saved_pipeline_layout_RV.handle) << " ). !!! Error in creating DX11 layout for RV !!!;";
 	reshade::log::message(reshade::log::level::error, s.str().c_str());
 	s.str("");
 	s.clear();

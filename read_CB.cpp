@@ -44,6 +44,38 @@
 
 using namespace reshade::api;
 
+
+// *******************************************************************************************************
+/// create_CB_layout()
+/// <summary>
+///  create a CB layout for CB created or modified by VREM 
+/// </summary>
+
+void create_modified_CB_layout(reshade::api::device* device, int cbindex, std::string CB_name, int layout_number)
+{
+	// create a new pipeline_layout for VREM constant buffer to be updated by push_constant(), cb number defined in CBINDEX (in mod_injection.h)
+	// pipeline_layout_param
+	// uint32_t 	binding 			OpenGL uniform buffer binding index. 
+	// uint32_t 	dx_register_index	D3D10/D3D11/D3D12 constant buffer register index. 
+	// uint32_t 	dx_register_space	D3D12 constant buffer register space. 
+	// uint32_t 	count				Number of constants in this range (in 32-bit values). 
+	// shader_stage visibility			Shader pipeline stages that can make use of the constants in this range. 
+
+	reshade::api::pipeline_layout_param newParams;
+	newParams.type = reshade::api::pipeline_layout_param_type::push_constants;
+	newParams.push_constants.binding = 0;
+	newParams.push_constants.count = 1;
+	newParams.push_constants.dx_register_index = cbindex;
+	newParams.push_constants.dx_register_space = 0;
+	newParams.push_constants.visibility = reshade::api::shader_stage::all;
+
+	//put the VREM parameters in CB
+	bool  result = device->create_pipeline_layout(1, &newParams, &shared_data.saved_pipeline_layout_CB[layout_number]);
+	//logs
+	if (result) log_create_CBlayout(CB_name, layout_number);
+	else log_error_creating_CBlayout(CB_name, layout_number);
+}
+
 // *******************************************************************************************************
 /// read_Constant_buffer()
 /// <summary>

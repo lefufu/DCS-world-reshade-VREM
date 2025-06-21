@@ -55,7 +55,7 @@
 using namespace reshade::api;
 
 extern "C" __declspec(dllexport) const char *NAME = "DCS VREM";
-extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v9.3";
+extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v9.4c";
 
 // ***********************************************************************************************************************
 // definition of all shader of the mod (whatever feature selected in GUI)
@@ -73,6 +73,8 @@ std::unordered_map<uint32_t, Shader_Definition> shader_by_hash =
 	// to start spying texture for depthStencil (Vs associated with global illumination PS)
 	// and inject modified CB CperFrame
 	{ 0x4DDC4917, Shader_Definition(action_log | action_injectCB, Feature::GetStencil, L"", 0) },
+	{ 0x57D037A0, Shader_Definition(action_injectCB, Feature::Sky, L"", 0) },
+	// { 0x4DDC4917, Shader_Definition(action_log , Feature::GetStencil, L"", 0) },
 	// global PS for all changes
 	//{ 0xBAF1E52F, Shader_Definition(action_replace | action_injectText | action_log, Feature::Global, L"global_PS_2.cso", 0) },
 	{ 0xBAF1E52F, Shader_Definition(action_replace | action_injectText, Feature::Global, L"global_PS_2.cso", 0) },
@@ -195,6 +197,8 @@ static void on_init_pipeline_layout(reshade::api::device* device, const uint32_t
 			//index should be 2 for CB in DX11, but let's get it dynamically. Finally Not used...
 			shared_data.CBIndex = paramIndex;
 
+			/*
+
 			// create a new pipeline_layout for VREM constant buffer to be updated by push_constant(), cb number defined in CBINDEX (in mod_injection.h)
 			// pipeline_layout_param
 			// uint32_t 	binding 			OpenGL uniform buffer binding index. 
@@ -212,11 +216,14 @@ static void on_init_pipeline_layout(reshade::api::device* device, const uint32_t
 			newParams.push_constants.visibility = reshade::api::shader_stage::all;
 
 			//put the VREM parameters in CB
-			bool  result = device->create_pipeline_layout(1, &newParams, &shared_data.saved_pipeline_layout_CB);
+			bool  result = device->create_pipeline_layout(1, &newParams, &shared_data.saved_pipeline_layout_CB[0]);
 			//logs
 			if (result) log_create_CBlayout("VREM Cbuffer");
 			else log_error_creating_CBlayout("VREM Cbuffer");
-
+			*/
+			// create pipeline layout for injecting VREM parameters in CB CBINDEX
+			create_modified_CB_layout(device, CBINDEX, "VREM Cbuffer", MOD_CB_NB);
+			/*
 			// create a new pipeline_layout for CPerFrame constant buffer to be modified by push_constant(), cb number defined in CPERFRAME_INDEX (in mod_injection.h)
 			// 
 			reshade::api::pipeline_layout_param newParams2;
@@ -232,6 +239,9 @@ static void on_init_pipeline_layout(reshade::api::device* device, const uint32_t
 			//logs
 			if (result) log_create_CBlayout("CperFrame");
 			else log_error_creating_CBlayout("CperFrame");
+			*/
+			// create pipeline layout for injecting CperFrame parameters in CB CPERFRAME_INDEX
+			create_modified_CB_layout(device, CPERFRAME_INDEX, "CperFrame", CPERFRAME_CB_NB);
 		}
 
 		else if (param.push_descriptors.type == descriptor_type::shader_resource_view)
@@ -420,31 +430,60 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 
 			}	
 
-
+			
 			if (it->second.action & action_injectCB)
 			{
 				// inject constant buffer other than the one containing VREM setting
 				
-				if (it->second.feature == Feature::GetStencil && shared_data.CPerFrame_copied)
+				//CPERFRAME for global illumination :  need to modify value
+				if (it->second.feature == Feature::GetStencil && shared_data.CB_copied[CPERFRAME_CB_NB])
 				{
+
+					//modify value
+					shared_data.dest_CB_array[CPERFRAME_CB_NB][FOG_INDEX] = shared_data.orig_values[CPERFRAME_CB_NB][GATMINTENSITY_SAVE] * shared_data.cb_inject_values.hazeReduction;
 					// use push constant() to push CPerFrame 
 					// pipeline_layout for CB initialized in init_pipeline() once for all
 					commandList->push_constants(
 						shader_stage::all,
-						shared_data.saved_pipeline_layout_CPerFrame,
+						shared_data.saved_pipeline_layout_CB[CPERFRAME_CB_NB],
 						0,
-						0, // injecting only the haze value to be updated (so first = FOG_INDEX) is making the game crash...
+						0, // can not injecting only the haze value to be updated (so first = FOG_INDEX) because it is making the game crash...
 						CPERFRAME_SIZE,
-						&shared_data.dest_CB_CPerFrame
+						&shared_data.dest_CB_array[CPERFRAME_CB_NB]
 					);
 
-					log_CB_injected("CPerFrame");
+					log_CB_injected("CPerFrame updated");
+
+					// last_replaced_shader = pipelineHandle.handle;
+					last_feature = it->second.feature;
+
+				}
+
+				//CPERFRAME for other shaders :  need to keep orig. value
+				if (it->second.feature == Feature::Sky && shared_data.CB_copied[CPERFRAME_CB_NB])
+				{
+
+					//modify value
+					shared_data.dest_CB_array[CPERFRAME_CB_NB][FOG_INDEX] = shared_data.orig_values[CPERFRAME_CB_NB][GATMINTENSITY_SAVE];
+					// use push constant() to push CPerFrame 
+					// pipeline_layout for CB initialized in init_pipeline() once for all
+					commandList->push_constants(
+						shader_stage::all,
+						shared_data.saved_pipeline_layout_CB[CPERFRAME_CB_NB],
+						0,
+						0, 
+						CPERFRAME_SIZE,
+						&shared_data.dest_CB_array[CPERFRAME_CB_NB]
+					);
+
+					log_CB_injected("CPerFrame original");
 
 					// last_replaced_shader = pipelineHandle.handle;
 					last_feature = it->second.feature;
 
 				}
 			}
+			
 		
 			// shader is to be handled
 			// if (it->second.action & action_replace)
@@ -460,7 +499,7 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 					// pipeline_layout for CB initialized in init_pipeline() once for all
 					commandList->push_constants(
 						shader_stage::all,
-						shared_data.saved_pipeline_layout_CB,
+						shared_data.saved_pipeline_layout_CB[MOD_CB_NB],
 						0,
 						0,
 						CBSIZE,
@@ -780,10 +819,13 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 	// CB cPerFrame is generated once at the beginning of the frame, it is not needed to use a dedicated shader to track the push_descriptor command
 	// copy the CB cPerFrame into the variable into shared_data.dest_CB_CPerFrame and modify it
 	//only if needed
-	if (shared_data.cb_inject_values.hazeReduction != 1.0 && shared_data.misc_feature && !shared_data.CPerFrame_copied)
+	// if (shared_data.cb_inject_values.hazeReduction != 1.0 && shared_data.misc_feature && !shared_data.CPerFrame_copied)
+	if (shared_data.cb_inject_values.hazeReduction != 1.0 && shared_data.misc_feature)
 	{
-		if (update.type == descriptor_type::constant_buffer && update.binding == 6 && update.count == 1 && stages == shader_stage::pixel)
+		if (update.type == descriptor_type::constant_buffer && update.binding == CPERFRAME_INDEX && update.count == 1 && stages == shader_stage::pixel)
 		{
+			
+			/*
 			bool error = read_constant_buffer(cmd_list, update, "CPerFrame", 0, shared_data.dest_CB_CPerFrame, CPERFRAME_SIZE);
 			if (!error)
 			{
@@ -791,6 +833,40 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 				shared_data.dest_CB_CPerFrame[FOG_INDEX] = shared_data.dest_CB_CPerFrame[FOG_INDEX] * shared_data.cb_inject_values.hazeReduction;
 				shared_data.CPerFrame_copied = true;
 			}
+			*/
+			bool error = read_constant_buffer(cmd_list, update, "CPerFrame", 0, shared_data.dest_CB_array[CPERFRAME_CB_NB], CPERFRAME_SIZE);
+			if (!error)
+			{
+			
+				// copy original value for gAtmIntensity
+				shared_data.orig_values[CPERFRAME_CB_NB][GATMINTENSITY_SAVE] = shared_data.dest_CB_array[CPERFRAME_CB_NB][FOG_INDEX];
+				shared_data.CB_copied[CPERFRAME_CB_NB] = true;
+			}
+
+
+			// inject constant buffer other than the one containing VREM setting
+			/*
+			//if (it->second.feature == Feature::GetStencil && shared_data.CPerFrame_copied)
+			{
+				// use push constant() to push CPerFrame 
+				// pipeline_layout for CB initialized in init_pipeline() once for all
+				cmd_list->push_constants(
+					shader_stage::all,
+					shared_data.saved_pipeline_layout_CPerFrame,
+					0,
+					0, // injecting only the haze value to be updated (so first = FOG_INDEX) is making the game crash...
+					CPERFRAME_SIZE,
+					&shared_data.dest_CB_CPerFrame
+				);
+
+				log_CB_injected("CPerFrame");
+
+				// last_replaced_shader = pipelineHandle.handle;
+				// last_feature = it->second.feature;
+
+			}
+			*/
+
 		}
 	}
 }

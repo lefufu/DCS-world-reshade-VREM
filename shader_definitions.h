@@ -104,7 +104,10 @@ enum class Feature : uint32_t
 	// Testing : for testing purpose
 	Testing = 20,
 	// VS of 2nd global color change PS
-	VS_global2 = 21
+	VS_global2 = 21,
+	// PS of sky to not modify gAtmInstensity
+	Sky = 22
+
 };
 
 

@@ -98,9 +98,6 @@ struct technique_trace {
 // should be 2x per eye x 2 for quad view + margin. No added view/resources for AA   
 #define MAXVIEWSPERDRAW 6
 
-// index of gAtmIntensity in the float array mapped for cPerFrame (cb6) 
-#define FOG_INDEX 11
-#define CPERFRAME_SIZE 152 //in float
 
 // a class to host all global variables shared between reshade on_* functions. 
 // 
@@ -116,12 +113,17 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	uint64_t cb_inject_size = CBSIZE;
 
 	// DX11 pipeline_layout for VREM CB containing parameters
-	reshade::api::pipeline_layout saved_pipeline_layout_CB;
+	reshade::api::pipeline_layout saved_pipeline_layout_CB[NUMBER_OF_MODIFIED_CB];
 
 	// DX11 pipeline_layout for DCS CB cPerFrame that need to be modified
-	reshade::api::pipeline_layout saved_pipeline_layout_CPerFrame;
-	float dest_CB_CPerFrame[CPERFRAME_SIZE+16]; // margin in case of...
-	bool CPerFrame_copied = false;
+	// reshade::api::pipeline_layout saved_pipeline_layout_CPerFrame;
+	// float dest_CB_CPerFrame[CPERFRAME_SIZE+16]; // margin in case of...
+	// bool CPerFrame_copied = false;
+
+	// DX11 pipeline_layout for DCS CB that need to be modified
+	float dest_CB_array[NUMBER_OF_MODIFIED_CB][MAX_CBSIZE];
+	bool CB_copied[NUMBER_OF_MODIFIED_CB];
+	float orig_values[NUMBER_OF_MODIFIED_CB][MAX_OF_MODIFIED_VALUES];
 
 	// DX11 pipeline_layout for ressource view
 	reshade::api::pipeline_layout saved_pipeline_layout_RV;

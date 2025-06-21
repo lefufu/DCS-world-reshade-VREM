@@ -75,9 +75,9 @@ extern void log_init_pipeline(pipeline pipelineHandle, pipeline_layout layout, u
 
 extern void log_init_pipeline_params(const uint32_t paramCount, const reshade::api::pipeline_layout_param* params, reshade::api::pipeline_layout layout, uint32_t paramIndex, reshade::api::pipeline_layout_param param);
 
-extern void log_create_CBlayout(std::string CBName);
+extern void log_create_CBlayout(std::string CBName, int CB_Number);
 
-extern void log_error_creating_CBlayout(std::string CBName);
+extern void log_error_creating_CBlayout(std::string CBName, int CB_number);
 
 extern void log_reset_tracking();
 
@@ -136,3 +136,5 @@ extern void log_preprocessor(std::string name, float targetValue, bool update, b
 extern void log_susperSamping();
 
 extern int default_preprocessor(effect_runtime* runtime, std::string name, float defaultValue, bool update, short int display_to_use);
+
+extern void create_modified_CB_layout(reshade::api::device* device, int cbindex, std::string CB_name, int layout_number);

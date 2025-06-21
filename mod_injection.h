@@ -43,11 +43,27 @@
 static const int CBINDEX = 13;
 static const int CPERFRAME_INDEX = 6;
 
+// to use for all tables related to CB (pipeline_layout,...)
+static const int MOD_CB_NB = 0;
+static const int CPERFRAME_CB_NB = 1;
+static const int NUMBER_OF_MODIFIED_CB = 2;
+static const int MAX_OF_MODIFIED_VALUES = 2;
+
+
+// index of gAtmIntensity in the float array mapped for cPerFrame (cb6) 
+#define FOG_INDEX 11
+#define CPERFRAME_SIZE 152 //in float
+// only one value to save for CPerFrame
+static const int  GATMINTENSITY_SAVE = 0;
+
 // RV number to be injected in the shaders
 static const int RVINDEX = 3;
 
 // size of the constant buffer containing all mod parameters, to be injected in shaders
 static const int CBSIZE = 44;
+
+// maximum size of all CB
+static const int MAX_CBSIZE = 152;
 
 // Must be 32bit aligned
 struct ShaderInjectData {

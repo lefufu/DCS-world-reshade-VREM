@@ -455,7 +455,7 @@ void init_mod_features()
 		}
 
 		// add entrie for CB update in case of Haze activated
-		if (entry.second.feature == Feature::GetStencil && entry.second.action & action_injectCB && shared_data.cb_inject_values.hazeReduction !=1.0 && shared_data.misc_feature)
+		if ((entry.second.feature == Feature::GetStencil || entry.second.feature == Feature::Sky ) && entry.second.action & action_injectCB && shared_data.cb_inject_values.hazeReduction !=1.0 && shared_data.misc_feature)
 		{
 			add_line = true;
 		}

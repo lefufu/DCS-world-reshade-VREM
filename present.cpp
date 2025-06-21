@@ -63,7 +63,8 @@ void intialize_counters()
 	shared_data.track_for_render_target = false;
 
 	// shared_data.render_target_res->copied = false;
-	shared_data.CPerFrame_copied = false;
+	// shared_data.CPerFrame_copied = false;
+	shared_data.CB_copied[CPERFRAME_CB_NB] = false;
 
 	shared_data.last_feature = Feature::Null;
 
