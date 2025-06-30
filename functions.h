@@ -71,7 +71,7 @@ extern void log_destroy_pipeline(reshade::api::pipeline pipeline, std::unordered
 
 extern void log_shader_code_error(pipeline pipelineHandle, uint32_t hash, std::unordered_map<uint32_t, Shader_Definition>::iterator it);
 
-extern void log_init_pipeline(pipeline pipelineHandle, pipeline_layout layout, uint32_t subobjectCount, const pipeline_subobject* subobjects, uint32_t hash, std::unordered_map<uint32_t, Shader_Definition>::iterator it);
+extern void log_init_pipeline(pipeline pipelineHandle, pipeline_layout layout, uint32_t subobjectCount, const pipeline_subobject* subobjects, uint32_t i, uint32_t hash, std::unordered_map<uint32_t, Shader_Definition>::iterator it);
 
 extern void log_init_pipeline_params(const uint32_t paramCount, const reshade::api::pipeline_layout_param* params, reshade::api::pipeline_layout layout, uint32_t paramIndex, reshade::api::pipeline_layout_param param);
 
@@ -93,7 +93,7 @@ extern void log_invalid_subobjectCount(pipeline pipelineHandle);
 
 extern void log_shader_code_error_oncreate(uint32_t hash, std::unordered_map<uint32_t, Shader_Definition>::iterator it);
 
-extern void log_replaced_shader_code(uint32_t hash, std::unordered_map<uint32_t, Shader_Definition>::iterator it);
+extern void log_replaced_shader_code(uint32_t hash, std::unordered_map<uint32_t, Shader_Definition>::iterator it, uint32_t newHash);
 
 extern void log_renderTarget_depth(uint32_t count, const resource_view* rtvs, resource_view dsv, command_list* cmd_list);
 
@@ -135,6 +135,12 @@ extern void log_preprocessor(std::string name, float targetValue, bool update, b
 
 extern void log_susperSamping();
 
+extern void log_error_loading_shader_code(std::string);
+
 extern int default_preprocessor(effect_runtime* runtime, std::string name, float defaultValue, bool update, short int display_to_use);
 
 extern void create_modified_CB_layout(reshade::api::device* device, int cbindex, std::string CB_name, int layout_number);
+
+extern void print_pipeline_by_hash(const std::unordered_map<uint32_t, Shader_Definition>& map);
+
+extern void print_pipeline_by_handle(const std::unordered_map<uint64_t, Shader_Definition>& map);

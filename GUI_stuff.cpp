@@ -320,7 +320,8 @@ void displaySettings(reshade::api::effect_runtime* runtime)
 		ImGui::SliderFloat("Haze strenght", &shared_data.cb_inject_values.hazeReduction, 0.0f, 1.0f, "Strenght: %.2f");
 
 		// enable/disable reflection removal for A10C
-		ImGui::SliderFloat("Remove A10C instr. reflect", &shared_data.cb_inject_values.noReflect, 0.0f, 1.0f, "Active: %1.0f");
+		// ImGui::SliderFloat("Remove A10C instr. reflect", &shared_data.cb_inject_values.noReflect, 0.0f, 1.0f, "Active: %1.0f");
+		ImGui::DragFloat("Dynamic reflection factor (A10C, AH64, F4E + ?)", &shared_data.cb_inject_values.gCockpitIBL, 0.01f);
 
 		// set NVG size
 		ImGui::SliderFloat("NVG size", &shared_data.cb_inject_values.NVGSize, 0.9f, 3.0f, "Scale: %.2f");

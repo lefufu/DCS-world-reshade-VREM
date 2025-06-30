@@ -42,19 +42,34 @@
 // CB number to be injected in the shaders
 static const int CBINDEX = 13;
 static const int CPERFRAME_INDEX = 6;
+static const int DEF_UNIFORMS_INDEX = 0; 
 
 // to use for all tables related to CB (pipeline_layout,...)
 static const int MOD_CB_NB = 0;
 static const int CPERFRAME_CB_NB = 1;
+// too many calls for VS of instrument=> cancelled 
+// static const int DEF_UNIFORMS_CB_NB = 2;
 static const int NUMBER_OF_MODIFIED_CB = 2;
-static const int MAX_OF_MODIFIED_VALUES = 2;
+static const int MAX_OF_MODIFIED_VALUES = 3;
 
-
+// index of values to change in CB
 // index of gAtmIntensity in the float array mapped for cPerFrame (cb6) 
-#define FOG_INDEX 11
+#define FOG_INDEX 11 // c2.w => 2*4 + 3 = 11
+// #define OPACITY_INDEX 55 // 13.z => 13*4+3 = 55
+#define GCOCKPITIBL_INDEX_X 30*4
+#define GCOCKPITIBL_INDEX_Y 30*4+1
+
+// size of CB
 #define CPERFRAME_SIZE 152 //in float
+// #define DEF_UNIFORM_SIZE 68 //in float
+
 // only one value to save for CPerFrame
 static const int  GATMINTENSITY_SAVE = 0;
+static const int  GCOCKPITIBL_X_SAVE = 1;
+static const int  GCOCKPITIBL_Y_SAVE = 1;
+
+// only one value to save for def_uniform
+// static const int  OPACITY_SAVE = 0;
 
 // RV number to be injected in the shaders
 static const int RVINDEX = 3;
@@ -109,7 +124,7 @@ struct ShaderInjectData {
 	float NVGYPos; //9.w
 	float TADSNight; //10.x
 	float TADSDay; //10.y
-	float dunmmy1; //10.z
+	float gCockpitIBL; //10.z
 	float dunmmy2; //10.w
 };
 

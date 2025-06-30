@@ -437,7 +437,7 @@ void log_shader_code_error_oncreate(uint32_t hash, std::unordered_map<uint32_t, 
 /// </summary>
 /// 
 /// 
-void log_init_pipeline(pipeline pipelineHandle, pipeline_layout layout, uint32_t subobjectCount, const pipeline_subobject* subobjects, uint32_t hash, std::unordered_map<uint32_t, Shader_Definition>::iterator it)
+void log_init_pipeline(pipeline pipelineHandle, pipeline_layout layout, uint32_t subobjectCount, const pipeline_subobject* subobjects, uint32_t i, uint32_t hash, std::unordered_map<uint32_t, Shader_Definition>::iterator it)
 {
 	if (debug_flag || FORCE_LOG)
 	{
@@ -446,7 +446,8 @@ void log_init_pipeline(pipeline pipelineHandle, pipeline_layout layout, uint32_t
 		s << "onInitPipeline, pipelineHandle: " << (void*)pipelineHandle.handle << "), ";
 		s << "layout =  " << reinterpret_cast<void*>(layout.handle) << " ;";
 		s << "subobjectCount =  " << subobjectCount << " ;";
-		s << "Type = " << to_string(subobjects[0].type) << " ;";
+		s << "index =  " << i << " ;";
+		s << "Type = " << to_string(subobjects[i].type) << " ;";
 		s << "hash to handle = " << std::hex << hash << " ;";
 		s << "Action = " << to_string(it->second.action) << "; Feature = " << to_string(it->second.feature) << "; fileName =" << to_string(it->second.replace_filename) << ";";
 
@@ -611,7 +612,7 @@ void log_invalid_subobjectCount(pipeline pipelineHandle)
 /// </summary>
 /// 
 /// 
-void log_replaced_shader_code(uint32_t hash, std::unordered_map<uint32_t, Shader_Definition>::iterator it)
+void log_replaced_shader_code(uint32_t hash, std::unordered_map<uint32_t, Shader_Definition>::iterator it, uint32_t newHash)
 {
 
 	if (debug_flag || FORCE_LOG)
@@ -619,7 +620,7 @@ void log_replaced_shader_code(uint32_t hash, std::unordered_map<uint32_t, Shader
 		std::stringstream s;
 
 		s << "onCreatePipeline, hash to handle = " << std::hex << hash << " ;";
-		s << "shader code replaced by :" << to_string(it->second.replace_filename) << ";";
+		s << "shader code replaced by :" << to_string(it->second.replace_filename) << ", new hash =" << newHash  <<";";
 
 		reshade::log::message(reshade::log::level::info, s.str().c_str());
 	}
@@ -1070,5 +1071,69 @@ void log_susperSamping()
 		std::stringstream s;
 		s << "OnPresent : MSAAxfactor = " << shared_data.MSAAxfactor << ", MSAAxfactor = " << shared_data.MSAAyfactor << ", StencilBufferX =  " << shared_data.renderTargetX << ", render_target_vie width =  " << shared_data.render_target_view[0].width << ", SSfactor =" << shared_data.SSfactor << " ***";
 		reshade::log::message(reshade::log::level::info, s.str().c_str());
+	}
+}
+
+// *******************************************************************************************************
+/// <summary>
+/// Log error when loading shader code
+/// 
+void log_error_loading_shader_code(std::string message)
+{
+	if (debug_flag || FORCE_LOG)
+	{
+		std::stringstream s;
+		s << "**** Error when loading shader code : " << message << " !!! ***";
+		reshade::log::message(reshade::log::level::error, s.str().c_str());
+	}
+}
+
+// *******************************************************************************************************
+/// <summary>
+/// display  pipeline_by_hash content
+/// 
+void print_pipeline_by_hash(const std::unordered_map<uint32_t, Shader_Definition>& map)
+{
+	if (debug_flag && flag_capture)
+	{
+		reshade::log::message(reshade::log::level::info, "pipeline_by_hash:");
+		for (const auto& [hash, def] : map)
+		{
+			std::stringstream s;
+			s << "Hash: " << std::hex << hash
+				<< ", Action: " << to_string(def.action)
+				<< ", Feature: " << to_string(def.feature)
+				<< ", Draw Count: " << def.draw_count
+				<< ", Replace File: " << to_string(def.replace_filename)
+				<< ", Pipeline Handle: " << std::hex << def.substitute_pipeline.handle
+				<< ", Hash: " << std::hex << def.hash;
+
+			reshade::log::message(reshade::log::level::error, s.str().c_str());
+		}
+	}
+}
+
+// *******************************************************************************************************
+/// <summary>
+/// display  pipeline_by_handle content
+/// 
+void print_pipeline_by_handle(const std::unordered_map<uint64_t, Shader_Definition>& map)
+{
+	if (debug_flag && flag_capture)
+	{
+		reshade::log::message(reshade::log::level::info, "pipeline_by_handle:");
+		for (const auto& [handle, def] : map)
+		{
+			std::stringstream s;
+			s << "handle: " << std::hex << handle
+				<< ", Action: " << to_string(def.action)
+				<< ", Feature: " << to_string(def.feature)
+				<< ", Draw Count: " << def.draw_count
+				<< ", Replace File: " << to_string(def.replace_filename)
+				<< ", Cloned Pipeline Handle: " << std::hex << def.substitute_pipeline.handle
+				<< ", Hash: " << std::hex << def.hash;
+
+			reshade::log::message(reshade::log::level::error, s.str().c_str());
+		}
 	}
 }

@@ -65,6 +65,7 @@ void intialize_counters()
 	// shared_data.render_target_res->copied = false;
 	// shared_data.CPerFrame_copied = false;
 	shared_data.CB_copied[CPERFRAME_CB_NB] = false;
+	// shared_data.track_for_CB[DEF_UNIFORMS_CB_NB] = false;
 
 	shared_data.last_feature = Feature::Null;
 
@@ -273,6 +274,12 @@ void on_present(effect_runtime* runtime)
 			if (debug_flag)
 			{
 				reshade::log::message(reshade::log::level::info, "--- Frame ---");
+
+				//display pipeline_by_hash
+				print_pipeline_by_hash(pipeline_by_hash);
+
+				//display shader by hash
+				print_pipeline_by_handle(pipeline_by_handle);
 			}
 
 		}

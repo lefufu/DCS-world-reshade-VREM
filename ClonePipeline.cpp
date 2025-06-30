@@ -139,7 +139,7 @@ void clone_pipeline(
                 s.str("");
                 s.clear();
             }
-        }
+         }
         else
         {
             // log error

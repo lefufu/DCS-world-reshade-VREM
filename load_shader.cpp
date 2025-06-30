@@ -95,7 +95,10 @@ bool load_shader_code(std::vector<std::vector<uint8_t>>& shaderCode, wchar_t fil
 bool load_shader_code_crosire(device_api device_type, shader_desc& desc, std::vector<std::vector<uint8_t>>& data_to_delete)
 {
 	if (desc.code_size == 0)
+	{
+		log_error_loading_shader_code("code size zero");
 		return false;
+	}
 
 	uint32_t shader_hash = compute_crc32(static_cast<const uint8_t*>(desc.code), desc.code_size);
 	std::unordered_map<uint32_t, Shader_Definition>::iterator it = pipeline_by_hash.find(shader_hash);
@@ -117,7 +120,10 @@ bool load_shader_code_crosire(device_api device_type, shader_desc& desc, std::ve
 
 			// Check if a replacement file for this shader hash exists and if so, overwrite the shader code with its contents
 			if (!std::filesystem::exists(replace_path))
+			{
+				log_error_loading_shader_code("file not found");
 				return false;
+			}
 
 			std::ifstream file(replace_path, std::ios::binary);
 			file.seekg(0, std::ios::end);
@@ -133,16 +139,25 @@ bool load_shader_code_crosire(device_api device_type, shader_desc& desc, std::ve
 
 			//update hash and pipeline_by_hash
 			uint32_t new_shader_hash = compute_crc32(static_cast<const uint8_t*>(desc.code), desc.code_size);
-			pipeline_by_hash.emplace(
+			Shader_Definition def = Shader_Definition(it->second.action,
+				it->second.feature,
+				it->second.replace_filename,
+				it->second.draw_count);
+
+			def.hash = new_shader_hash;
+			
+			/*pipeline_by_hash.emplace(
 				new_shader_hash,
 				Shader_Definition(it->second.action,
 					it->second.feature,
 					it->second.replace_filename,
 					it->second.draw_count)
 			);
-			pipeline_by_hash.erase(shader_hash);
+			*/
+			pipeline_by_hash.emplace(new_shader_hash, def);
+			// pipeline_by_hash.erase(shader_hash);
 
-			log_replaced_shader_code(shader_hash, it);
+			log_replaced_shader_code(shader_hash, it, new_shader_hash);
 			return true;
 		}
 		else return false;

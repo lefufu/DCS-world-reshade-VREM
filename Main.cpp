@@ -55,7 +55,7 @@
 using namespace reshade::api;
 
 extern "C" __declspec(dllexport) const char *NAME = "DCS VREM";
-extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v9.4c";
+extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v9.4";
 
 // ***********************************************************************************************************************
 // definition of all shader of the mod (whatever feature selected in GUI)
@@ -100,8 +100,12 @@ std::unordered_map<uint32_t, Shader_Definition> shader_by_hash =
 	{ 0x886E31F2, Shader_Definition(action_identify | action_log, Feature::VRMode, L"", 0) },
 	// VS drawing cockpit parts to define if view is in welcome screen or map
 	{ 0xA337E177, Shader_Definition(action_identify, Feature::mapMode, L"", 0) },
-	//  ** A10C cockpit instrument **
-	{ 0xC9F547A7, Shader_Definition(action_replace , Feature::NoReflect , L"A10C_instrument.cso", 0) },
+	//  ** reflection on instrument, done by GCOCKPITIBL of CperFrame **
+	// A10C PS 
+	{ 0xC9F547A7, Shader_Definition(action_injectCB , Feature::NoReflect , L"", 0) },
+	// AH64 + F4 PS 
+	{ 0x7BB48FB, Shader_Definition(action_injectCB , Feature::NoReflect , L"", 0) },
+	
 	//  ** NVG **
 	{ 0xE65FAB66, Shader_Definition(action_replace , Feature::NVG , L"NVG_extPS.cso", 0) },
 	//  ** identify render target ** (VS associated with first global PS)
@@ -144,6 +148,7 @@ static thread_local std::vector<std::vector<uint8_t>> s_data_to_delete;
 static bool on_create_pipeline(device* device, pipeline_layout, uint32_t subobject_count, const pipeline_subobject* subobjects)
 {
 	bool replaced_stages = false;
+	bool status = false;
 	const device_api device_type = device->get_api();
 
 	// Go through all shader stages that are in this pipeline and potentially replace the associated shader code
@@ -152,10 +157,19 @@ static bool on_create_pipeline(device* device, pipeline_layout, uint32_t subobje
 		switch (subobjects[i].type)
 		{
 		case pipeline_subobject_type::vertex_shader:
-		case pipeline_subobject_type::pixel_shader:
-		case pipeline_subobject_type::compute_shader:
 		case pipeline_subobject_type::hull_shader:
 		case pipeline_subobject_type::domain_shader:
+		case pipeline_subobject_type::geometry_shader:
+		case pipeline_subobject_type::pixel_shader:
+		case pipeline_subobject_type::compute_shader:
+		case pipeline_subobject_type::amplification_shader:
+		case pipeline_subobject_type::mesh_shader:
+		case pipeline_subobject_type::raygen_shader:
+		case pipeline_subobject_type::any_hit_shader:
+		case pipeline_subobject_type::closest_hit_shader:
+		case pipeline_subobject_type::miss_shader:
+		case pipeline_subobject_type::intersection_shader:
+		case pipeline_subobject_type::callable_shader:
 			replaced_stages |= load_shader_code_crosire(device_type, *static_cast<shader_desc*>(subobjects[i].data), s_data_to_delete);
 			break;
 		}
@@ -197,51 +211,14 @@ static void on_init_pipeline_layout(reshade::api::device* device, const uint32_t
 			//index should be 2 for CB in DX11, but let's get it dynamically. Finally Not used...
 			shared_data.CBIndex = paramIndex;
 
-			/*
-
-			// create a new pipeline_layout for VREM constant buffer to be updated by push_constant(), cb number defined in CBINDEX (in mod_injection.h)
-			// pipeline_layout_param
-			// uint32_t 	binding 			OpenGL uniform buffer binding index. 
-			// uint32_t 	dx_register_index	D3D10/D3D11/D3D12 constant buffer register index. 
-			// uint32_t 	dx_register_space	D3D12 constant buffer register space. 
-			// uint32_t 	count				Number of constants in this range (in 32-bit values). 
-			// shader_stage visibility			Shader pipeline stages that can make use of the constants in this range. 
-
-			reshade::api::pipeline_layout_param newParams;
-			newParams.type = reshade::api::pipeline_layout_param_type::push_constants;
-			newParams.push_constants.binding = 0;
-			newParams.push_constants.count = 1;
-			newParams.push_constants.dx_register_index = CBINDEX;
-			newParams.push_constants.dx_register_space = 0;
-			newParams.push_constants.visibility = reshade::api::shader_stage::all;
-
-			//put the VREM parameters in CB
-			bool  result = device->create_pipeline_layout(1, &newParams, &shared_data.saved_pipeline_layout_CB[0]);
-			//logs
-			if (result) log_create_CBlayout("VREM Cbuffer");
-			else log_error_creating_CBlayout("VREM Cbuffer");
-			*/
 			// create pipeline layout for injecting VREM parameters in CB CBINDEX
 			create_modified_CB_layout(device, CBINDEX, "VREM Cbuffer", MOD_CB_NB);
-			/*
-			// create a new pipeline_layout for CPerFrame constant buffer to be modified by push_constant(), cb number defined in CPERFRAME_INDEX (in mod_injection.h)
-			// 
-			reshade::api::pipeline_layout_param newParams2;
-			newParams2.type = reshade::api::pipeline_layout_param_type::push_constants;
-			newParams2.push_constants.binding = 0;
-			newParams2.push_constants.count = 1;
-			newParams2.push_constants.dx_register_index = CPERFRAME_INDEX;
-			newParams2.push_constants.dx_register_space = 0;
-			newParams2.push_constants.visibility = reshade::api::shader_stage::all;
-
-			//put the CPerFrame parameters in CB
-			result = device->create_pipeline_layout(1, &newParams2, &shared_data.saved_pipeline_layout_CPerFrame);
-			//logs
-			if (result) log_create_CBlayout("CperFrame");
-			else log_error_creating_CBlayout("CperFrame");
-			*/
+			
 			// create pipeline layout for injecting CperFrame parameters in CB CPERFRAME_INDEX
 			create_modified_CB_layout(device, CPERFRAME_INDEX, "CperFrame", CPERFRAME_CB_NB);
+
+			// create pipeline layout for injecting def_uniforms parameters in CB DEF_UNIFORMS_INDEX
+			// create_modified_CB_layout(device, DEF_UNIFORMS_INDEX, "def_uniforms", DEF_UNIFORMS_CB_NB);
 		}
 
 		else if (param.push_descriptors.type == descriptor_type::shader_resource_view)
@@ -276,70 +253,84 @@ static void on_init_pipeline(device* device, pipeline_layout layout, uint32_t su
 
 	// It is assumed all worthly shaders are in pipeline of only 1 object in DCS
 	// only few shaders are to be modded
-	if (subobjectCount == 1)
+	for (uint32_t i = 0; i < subobjectCount; i++)
 	{
-		switch (subobjects[0].type)
+		//if (subobjectCount == 1)
 		{
-		case pipeline_subobject_type::vertex_shader:
-		case pipeline_subobject_type::pixel_shader:
-		case pipeline_subobject_type::compute_shader:
-		case pipeline_subobject_type::hull_shader:
-		case pipeline_subobject_type::domain_shader:
-			//compute has and see if it is declared in shader mod list
-			uint32_t hash = calculateShaderHash(subobjects[0].data);
-			// auto it = shaders_by_hash.find(hash);
-			std::unordered_map<uint32_t, Shader_Definition>::iterator it = pipeline_by_hash.find(hash);
+			switch (subobjects[i].type)
+			{
+			case pipeline_subobject_type::vertex_shader:
+			case pipeline_subobject_type::hull_shader:
+			case pipeline_subobject_type::domain_shader:
+			case pipeline_subobject_type::geometry_shader:
+			case pipeline_subobject_type::pixel_shader:
+			case pipeline_subobject_type::compute_shader:
+			case pipeline_subobject_type::amplification_shader:
+			case pipeline_subobject_type::mesh_shader:
+			case pipeline_subobject_type::raygen_shader:
+			case pipeline_subobject_type::any_hit_shader:
+			case pipeline_subobject_type::closest_hit_shader:
+			case pipeline_subobject_type::miss_shader:
+			case pipeline_subobject_type::intersection_shader:
+			case pipeline_subobject_type::callable_shader:
+				//compute has and see if it is declared in shader mod list
+				uint32_t hash = calculateShaderHash(subobjects[i].data);
 
-			if (it != pipeline_by_hash.end()) {
-				// shader is to be handled
-				// add the shader entry in the map by pipeline handle
+				// auto it = shaders_by_hash.find(hash);
+				std::unordered_map<uint32_t, Shader_Definition>::iterator it = pipeline_by_hash.find(hash);
 
-				//log
-				log_init_pipeline(pipelineHandle, layout, subobjectCount, subobjects, hash, it);
+				if (it != pipeline_by_hash.end()) {
+					// shader is to be handled
+					// add the shader entry in the map by pipeline handle
 
-				//create the entry for handling shader by pipeline instead of Hash
-				Shader_Definition newShader(it->second.action, it->second.feature, it->second.replace_filename, it->second.draw_count);
+					//log
+					log_init_pipeline(pipelineHandle, layout, subobjectCount, subobjects, i, hash, it);
 
-				if (it->second.action & action_replace_bind )
-				{
-					// either replace the shader code or clone the existing pipeline and load the modded shader in it
-					//load shader code
-					bool status = load_shader_code(shader_code, it->second.replace_filename);
-					if (!status) {
-						// log error
-						log_shader_code_error(pipelineHandle, hash, it);
-					}
-					else
+					//create the entry for handling shader by pipeline instead of Hash
+					Shader_Definition newShader(it->second.action, it->second.feature, it->second.replace_filename, it->second.draw_count);
+					newShader.hash = hash;
+
+					if (it->second.action & action_replace_bind)
 					{
-						// no error, clone pipeline
-						//keep hash for debug messages
-						newShader.hash = hash;
-						// if not done, clone the pipeline to have a new version with fixed color for PS
-						clone_pipeline(device, layout, subobjectCount, subobjects, pipelineHandle, shader_code, &newShader);
+						// either replace the shader code or clone the existing pipeline and load the modded shader in it
+						//load shader code
+						bool status = load_shader_code(shader_code, it->second.replace_filename);
+						if (!status) {
+							// log error
+							log_shader_code_error(pipelineHandle, hash, it);
+						}
+						else
+						{
+							// no error, clone pipeline
+							//keep hash for debug messages
+							newShader.hash = hash;
+							// if not done, clone the pipeline to have a new version with fixed color for PS
+							clone_pipeline(device, layout, subobjectCount, subobjects, pipelineHandle, shader_code, &newShader);
+						}
 					}
+					// setup some global variables according to the feature
+					if (it->second.action & action_identify)
+					{
+						/*
+						// moved to bind as it is not working when VR is set but HMD is off
+						if (it->second.feature == Feature::VRMode)
+						{
+							shared_data.cb_inject_values.VRMode = 1.0;
+						}
+
+						// identify if cockpit VS is used
+						if (it->second.feature == Feature::mapMode)
+						{
+							shared_data.cb_inject_values.mapMode = 0.0;
+						}
+						*/
+					}
+
+					// store new shader to re use it later 
+					pipeline_by_handle.emplace(pipelineHandle.handle, newShader);
 				}
-				// setup some global variables according to the feature
-				if (it->second.action & action_identify)
-				{
-					/*
-					// moved to bind as it is not working when VR is set but HMD is off
-					if (it->second.feature == Feature::VRMode)
-					{
-						shared_data.cb_inject_values.VRMode = 1.0;
-					}
-
-					// identify if cockpit VS is used
-					if (it->second.feature == Feature::mapMode)
-					{
-						shared_data.cb_inject_values.mapMode = 0.0;
-					}
-					*/
-				}
-
-				// store new shader to re use it later 
-				pipeline_by_handle.emplace(pipelineHandle.handle, newShader);
+				break;
 			}
-			break;
 		}
 	}
 	// else log_invalid_subobjectCount(pipelineHandle);
@@ -361,6 +352,17 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 	if ((stages & pipeline_stage::compute_shader) == pipeline_stage::compute_shader) to_process = true;
 	if ((stages & pipeline_stage::hull_shader) == pipeline_stage::hull_shader) to_process = true;
 	if ((stages & pipeline_stage::domain_shader) == pipeline_stage::domain_shader) to_process = true;
+
+	/*
+	if ((debug_flag && flag_capture))
+	{
+		std::stringstream s;
+
+		s << "*** bind_pipeline(" << to_string(stages) << " :  , pipelineHandle: " << (void*)pipelineHandle.handle << ")";
+		reshade::log::message(reshade::log::level::error, s.str().c_str());
+
+	}
+	*/
 
 	if (to_process)
 	{
@@ -435,12 +437,15 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 			{
 				// inject constant buffer other than the one containing VREM setting
 				
-				//CPERFRAME for global illumination :  need to modify value
+				//CPERFRAME/haze for global illumination :  need to modify value for haze but set orgi. value for reflection
 				if (it->second.feature == Feature::GetStencil && shared_data.CB_copied[CPERFRAME_CB_NB])
 				{
 
-					//modify value
+					//modify value for Haze
 					shared_data.dest_CB_array[CPERFRAME_CB_NB][FOG_INDEX] = shared_data.orig_values[CPERFRAME_CB_NB][GATMINTENSITY_SAVE] * shared_data.cb_inject_values.hazeReduction;
+					// other value
+					shared_data.dest_CB_array[CPERFRAME_CB_NB][GCOCKPITIBL_INDEX_X] = shared_data.orig_values[CPERFRAME_CB_NB][GCOCKPITIBL_X_SAVE];
+					shared_data.dest_CB_array[CPERFRAME_CB_NB][GCOCKPITIBL_INDEX_Y] = shared_data.orig_values[CPERFRAME_CB_NB][GCOCKPITIBL_Y_SAVE];
 					// use push constant() to push CPerFrame 
 					// pipeline_layout for CB initialized in init_pipeline() once for all
 					commandList->push_constants(
@@ -452,19 +457,23 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 						&shared_data.dest_CB_array[CPERFRAME_CB_NB]
 					);
 
-					log_CB_injected("CPerFrame updated");
+					log_CB_injected("CPerFrame updated for fog, GCOCKPITIBL default");
 
 					// last_replaced_shader = pipelineHandle.handle;
 					last_feature = it->second.feature;
 
 				}
 
-				//CPERFRAME for other shaders :  need to keep orig. value
+				//CPERFRAME/haze for other shaders :  need to keep orig. value
 				if (it->second.feature == Feature::Sky && shared_data.CB_copied[CPERFRAME_CB_NB])
 				{
 
-					//modify value
+					//modify value for Haze
 					shared_data.dest_CB_array[CPERFRAME_CB_NB][FOG_INDEX] = shared_data.orig_values[CPERFRAME_CB_NB][GATMINTENSITY_SAVE];
+					//other value
+					shared_data.dest_CB_array[CPERFRAME_CB_NB][GCOCKPITIBL_INDEX_X] = shared_data.orig_values[CPERFRAME_CB_NB][GCOCKPITIBL_X_SAVE] ;
+					shared_data.dest_CB_array[CPERFRAME_CB_NB][GCOCKPITIBL_INDEX_Y] = shared_data.orig_values[CPERFRAME_CB_NB][GCOCKPITIBL_Y_SAVE] ;
+
 					// use push constant() to push CPerFrame 
 					// pipeline_layout for CB initialized in init_pipeline() once for all
 					commandList->push_constants(
@@ -482,14 +491,41 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 					last_feature = it->second.feature;
 
 				}
+
+				//CPERFRAME/reflect for instrument
+				if (it->second.feature == Feature::NoReflect && shared_data.CB_copied[CPERFRAME_CB_NB])
+				{
+
+					//modify value
+					shared_data.dest_CB_array[CPERFRAME_CB_NB][GCOCKPITIBL_INDEX_X] = shared_data.orig_values[CPERFRAME_CB_NB][GCOCKPITIBL_X_SAVE] * shared_data.cb_inject_values.gCockpitIBL;
+					shared_data.dest_CB_array[CPERFRAME_CB_NB][GCOCKPITIBL_INDEX_Y] = shared_data.orig_values[CPERFRAME_CB_NB][GCOCKPITIBL_Y_SAVE] * shared_data.cb_inject_values.gCockpitIBL;
+
+					// use push constant() to push CPerFrame 
+					// pipeline_layout for CB initialized in init_pipeline() once for all
+					commandList->push_constants(
+						shader_stage::all,
+						shared_data.saved_pipeline_layout_CB[CPERFRAME_CB_NB],
+						0,
+						0,
+						CPERFRAME_SIZE,
+						&shared_data.dest_CB_array[CPERFRAME_CB_NB]
+					);
+					log_CB_injected("CPerFrame for GCOCKPITIBL");
+
+					// last_replaced_shader = pipelineHandle.handle;
+					last_feature = it->second.feature;
+				}
+				
 			}
 			
 		
 			// shader is to be handled
 			// if (it->second.action & action_replace)
-			if (it->second.action & action_replace || it->second.action & action_replace_bind)
+			if (it->second.action & action_replace || it->second.action & action_replace_bind )
+			// ugly workaround
+			//if (it->second.action & action_replace || it->second.action & action_replace_bind || (it->second.action & action_replace && it->second.feature == Feature::mapMode) )
 			{
-				
+
 				// optimization : do not push CB if same shader is replaced again and no "count" action used for the shader 
 				// possible because CB13 is not used by the game
 				// if (last_replaced_shader != pipelineHandle.handle || it->second.action & action_count)
@@ -527,6 +563,15 @@ static void on_bind_pipeline(command_list* commandList, pipeline_stage stages, p
 			// setup variables regarding the action
 			if (it->second.action & action_log)
 			{
+				/*
+				// VS for A10C instrum : get CB values
+				if (it->second.feature == Feature::NoReflect)
+				{
+					shared_data.track_for_CB[DEF_UNIFORMS_CB_NB] = true;
+					log_start_monitor("def_uniforms CB");
+				}
+				*/
+				
 				// VS for illum : trigger logging of resources (eg texture) or other topics (eg count calls)
 				if (it->second.feature == Feature::GetStencil)
 				{	
@@ -816,12 +861,14 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 
 	}
 
+	//handle CB 
 	// CB cPerFrame is generated once at the beginning of the frame, it is not needed to use a dedicated shader to track the push_descriptor command
-	// copy the CB cPerFrame into the variable into shared_data.dest_CB_CPerFrame and modify it
 	//only if needed
 	// if (shared_data.cb_inject_values.hazeReduction != 1.0 && shared_data.misc_feature && !shared_data.CPerFrame_copied)
-	if (shared_data.cb_inject_values.hazeReduction != 1.0 && shared_data.misc_feature)
+	if ( (shared_data.cb_inject_values.hazeReduction != 1.0 || shared_data.cb_inject_values.gCockpitIBL !=1.0)  && shared_data.misc_feature)
 	{
+		
+		
 		if (update.type == descriptor_type::constant_buffer && update.binding == CPERFRAME_INDEX && update.count == 1 && stages == shader_stage::pixel)
 		{
 			
@@ -840,35 +887,38 @@ static void on_push_descriptors(command_list* cmd_list, shader_stage stages, pip
 			
 				// copy original value for gAtmIntensity
 				shared_data.orig_values[CPERFRAME_CB_NB][GATMINTENSITY_SAVE] = shared_data.dest_CB_array[CPERFRAME_CB_NB][FOG_INDEX];
+
+				// copy original value for gCockpitIBL.xy
+				shared_data.orig_values[CPERFRAME_CB_NB][GCOCKPITIBL_X_SAVE] = shared_data.dest_CB_array[CPERFRAME_CB_NB][GCOCKPITIBL_INDEX_X];
+				shared_data.orig_values[CPERFRAME_CB_NB][GCOCKPITIBL_Y_SAVE] = shared_data.dest_CB_array[CPERFRAME_CB_NB][GCOCKPITIBL_INDEX_Y];
+
+				/*
+				// update value for dynamic reflexion
+				shared_data.dest_CB_array[CPERFRAME_CB_NB][GCOCKPITIBL_INDEX_X] = shared_data.dest_CB_array[CPERFRAME_CB_NB][GCOCKPITIBL_INDEX_X] * shared_data.cb_inject_values.gCockpitIBL;
+				shared_data.dest_CB_array[CPERFRAME_CB_NB][GCOCKPITIBL_INDEX_Y] = shared_data.dest_CB_array[CPERFRAME_CB_NB][GCOCKPITIBL_INDEX_Y] * shared_data.cb_inject_values.gCockpitIBL;
+				*/
+
 				shared_data.CB_copied[CPERFRAME_CB_NB] = true;
 			}
 
-
-			// inject constant buffer other than the one containing VREM setting
-			/*
-			//if (it->second.feature == Feature::GetStencil && shared_data.CPerFrame_copied)
-			{
-				// use push constant() to push CPerFrame 
-				// pipeline_layout for CB initialized in init_pipeline() once for all
-				cmd_list->push_constants(
-					shader_stage::all,
-					shared_data.saved_pipeline_layout_CPerFrame,
-					0,
-					0, // injecting only the haze value to be updated (so first = FOG_INDEX) is making the game crash...
-					CPERFRAME_SIZE,
-					&shared_data.dest_CB_CPerFrame
-				);
-
-				log_CB_injected("CPerFrame");
-
-				// last_replaced_shader = pipelineHandle.handle;
-				// last_feature = it->second.feature;
-
-			}
-			*/
-
 		}
 	}
+
+	// copy def_uniform
+	/*
+	if (shared_data.track_for_CB[DEF_UNIFORMS_CB_NB] == true && update.type == descriptor_type::constant_buffer && update.binding == DEF_UNIFORMS_INDEX && update.count == 1 && stages == shader_stage::pixel)
+	{
+		bool error = read_constant_buffer(cmd_list, update, "def_uniforms", 0, shared_data.dest_CB_array[DEF_UNIFORMS_CB_NB], DEF_UNIFORM_SIZE);
+		if (!error)
+		{
+			// copy original value for opacityValue 
+			shared_data.orig_values[DEF_UNIFORMS_CB_NB][OPACITY_SAVE] = shared_data.dest_CB_array[DEF_UNIFORMS_CB_NB][OPACITY_INDEX];
+			shared_data.CB_copied[DEF_UNIFORMS_CB_NB] = true;
+			
+		}
+		shared_data.track_for_CB[DEF_UNIFORMS_CB_NB] == false;
+	}
+	*/
 }
 
 //*******************************************************************************************************
@@ -911,6 +961,9 @@ static void clear_tracking_flags()
 		shared_data.track_for_NS430 = false;
 		do_not_draw = false;
 	}
+
+	// shared_data.track_for_CB[DEF_UNIFORMS_CB_NB] = false;
+
 	shared_data.draw_passed = true;
 }
 

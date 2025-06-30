@@ -124,6 +124,7 @@ struct __declspec(uuid("6EAA737E-90F1-453E-A062-BF8FE390EE21")) global_shared
 	float dest_CB_array[NUMBER_OF_MODIFIED_CB][MAX_CBSIZE];
 	bool CB_copied[NUMBER_OF_MODIFIED_CB];
 	float orig_values[NUMBER_OF_MODIFIED_CB][MAX_OF_MODIFIED_VALUES];
+	bool track_for_CB[NUMBER_OF_MODIFIED_CB];
 
 	// DX11 pipeline_layout for ressource view
 	reshade::api::pipeline_layout saved_pipeline_layout_RV;

@@ -244,8 +244,10 @@ void load_setting_IniFile()
 	//misc
 	shared_data.misc_feature = iniFile.GetBool("misc_feature", "Misc");
 	shared_data.cb_inject_values.maskLabels = read_float_with_defaut(iniFile, fileExist, "maskLabels", "Misc", 0.0);
-	shared_data.cb_inject_values.hazeReduction = read_float_with_defaut(iniFile, fileExist, "hazeReduction", "Misc", 0.0);
+	shared_data.cb_inject_values.hazeReduction = read_float_with_defaut(iniFile, fileExist, "hazeReduction", "Misc", 1.0);
 	shared_data.cb_inject_values.noReflect = read_float_with_defaut(iniFile, fileExist, "noReflect", "Misc", 0.0);
+	shared_data.cb_inject_values.gCockpitIBL = read_float_with_defaut(iniFile, fileExist, "gCockpitIBL", "Misc", 1.0);
+	
 	shared_data.cb_inject_values.NVGSize = read_float_with_defaut(iniFile, fileExist, "NVGSize", "Misc", 1.0);
 	shared_data.cb_inject_values.NVGYPos = read_float_with_defaut(iniFile, fileExist, "NVGYPos", "Misc", 0.0);
 	shared_data.MSAA_factor = read_int_with_defaut(iniFile, fileExist, "MSAA_factor", "Misc", 0);
@@ -373,6 +375,8 @@ void saveShaderTogglerIniFile()
 	iniFile.SetFloat("maskLabels", shared_data.cb_inject_values.maskLabels, "for hiding labels", "Misc");
 	iniFile.SetFloat("hazeReduction", shared_data.cb_inject_values.hazeReduction, "for haze control", "Misc");
 	iniFile.SetFloat("noReflect", shared_data.cb_inject_values.noReflect, "remove A10C instrument reflexion", "Misc");
+	iniFile.SetFloat("gCockpitIBL", shared_data.cb_inject_values.gCockpitIBL, "Dynamic reflexion factor", "Misc");
+
 	iniFile.SetFloat("NVGSize", shared_data.cb_inject_values.NVGSize, "Scale NVG", "Misc");
 	iniFile.SetFloat("NVGYPos", shared_data.cb_inject_values.NVGYPos, "height of NVG", "Misc");
 	iniFile.SetInt("MSAA_factor", shared_data.MSAA_factor, "MSAA to define supersampling fix", "Misc");
@@ -455,7 +459,8 @@ void init_mod_features()
 		}
 
 		// add entrie for CB update in case of Haze activated
-		if ((entry.second.feature == Feature::GetStencil || entry.second.feature == Feature::Sky ) && entry.second.action & action_injectCB && shared_data.cb_inject_values.hazeReduction !=1.0 && shared_data.misc_feature)
+		// if ((entry.second.feature == Feature::GetStencil || entry.second.feature == Feature::Sky ) && entry.second.action & action_injectCB && shared_data.cb_inject_values.hazeReduction !=1.0 && shared_data.misc_feature)
+		if ((entry.second.feature == Feature::GetStencil || entry.second.feature == Feature::Sky) && entry.second.action & action_injectCB && shared_data.misc_feature)
 		{
 			add_line = true;
 		}

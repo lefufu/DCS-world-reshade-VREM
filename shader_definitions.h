@@ -124,6 +124,7 @@ struct Shader_Definition {
 	Shader_Definition(uint32_t act, Feature feat, const wchar_t* filename, uint32_t count)
 		: action(act), feature(feat), draw_count(count) {
 		wcsncpy_s(replace_filename, filename, MAXNAMECHAR);
+		hash = 0;
 	}
 
 };
