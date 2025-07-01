@@ -55,7 +55,7 @@
 using namespace reshade::api;
 
 extern "C" __declspec(dllexport) const char *NAME = "DCS VREM";
-extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v9.4";
+extern "C" __declspec(dllexport) const char *DESCRIPTION = "DCS mod to enhance VR in DCS - v9.4.1";
 
 // ***********************************************************************************************************************
 // definition of all shader of the mod (whatever feature selected in GUI)
@@ -1024,9 +1024,24 @@ static bool on_drawOrDispatch_indirect(command_list* commandList, indirect_comma
 
 static void on_reshade_reloaded_effects(effect_runtime* runtime)
 {
-	
-	enumerateTechniques(runtime);
 
+	if (shared_data.effects_feature)
+	{
+		enumerateTechniques(runtime);
+	}
+
+	//initialize pre process variable (if needed)
+	//init_preprocess(runtime);
+
+
+}
+
+//*******************************************************************************************************
+// on_reshade_overlay() : initialize technique list
+
+static void on_reshade_overlay(effect_runtime* runtime)
+{
+	
 	//initialize pre process variable (if needed)
 	init_preprocess(runtime);
 
@@ -1112,8 +1127,9 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD fdwReason, LPVOID)
 
 			reshade::register_event<reshade::addon_event::reshade_present>(on_present);
 
-			reshade::register_event< reshade::addon_event::reshade_reloaded_effects>(on_reshade_reloaded_effects);
 
+			reshade::register_event < reshade::addon_event::reshade_overlay> (on_reshade_overlay);
+			reshade::register_event< reshade::addon_event::reshade_reloaded_effects>(on_reshade_reloaded_effects);
 			reshade::register_event<reshade::addon_event::reshade_set_technique_state>(onReshadeSetTechniqueState);
 	
 			// setup GUI
@@ -1138,7 +1154,6 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD fdwReason, LPVOID)
 		reshade::unregister_event<reshade::addon_event::push_descriptors>(on_push_descriptors);
 		reshade::unregister_event<reshade::addon_event::create_pipeline>(on_create_pipeline);
 		reshade::unregister_event<reshade::addon_event::init_pipeline>(on_after_create_pipeline);
-
 		reshade::unregister_event<reshade::addon_event::bind_render_targets_and_depth_stencil>(on_bind_render_targets_and_depth_stencil);
 
 		reshade::unregister_event< reshade::addon_event::reshade_reloaded_effects>(on_reshade_reloaded_effects);

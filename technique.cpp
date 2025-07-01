@@ -122,7 +122,8 @@ int default_preprocessor(effect_runtime* runtime, std::string name, float defaul
 
 void init_preprocess(effect_runtime* runtime)
 {
-    if (!shared_data.init_preprocessor && shared_data.effects_feature)
+    // if (!shared_data.init_preprocessor && shared_data.effects_feature)
+    if (!shared_data.init_preprocessor)
     {
 
         shared_data.init_preprocessor = true;
@@ -140,6 +141,9 @@ void init_preprocess(effect_runtime* runtime)
         check += default_preprocessor(runtime, "BUFFER_RCP_WIDTH_QVIN", 1.0 / 1920, false, -1);
         check += default_preprocessor(runtime, "BUFFER_RCP_HEIGHT_QVIN", 1.0 / 1080, false, -1);
         */
+
+        // set one technique to activate pre process
+
 
         //save check done
         saveShaderTogglerIniFile();
@@ -186,102 +190,104 @@ bool read_technique_status_from_file(std::string name)
 void enumerateTechniques(effect_runtime* runtime)
 {
     
-    extern CDataFile technique_iniFile;
+    if (shared_data.effects_feature)
+    {
+        extern CDataFile technique_iniFile;
 
-    //purge the technique vector
-    shared_data.technique_vector.clear();
+        //purge the technique vector
+        shared_data.technique_vector.clear();
 
-    // init flags for texture or uniform injection
-    shared_data.uniform_needed = false;
-    //shared_data.texture_needed = false;
- 
-    // load the technique file, as status of technique are not relevant
-    technique_iniFile.Load(technique_iniFileName);       
-    
+        // init flags for texture or uniform injection
+        shared_data.uniform_needed = false;
+        //shared_data.texture_needed = false;
 
-    // Pass the logging function as the callback
-    runtime->enumerate_techniques(nullptr, [](effect_runtime* rt, effect_technique technique) {
-        
-        // Buffer size definition
-        g_charBufferSize = CHAR_BUFFER_SIZE;
+        // load the technique file, as status of technique are not relevant
+        technique_iniFile.Load(technique_iniFileName);
 
-        // Get technique name
-        rt->get_technique_name(technique, g_charBuffer, &g_charBufferSize);
-        std::string name(g_charBuffer);
 
-        // Get effect name
-        g_charBufferSize = CHAR_BUFFER_SIZE;
-        rt->get_technique_effect_name(technique, g_charBuffer, &g_charBufferSize);
-        std::string eff_name(g_charBuffer);
+        // Pass the logging function as the callback
+        runtime->enumerate_techniques(nullptr, [](effect_runtime* rt, effect_technique technique) {
 
-        // get the "VREM "VR only" empty technique (used to ensure to have at least 1 active technique and make runtime->enumerate_techniques called
-        if (name == VR_ONLY_NAME)
-        {
-            shared_data.VR_only_technique_handle = technique;
-            //disable technique if not VR only
+            // Buffer size definition
+            g_charBufferSize = CHAR_BUFFER_SIZE;
+
+            // Get technique name
+            rt->get_technique_name(technique, g_charBuffer, &g_charBufferSize);
+            std::string name(g_charBuffer);
+
+            // Get effect name
+            g_charBufferSize = CHAR_BUFFER_SIZE;
+            rt->get_technique_effect_name(technique, g_charBuffer, &g_charBufferSize);
+            std::string eff_name(g_charBuffer);
+
+            // get the "VREM "VR only" empty technique (used to ensure to have at least 1 active technique and make runtime->enumerate_techniques called
+            if (name == VR_ONLY_NAME)
+            {
+                shared_data.VR_only_technique_handle = technique;
+                //disable technique if not VR only
+                if (!shared_data.VRonly_technique)
+                    rt->set_technique_state(shared_data.VR_only_technique_handle, false);
+            }
+
+            // if shared_data.VRonly_technique is set, the technique state will not be used, instead the status will be read from the technique .ini file
+            if (shared_data.VRonly_technique)
+            {
+                technique_status = read_technique_status_from_file(name);
+                // activate the technique, as it may be keep off from previous game session and it need to be activated before the 3D window at least once per session
+                if (technique_status && shared_data.count_draw == 0)
+                {
+                    rt->set_technique_state(technique, true);
+                }
+
+            }
+            else
+                technique_status = rt->get_technique_state(technique);
+
+            // add technique in vector if active
+            if (technique_status)
+            {
+
+                //check if shader is containing a VREM texture (¨DEPTH' or 'STENCIL') or other options in GUI that need stencil
+                bool has_depth_or_stencil = false;
+                if (rt->find_texture_variable(g_charBuffer, DEPTH_NAME) != 0 || rt->find_texture_variable(g_charBuffer, STENCIL_NAME) != 0)
+                {
+                    has_depth_or_stencil = true;
+                    shared_data.texture_needed = true;
+                }
+
+                //check if shader is containing VREM uniform
+                bool has_uniform = false;
+                reshade::api::effect_uniform_variable unif = rt->find_uniform_variable(g_charBuffer, QV_TARGET_NAME);
+                int QV_target = shared_data.effect_target_QV;
+                if (unif != 0) rt->get_uniform_value_int(unif, &QV_target, 1);
+
+
+                // add the technique in the vector
+                shared_data.technique_vector.push_back({ technique, name, eff_name , technique_status, QV_target });
+
+                //log 
+                log_technique_info(rt, technique, name, eff_name, technique_status, QV_target, has_depth_or_stencil);
+
+            }
+            // log_technique_info(rt, technique, name, eff_name, technique_status, -1, false);
+            // save changes only if VROnly is not set
             if (!shared_data.VRonly_technique)
-                rt->set_technique_state(shared_data.VR_only_technique_handle, false);
-        }
-
-        // if shared_data.VRonly_technique is set, the technique state will not be used, instead the status will be read from the technique .ini file
-        if (shared_data.VRonly_technique)
-        {
-            technique_status = read_technique_status_from_file(name);
-            // activate the technique, as it may be keep off from previous game session and it need to be activated before the 3D window at least once per session
-            if (technique_status && shared_data.count_draw == 0)
             {
-                rt->set_technique_state(technique, true);
+                save_technique_status(name, eff_name, technique_status, shared_data.effect_target_QV);
             }
 
-        }
-        else
-            technique_status = rt->get_technique_state(technique);
-
-        // add technique in vector if active
-        if (technique_status)
-        {
-
-            //check if shader is containing a VREM texture (¨DEPTH' or 'STENCIL') or other options in GUI that need stencil
-            bool has_depth_or_stencil = false;
-            if (rt->find_texture_variable(g_charBuffer, DEPTH_NAME) != 0 || rt->find_texture_variable(g_charBuffer, STENCIL_NAME) != 0  )
-            {
-                has_depth_or_stencil = true;
-                shared_data.texture_needed = true;
-            }
-
-            //check if shader is containing VREM uniform
-            bool has_uniform = false;
-            reshade::api::effect_uniform_variable unif = rt->find_uniform_variable(g_charBuffer, QV_TARGET_NAME);
-            int QV_target = shared_data.effect_target_QV;
-            if (unif != 0) rt->get_uniform_value_int(unif, &QV_target, 1);
-
-
-            // add the technique in the vector
-            shared_data.technique_vector.push_back({ technique, name, eff_name , technique_status, QV_target });
-
-            //log 
-            log_technique_info(rt, technique, name, eff_name, technique_status, QV_target, has_depth_or_stencil);
-
-        }
-        // log_technique_info(rt, technique, name, eff_name, technique_status, -1, false);
-        // save changes only if VROnly is not set
+            });
+        //save technique list
         if (!shared_data.VRonly_technique)
         {
-            save_technique_status(name, eff_name, technique_status, shared_data.effect_target_QV);
+
+            technique_iniFile.SetFileName(technique_iniFileName);
+            technique_iniFile.Save();
         }
 
-        });
-    //save technique list
-    if (!shared_data.VRonly_technique)
-    {
-        
-        technique_iniFile.SetFileName(technique_iniFileName);
-        technique_iniFile.Save();
+        //create post process if not existing
+        // init_preprocess(runtime);
     }
-
-    //create post process if not existing
-    // init_preprocess(runtime);
-
 }
 
 // *******************************************************************************************************
